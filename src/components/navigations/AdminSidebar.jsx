@@ -10,8 +10,13 @@ import {
   GraduationCap,
   UserCog2,
   ServerCog,
+  Files,
+  FileCheck,
+  Mail,
+  ThumbsUp,
 } from 'lucide-react';
 import { Shield } from 'react-feather';
+import Message from 'react-pdf/dist/cjs/Message';
 
 const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
   const menuItems = [
@@ -19,8 +24,12 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
     { id: 'peserta', label: 'Peserta Magang', icon: Users },
     { id: 'subkoorbid', label: 'Sub Koor Bidang', icon: UserCog2 },
     { id: 'laporan', label: 'Laporan', icon: FileText },
+    { id: 'laporanAkhir', label: 'Laporan Akhir', icon: FileCheck },
+    { id: 'ajuan', label: 'Ajuan Magang', icon: Files },
     { id: 'mitra', label: 'Mitra', icon: Building },
     { id: 'bidang', label: 'Bidang Magang', icon: Briefcase },
+    { id: 'kritik', label: 'Kritik & Saran', icon: Mail },
+    { id: 'ulasan', label: 'Ulasan Magang', icon: ThumbsUp },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'settings', label: 'Pengaturan', icon: Settings },
   ];

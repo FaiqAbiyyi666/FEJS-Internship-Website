@@ -69,19 +69,6 @@ const AdminHeader = ({ title }) => {
         </div>
 
         <div className="flex items-center space-x-4 relative">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <Search
-              size={20}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Cari..."
-              className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-            />
-          </div>
-
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
             <button

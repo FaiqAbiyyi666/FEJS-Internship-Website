@@ -5,10 +5,14 @@ import DashboardHome from './AdminDashboardHome';
 import ManagementPeserta from './ManagePesertaMagang';
 import ManagementSubKoorbid from './ManageSubKoorbid';
 import ManagementLaporan from './ManageLaporan';
+import ManagementLaporanAkhir from './ManageLaporanAkhir';
 import ManagementMitra from './ManageMitra';
 import ManagementBidang from './ManageBidang';
+import ManagementKritikSaran from './ManageKritikSaran';
+import ManagementUlasanMagang from './ManageUlasanMagang';
 import AdminProfile from './AdminProfile';
 import AdminSettings from './AdminSetting';
+import ManageAjuanMagang from './ManageAjuanMagang';
 
 const AdminDashboard = () => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -23,10 +27,18 @@ const AdminDashboard = () => {
         return <ManagementSubKoorbid />;
       case 'laporan':
         return <ManagementLaporan />;
+      case 'laporanAkhir':
+        return <ManagementLaporanAkhir />;
+      case 'ajuan':
+        return <ManageAjuanMagang />;
       case 'mitra':
         return <ManagementMitra />;
       case 'bidang':
         return <ManagementBidang />;
+      case 'kritik':
+        return <ManagementKritikSaran />;
+      case 'ulasan':
+        return <ManagementUlasanMagang />;
       case 'profile':
         return <AdminProfile />;
       case 'settings':
