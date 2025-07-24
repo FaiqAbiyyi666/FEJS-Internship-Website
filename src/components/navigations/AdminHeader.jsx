@@ -1,13 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Bell,
-  Search,
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+import { Bell, ChevronDown, User, Settings, LogOut } from 'lucide-react';
 
 const AdminHeader = ({ title }) => {
   const [showNotifications, setShowNotifications] = useState(false);

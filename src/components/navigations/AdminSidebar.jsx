@@ -15,15 +15,13 @@ import {
   Mail,
   ThumbsUp,
 } from 'lucide-react';
-import { Shield } from 'react-feather';
-import Message from 'react-pdf/dist/cjs/Message';
 
 const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'peserta', label: 'Peserta Magang', icon: Users },
     { id: 'subkoorbid', label: 'Sub Koor Bidang', icon: UserCog2 },
-    { id: 'laporan', label: 'Laporan', icon: FileText },
+    { id: 'laporan', label: 'Laporan Harian', icon: FileText },
     { id: 'laporanAkhir', label: 'Laporan Akhir', icon: FileCheck },
     { id: 'ajuan', label: 'Ajuan Magang', icon: Files },
     { id: 'mitra', label: 'Mitra', icon: Building },

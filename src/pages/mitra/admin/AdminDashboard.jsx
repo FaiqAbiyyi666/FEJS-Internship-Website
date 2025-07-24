@@ -53,15 +53,23 @@ const AdminDashboard = () => {
       case 'dashboard':
         return 'Dashboard';
       case 'peserta':
-        return 'Manajemen Peserta';
-      case 'peserta':
-        return 'Manajemen Sub Koor Bidang';
+        return 'Peserta Magang';
+      case 'subkoorbid':
+        return 'Sub Koordinator Bidang';
       case 'laporan':
         return 'Laporan Harian';
+      case 'laporanAkhir':
+        return 'Laporan Akhir';
+      case 'Ajuan':
+        return 'Ajuan Magang';
       case 'mitra':
         return 'Manajemen Mitra';
       case 'bidang':
         return 'Bidang Magang';
+      case 'kritik':
+        return 'Kritik & Saran';
+      case 'ulasan':
+        return 'Ulasan Magang';
       case 'profile':
         return 'Profile Admin';
       case 'settings':
