@@ -3,13 +3,9 @@ import {
   LayoutDashboard,
   Users,
   FileText,
-  Building,
   Briefcase,
   User,
-  Settings,
-  GraduationCap,
   UserCog2,
-  ServerCog,
   Files,
   FileCheck,
   Mail,
@@ -24,12 +20,10 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
     { id: 'laporan', label: 'Laporan Harian', icon: FileText },
     { id: 'laporanAkhir', label: 'Laporan Akhir', icon: FileCheck },
     { id: 'ajuan', label: 'Ajuan Magang', icon: Files },
-    { id: 'mitra', label: 'Mitra', icon: Building },
     { id: 'bidang', label: 'Bidang Magang', icon: Briefcase },
     { id: 'kritik', label: 'Kritik & Saran', icon: Mail },
     { id: 'ulasan', label: 'Ulasan Magang', icon: ThumbsUp },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'settings', label: 'Pengaturan', icon: Settings },
   ];
 
   return (

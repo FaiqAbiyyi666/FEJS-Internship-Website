@@ -31,8 +31,6 @@ const AdminDashboard = () => {
         return <ManagementLaporanAkhir />;
       case 'ajuan':
         return <ManageAjuanMagang />;
-      case 'mitra':
-        return <ManagementMitra />;
       case 'bidang':
         return <ManagementBidang />;
       case 'kritik':
@@ -41,8 +39,6 @@ const AdminDashboard = () => {
         return <ManagementUlasanMagang />;
       case 'profile':
         return <AdminProfile />;
-      case 'settings':
-        return <AdminSettings />;
       default:
         return <DashboardHome />;
     }
@@ -62,8 +58,6 @@ const AdminDashboard = () => {
         return 'Laporan Akhir';
       case 'Ajuan':
         return 'Ajuan Magang';
-      case 'mitra':
-        return 'Manajemen Mitra';
       case 'bidang':
         return 'Bidang Magang';
       case 'kritik':
@@ -72,8 +66,6 @@ const AdminDashboard = () => {
         return 'Ulasan Magang';
       case 'profile':
         return 'Profile Admin';
-      case 'settings':
-        return 'Pengaturan';
       default:
         return 'Dashboard';
     }
