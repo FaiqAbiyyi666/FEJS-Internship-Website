@@ -3,18 +3,18 @@ import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const images = [
   {
-    src: '/hero_carousel/Foto_Patung Unair.jpg',
-    alt: 'Slide Unair',
+    src: '/hero_carousel/hero-1.svg',
+    alt: 'Hero 1',
     link: '#',
   },
   {
-    src: '/hero_carousel/petani.jpg',
-    alt: 'Slide Petani',
+    src: '/hero_carousel/hero-2.svg',
+    alt: 'Hero 2',
     link: '#',
   },
   {
-    src: '/hero_carousel/purabali.jpg',
-    alt: 'Slide Pura Bali',
+    src: '/hero_carousel/hero-3.svg',
+    alt: 'Hero 3',
     link: '#',
   },
 ];
@@ -52,7 +52,7 @@ export default function HeroCarousel() {
               alt={img.alt}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black bg-opacity-40" />
+            {/* <div className="absolute inset-0 bg-black bg-opacity-20" /> */}
           </a>
         </div>
       ))}

@@ -82,25 +82,6 @@ const AdminProfile = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nama Lengkap
-              </label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={formData.nama}
-                  onChange={(e) =>
-                    setFormData({ ...formData, nama: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-                  required
-                />
-              ) : (
-                <p className="text-gray-900 py-2">{formData.nama}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
               {isEditing ? (
@@ -123,29 +104,7 @@ const AdminProfile = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Telepon
-              </label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-                  required
-                />
-              ) : (
-                <div className="flex items-center py-2">
-                  <Phone size={16} className="text-gray-400 mr-2" />
-                  <span className="text-gray-900">{formData.phone}</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Jabatan
+                Role
               </label>
               {isEditing ? (
                 <input
@@ -164,7 +123,7 @@ const AdminProfile = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Divisi
+                Bidang
               </label>
               {isEditing ? (
                 <input
@@ -187,48 +146,6 @@ const AdminProfile = () => {
               </label>
               <p className="text-gray-900 py-2">{formData.tanggalBergabung}</p>
             </div>
-          </div>
-
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alamat
-            </label>
-            {isEditing ? (
-              <textarea
-                value={formData.alamat}
-                onChange={(e) =>
-                  setFormData({ ...formData, alamat: e.target.value })
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-                required
-              />
-            ) : (
-              <div className="flex items-center py-2">
-                <MapPin size={16} className="text-gray-400 mr-2" />
-                <span className="text-gray-900">{formData.alamat}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bio
-            </label>
-            {isEditing ? (
-              <textarea
-                value={formData.bio}
-                onChange={(e) =>
-                  setFormData({ ...formData, bio: e.target.value })
-                }
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-              />
-            ) : (
-              <p className="text-gray-900 py-2 leading-relaxed">
-                {formData.bio}
-              </p>
-            )}
           </div>
 
           {isEditing && (

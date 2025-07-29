@@ -1,13 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Bell,
-  Search,
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+import { Bell, ChevronDown, User, LogOut } from 'lucide-react';
 
 const AdminHeader = ({ title }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -69,19 +62,6 @@ const AdminHeader = ({ title }) => {
         </div>
 
         <div className="flex items-center space-x-4 relative">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <Search
-              size={20}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Cari..."
-              className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-            />
-          </div>
-
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
             <button
@@ -144,14 +124,6 @@ const AdminHeader = ({ title }) => {
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                 <ul className="text-sm text-gray-700">
-                  <li className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer">
-                    <User size={16} className="mr-2 text-[#006DA6]" />
-                    Profile
-                  </li>
-                  <li className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer">
-                    <Settings size={16} className="mr-2 text-[#006DA6]" />
-                    Pengaturan
-                  </li>
                   <li
                     className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer"
                     onClick={handleLogout}

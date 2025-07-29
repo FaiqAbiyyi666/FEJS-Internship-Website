@@ -6,6 +6,7 @@ import LaporanHarianForm from './LaporanHarianForm';
 import SertifikatPage from './SertifikatPage';
 import Navbar from '../../../components/navigations/Navbar';
 import UnggahLaporanPage from './UnggahLaporan';
+import UlasanMagangPage from './UlasanMagangPage';
 
 export default function DashboardLayout() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -30,17 +31,21 @@ export default function DashboardLayout() {
       </div>
 
       <div className="flex bg-[#F5F7FA] min-h-screen max-w-7xl mx-auto px-4">
+        {/* Sidebar hanya ditampilkan jika bukan halaman form laporan dan unggah laporan */}
         {activeMenu !== 'form-laporan' && activeMenu !== 'unggah-laporan' && (
           <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
         )}
+
         <main className="flex-1 p-6">
           {activeMenu === 'dashboard' && <DashboardHome />}
+
           {activeMenu === 'laporan' && (
             <LaporanPage
               onOpenForm={handleOpenForm}
               onNavigateToUpload={() => setActiveMenu('unggah-laporan')}
             />
           )}
+
           {activeMenu === 'form-laporan' &&
             selectedWeek !== null &&
             selectedDay !== null && (
@@ -50,10 +55,15 @@ export default function DashboardLayout() {
                 onBack={() => setActiveMenu('laporan')}
               />
             )}
+
           {activeMenu === 'unggah-laporan' && (
             <UnggahLaporanPage onBack={() => setActiveMenu('laporan')} />
           )}
+
           {activeMenu === 'sertifikat' && <SertifikatPage />}
+
+          {/* ✅ Tambahan untuk halaman Ulasan Magang */}
+          {activeMenu === 'ulasan-magang' && <UlasanMagangPage />}
         </main>
       </div>
     </>

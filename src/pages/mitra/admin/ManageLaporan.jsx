@@ -1,31 +1,33 @@
 import React, { useState } from 'react';
 import {
   Search,
-  Filter,
   Eye,
   Download,
-  Calendar,
   Clock,
   CheckCircle,
   XCircle,
   FileText,
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
+import autoTable from 'jspdf-autotable';
 
 const ManagementLaporan = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedLaporan, setSelectedLaporan] = useState(null);
 
-  const laporanData = [
+  // 🔧 Jadikan laporanData ke dalam state agar bisa diperbarui
+  const [dataLaporan, setDataLaporan] = useState([
     {
       id: 1,
       peserta: 'Ahmad Rizki Pratama',
       avatar: 'AR',
+      bidang: 'Tata Kelola Informatika',
       tanggal: '2024-01-15',
-      judul: 'Laporan Harian - Pengembangan Sistem',
+      judul: 'Laporan Harian',
       kegiatan:
         'Melakukan analisis requirement untuk sistem baru, merancang database schema, dan membuat dokumentasi teknis.',
-      jamMasuk: '08:00',
-      jamKeluar: '17:00',
       status: 'Disetujui',
       tanggalSubmit: '2024-01-15 18:30',
       pembimbing: 'Dr. Siti Nurhaliza',
@@ -34,12 +36,11 @@ const ManagementLaporan = () => {
       id: 2,
       peserta: 'Siti Aminah',
       avatar: 'SA',
+      bidang: 'Sekretariat',
       tanggal: '2024-01-16',
-      judul: 'Laporan Harian - Rekrutmen Karyawan',
+      judul: 'Laporan Harian',
       kegiatan:
         'Melakukan screening CV kandidat, menyiapkan soal tes, dan mengatur jadwal wawancara.',
-      jamMasuk: '08:15',
-      jamKeluar: '17:00',
       status: 'Pending',
       tanggalSubmit: '2024-01-16 19:00',
       pembimbing: 'Budi Santoso, S.H.',
@@ -48,17 +49,16 @@ const ManagementLaporan = () => {
       id: 3,
       peserta: 'Dian Permata',
       avatar: 'DP',
+      bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
       tanggal: '2024-01-17',
-      judul: 'Laporan Harian - Kampanye Marketing',
+      judul: 'Laporan Harian',
       kegiatan:
         'Membuat konten social media, menganalisis engagement, dan menyiapkan laporan performa.',
-      jamMasuk: '08:30',
-      jamKeluar: '16:45',
       status: 'Perlu Revisi',
       tanggalSubmit: '2024-01-17 17:15',
       pembimbing: 'Maria Gonzalez',
     },
-  ];
+  ]);
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -86,64 +86,148 @@ const ManagementLaporan = () => {
     }
   };
 
-  const filteredLaporan = laporanData.filter((laporan) => {
+  // Statistik dinamis
+  const total = dataLaporan.length;
+  const pending = dataLaporan.filter(
+    (l) => l.status.toLowerCase() === 'pending'
+  ).length;
+  const disetujui = dataLaporan.filter(
+    (l) => l.status.toLowerCase() === 'disetujui'
+  ).length;
+  const perluRevisi = dataLaporan.filter(
+    (l) => l.status.toLowerCase() === 'perlu revisi'
+  ).length;
+
+  const filteredLaporan = dataLaporan.filter((laporan) => {
     const matchesSearch =
       laporan.peserta.toLowerCase().includes(searchTerm.toLowerCase()) ||
       laporan.judul.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' ||
-      laporan.status.toLowerCase().replace(' ', '').includes(statusFilter);
-    return matchesSearch && matchesStatus;
+
+    const normalizedStatus = laporan.status.toLowerCase().replace(/\s+/g, '');
+    return (
+      matchesSearch &&
+      (statusFilter === 'all' || normalizedStatus === statusFilter)
+    );
   });
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    autoTable(doc, {
+      head: [['Peserta', 'Judul', 'Tanggal', 'Status']],
+      body: dataLaporan.map((laporan) => [
+        laporan.peserta,
+        laporan.judul,
+        laporan.tanggal,
+        laporan.status,
+      ]),
+    });
+    doc.save('laporan-peserta.pdf');
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(dataLaporan);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan');
+    XLSX.writeFile(workbook, 'laporan-peserta.xlsx');
+  };
+
+  // ✅ Fungsi untuk update status
+  const updateStatus = (id, newStatus) => {
+    const updated = dataLaporan.map((laporan) =>
+      laporan.id === id ? { ...laporan, status: newStatus } : laporan
+    );
+    setDataLaporan(updated);
+
+    if (selectedLaporan && selectedLaporan.id === id) {
+      setSelectedLaporan((prev) => ({ ...prev, status: newStatus }));
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Modal */}
+      {selectedLaporan && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+          onClick={() => setSelectedLaporan(null)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-4 right-5 text-gray-500 hover:text-red-500 text-xl"
+              onClick={() => setSelectedLaporan(null)}
+            >
+              ✕
+            </button>
+
+            <h2 className="text-xl font-semibold mb-4 text-[#006DA6]">
+              Detail Laporan Harian
+            </h2>
+
+            <div className="space-y-3 text-sm text-gray-700">
+              {[
+                ['Judul', selectedLaporan.judul],
+                ['Peserta', selectedLaporan.peserta],
+                ['Bidang', selectedLaporan.bidang],
+                ['Tanggal', selectedLaporan.tanggal],
+                ['Kegiatan', selectedLaporan.kegiatan],
+                ['Pembimbing', selectedLaporan.pembimbing],
+                ['Tanggal Submit', selectedLaporan.tanggalSubmit],
+                ['Status', selectedLaporan.status],
+              ].map(([label, value], i) => (
+                <div key={i}>
+                  <span className="font-medium block text-gray-500">
+                    {label}
+                  </span>
+                  <p>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 text-right">
+              <button
+                onClick={() => setSelectedLaporan(null)}
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md transition"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Laporan</p>
-              <p className="text-2xl font-bold text-gray-900">156</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-[#BFDCFF] to-[#006DA6] rounded-lg">
-              <FileText size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">23</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg">
-              <Clock size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Disetujui</p>
-              <p className="text-2xl font-bold text-green-600">125</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-lg">
-              <CheckCircle size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Perlu Revisi</p>
-              <p className="text-2xl font-bold text-red-600">8</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-red-400 to-red-600 rounded-lg">
-              <XCircle size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
+        <Card
+          title="Total Laporan"
+          value={total}
+          icon={<FileText />}
+          gradient="from-[#BFDCFF] to-[#006DA6]"
+          color="text-gray-900"
+        />
+        <Card
+          title="Pending"
+          value={pending}
+          icon={<Clock />}
+          gradient="from-yellow-400 to-yellow-600"
+          color="text-yellow-600"
+        />
+        <Card
+          title="Disetujui"
+          value={disetujui}
+          icon={<CheckCircle />}
+          gradient="from-green-400 to-green-600"
+          color="text-green-600"
+        />
+        <Card
+          title="Perlu Revisi"
+          value={perluRevisi}
+          icon={<XCircle />}
+          gradient="from-red-400 to-red-600"
+          color="text-red-600"
+        />
       </div>
 
       {/* Filters */}
@@ -173,10 +257,22 @@ const ManagementLaporan = () => {
             <option value="perlurevisi">Perlu Revisi</option>
           </select>
         </div>
-        <button className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] transition-colors flex items-center space-x-2">
-          <Download size={20} />
-          <span>Export Laporan</span>
-        </button>
+
+        {/* Tombol Ekspor */}
+        <div className="flex justify-end gap-4 mb-4">
+          <button
+            onClick={exportToPDF}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+          >
+            Ekspor PDF
+          </button>
+          <button
+            onClick={exportToExcel}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+          >
+            Ekspor Excel
+          </button>
+        </div>
       </div>
 
       {/* Laporan Cards */}
@@ -202,9 +298,7 @@ const ManagementLaporan = () => {
                     <span>•</span>
                     <span>{laporan.tanggal}</span>
                     <span>•</span>
-                    <span>
-                      {laporan.jamMasuk} - {laporan.jamKeluar}
-                    </span>
+                    <span>Bidang: {laporan.bidang}</span>
                   </div>
                 </div>
               </div>
@@ -217,7 +311,10 @@ const ManagementLaporan = () => {
                   {getStatusIcon(laporan.status)}
                   <span className="ml-2">{laporan.status}</span>
                 </span>
-                <button className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg transition-colors">
+                <button
+                  onClick={() => setSelectedLaporan(laporan)}
+                  className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg transition-colors"
+                >
                   <Eye size={20} />
                 </button>
               </div>
@@ -229,21 +326,27 @@ const ManagementLaporan = () => {
 
             <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
               <div>
-                <span className="font-medium">Pembimbing:</span>{' '}
+                <span className="font-bold">Pembimbing:</span>{' '}
                 {laporan.pembimbing}
               </div>
               <div>
-                <span className="font-medium">Disubmit:</span>{' '}
+                <span className="font-bold">Disubmit: </span>{' '}
                 {laporan.tanggalSubmit}
               </div>
             </div>
 
-            {laporan.status === 'Pending' && (
+            {laporan.status.toLowerCase() === 'pending' && (
               <div className="flex space-x-3 mt-4 pt-4 border-t">
-                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                <button
+                  onClick={() => updateStatus(laporan.id, 'Disetujui')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                >
                   Setujui
                 </button>
-                <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
+                <button
+                  onClick={() => updateStatus(laporan.id, 'Perlu Revisi')}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                >
                   Minta Revisi
                 </button>
               </div>
@@ -254,5 +357,20 @@ const ManagementLaporan = () => {
     </div>
   );
 };
+
+// Reusable Card component
+const Card = ({ title, value, icon, gradient, color }) => (
+  <div className="bg-white rounded-xl shadow-sm p-4">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-gray-600">{title}</p>
+        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      </div>
+      <div className={`p-3 rounded-lg bg-gradient-to-br ${gradient}`}>
+        {React.cloneElement(icon, { className: 'text-white' })}
+      </div>
+    </div>
+  </div>
+);
 
 export default ManagementLaporan;
