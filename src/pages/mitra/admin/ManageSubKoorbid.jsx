@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Edit, Plus } from 'lucide-react';
+import { FaTrash } from 'react-icons/fa';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -106,6 +107,13 @@ export default function ManagementSubKoorbid() {
     closeCreateModal();
   };
 
+  const handleDeleteSubkoor = (id) => {
+    if (confirm('Yakin ingin menghapus akun ini?')) {
+      // Panggil API hapus atau update state di sini
+      console.log('Hapus subkoor dengan id:', id);
+    }
+  };
+
   const filteredData = subKoorData.filter(
     (subkoor) =>
       subkoor.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -181,7 +189,13 @@ export default function ManagementSubKoorbid() {
                       onClick={() => openModal(item)}
                     >
                       <Edit size={16} className="mr-1" />
-                      Detail
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSubkoor(subKoorData.id)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Hapus Akun"
+                    >
+                      <FaTrash />
                     </button>
                   </td>
                 </tr>

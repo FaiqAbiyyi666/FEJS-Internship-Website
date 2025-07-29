@@ -1,11 +1,13 @@
 import { FaBook, FaHome } from 'react-icons/fa';
 import { TbCertificate } from 'react-icons/tb';
+import { BiLike } from 'react-icons/bi'; // icon untuk ulasan magang
 
 export default function Sidebar({ activeMenu, setActiveMenu }) {
   const menuItems = [
     { key: 'dashboard', icon: <FaHome />, label: 'Dashboard' },
     { key: 'laporan', icon: <FaBook />, label: 'Laporan' },
     { key: 'sertifikat', icon: <TbCertificate />, label: 'Sertifikat' },
+    { key: 'ulasan-magang', icon: <BiLike />, label: 'Ulasan Magang' }, // ✅ menu baru
   ];
 
   return (

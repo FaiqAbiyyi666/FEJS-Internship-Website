@@ -3,6 +3,7 @@ import { Eye, Edit } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import autoTable from 'jspdf-autotable';
+import { FaTrash, FaEye } from 'react-icons/fa';
 
 const ITEMS_PER_PAGE = 5;
 const ITEMS_PER_PAGE_PENDING = 5;
@@ -13,6 +14,13 @@ export default function ManagePesertaMagang() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPeserta, setSelectedPeserta] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleDeletePeserta = (id) => {
+    if (confirm('Yakin ingin menghapus akun peserta ini?')) {
+      // Panggil API hapus atau update state di sini
+      console.log('Hapus peserta dengan id:', id);
+    }
+  };
 
   // Eksport PDF dan Excel Akun Peserta Magang
   const handleExportPDF = () => {
@@ -687,12 +695,19 @@ export default function ManagePesertaMagang() {
                     {peserta.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 flex gap-2">
+                <td className="px-4 py-3 text-center flex justify-center gap-2">
                   <button
                     onClick={() => openDetailModal(peserta)}
                     className="text-[#006DA6] hover:underline flex items-center text-sm"
                   >
                     <Edit size={16} className="mr-1" />
+                  </button>
+                  <button
+                    onClick={() => handleDeletePeserta(peserta.id)}
+                    className="text-red-500 hover:text-red-700"
+                    title="Hapus Akun"
+                  >
+                    <FaTrash />
                   </button>
                 </td>
               </tr>

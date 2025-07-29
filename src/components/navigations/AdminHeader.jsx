@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import { Bell, ChevronDown, User, LogOut } from 'lucide-react';
 
 const AdminHeader = ({ title }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -124,14 +124,6 @@ const AdminHeader = ({ title }) => {
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                 <ul className="text-sm text-gray-700">
-                  <li className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer">
-                    <User size={16} className="mr-2 text-[#006DA6]" />
-                    Profile
-                  </li>
-                  <li className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer">
-                    <Settings size={16} className="mr-2 text-[#006DA6]" />
-                    Pengaturan
-                  </li>
                   <li
                     className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer"
                     onClick={handleLogout}
