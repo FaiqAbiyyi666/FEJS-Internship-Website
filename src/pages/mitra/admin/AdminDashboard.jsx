@@ -11,6 +11,8 @@ import ManagementKritikSaran from './ManageKritikSaran';
 import ManagementUlasanMagang from './ManageUlasanMagang';
 import AdminProfile from './AdminProfile';
 import ManageAjuanMagang from './ManageAjuanMagang';
+import ManageSertifikat from './ManageSertifikat';
+import ManageSuratMagang from './ManageSuratMagang';
 
 const AdminDashboard = () => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -31,6 +33,10 @@ const AdminDashboard = () => {
         return <ManageAjuanMagang />;
       case 'bidang':
         return <ManagementBidang />;
+      case 'sertifikat':
+        return <ManageSertifikat />;
+      case 'suratMagang':
+        return <ManageSuratMagang />;
       case 'kritik':
         return <ManagementKritikSaran />;
       case 'ulasan':
@@ -58,6 +64,10 @@ const AdminDashboard = () => {
         return 'Ajuan Magang';
       case 'bidang':
         return 'Bidang Magang';
+      case 'sertifikat':
+        return 'Sertifikat';
+      case 'suratMagang':
+        return 'Surat Magang';
       case 'kritik':
         return 'Kritik & Saran';
       case 'ulasan':

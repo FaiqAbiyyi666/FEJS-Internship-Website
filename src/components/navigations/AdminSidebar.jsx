@@ -10,6 +10,8 @@ import {
   FileCheck,
   Mail,
   ThumbsUp,
+  FileSignature,
+  TicketCheck,
 } from 'lucide-react';
 
 const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
@@ -21,6 +23,8 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
     { id: 'laporanAkhir', label: 'Laporan Akhir', icon: FileCheck },
     { id: 'ajuan', label: 'Ajuan Magang', icon: Files },
     { id: 'bidang', label: 'Bidang Magang', icon: Briefcase },
+    { id: 'sertifikat', label: 'Sertifikat', icon: TicketCheck },
+    { id: 'suratMagang', label: 'Surat Magang', icon: FileSignature },
     { id: 'kritik', label: 'Kritik & Saran', icon: Mail },
     { id: 'ulasan', label: 'Ulasan Magang', icon: ThumbsUp },
     { id: 'profile', label: 'Profile', icon: User },
