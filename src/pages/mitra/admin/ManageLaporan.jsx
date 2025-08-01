@@ -6,6 +6,9 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Edit,
+  Check,
+  ArrowLeft,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import * as xlsx from 'xlsx';
@@ -30,6 +33,7 @@ export default function ManagementLaporan() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [bidangFilter, setBidangFilter] = useState('all');
   const [selectedLaporan, setSelectedLaporan] = useState(null);
+  const [selectedMinggu, setSelectedMinggu] = useState(null);
 
   const [laporanData, setLaporanData] = useState([
     // contoh data
@@ -43,16 +47,22 @@ export default function ManagementLaporan() {
           week: 'Minggu ke‑1',
           tanggal: '2025-07-01',
           harian: [
-            { tanggal: '2025-07-01', isi: true },
-            { tanggal: '2025-07-02', isi: false },
+            {
+              hari: 'Senin',
+              tanggal: '30 November 2026',
+              isi: 'Deskripsi kegiatan',
+            },
           ],
         },
         {
           week: 'Minggu ke‑2',
           tanggal: '2025-07-08',
           harian: [
-            { tanggal: '2025-07-08', isi: true },
-            { tanggal: '2025-07-09', isi: true },
+            {
+              hari: 'Senin',
+              tanggal: '30 November 2026',
+              isi: 'Deskripsi kegiatan',
+            },
           ],
         },
       ],
@@ -234,55 +244,128 @@ export default function ManagementLaporan() {
       {selectedLaporan && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center"
-          onClick={() => setSelectedLaporan(null)}
+          onClick={() => {
+            setSelectedLaporan(null);
+            setSelectedMinggu(null);
+          }}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6"
+            className="bg-white w-full max-w-4xl rounded-lg shadow-lg p-6 overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white p-6 rounded-lg shadow mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                <h2 className="text-xl font-semibold text-[#006DA6]">
-                  Detail Laporan Harian
-                </h2>
-              </div>
-              <div className="border-t border-gray-200 pt-4">
-                <h1 className="text-lg font-bold text-gray-800 mb-1">
-                  Nama Peserta:
-                </h1>
-                <p className="text-md text-black">{selectedLaporan.peserta}</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {selectedLaporan.minggu.map((week) => (
-                <div key={week.week}>
-                  <h3 className="font-medium">
-                    {week.week} - {week.tanggal}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {week.harian.map((day) => (
-                      <div
-                        key={day.tanggal}
-                        className="flex items-center px-3 py-1 border rounded text-sm"
-                      >
-                        <span className="mr-2">
-                          {day.isi ? (
-                            <CheckCircle className="text-green-600" />
-                          ) : (
-                            <XCircle className="text-gray-400" />
-                          )}
-                        </span>
-                        <span>{day.tanggal}</span>
-                      </div>
-                    ))}
+            {/* Tampilan Mingguan */}
+            {!selectedMinggu ? (
+              <>
+                <div className="bg-white p-6 rounded-lg shadow mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                    <h2 className="text-xl font-semibold text-[#006DA6]">
+                      Detail Laporan Harian
+                    </h2>
+                  </div>
+                  <div className="border-t border-gray-200 pt-4">
+                    <h1 className="text-lg font-semibold text-gray-800 mb-1">
+                      Nama Peserta:
+                    </h1>
+                    <p className="text-md text-black">
+                      {selectedLaporan.peserta}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="space-y-4">
+                  {selectedLaporan.minggu.map((week, index) => (
+                    <div
+                      key={index}
+                      className="border rounded-lg p-4 shadow hover:bg-gray-50 cursor-pointer transition"
+                      onClick={() => setSelectedMinggu(week)}
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <div>
+                          <h3 className="font-medium text-lg">
+                            {week.week} - {week.tanggal}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {['S', 'S', 'R', 'K', 'J'].map((d, i) => {
+                            const isi = week.harian[i]?.isi;
+                            return (
+                              <div
+                                key={i}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center border ${
+                                  isi
+                                    ? 'bg-[#00A3FF] text-white'
+                                    : 'bg-gray-200 text-gray-400'
+                                }`}
+                              >
+                                {isi ? <Check size={14} /> : <span>{d}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Tampilan Harian */}
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    className="text-[#006DA6] font-semibold text-sm flex items-center"
+                    onClick={() => setSelectedMinggu(null)}
+                  >
+                    <ArrowLeft size={16} /> Kembali
+                  </button>
+                </div>
+
+                <h3 className="font-semibold text-lg mb-4">
+                  {selectedMinggu.week} - {selectedMinggu.tanggal}
+                </h3>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {selectedMinggu.harian.map((day, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 border rounded-lg shadow-sm ${
+                        idx === 0 ? 'bg-[#F5F9FF]' : 'bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                            day.isi
+                              ? 'bg-[#00A3FF] text-white'
+                              : 'bg-gray-200 text-gray-400'
+                          }`}
+                        >
+                          {day.isi ? <Check size={16} /> : null}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold">{day.hari}</h4>
+                          <p className="text-sm text-gray-600">{day.tanggal}</p>
+                        </div>
+                      </div>
+                      {day.isi ? (
+                        <p className="text-sm text-gray-800">{day.isi}</p>
+                      ) : (
+                        <button className="bg-[#00A3FF] text-white px-4 py-1 rounded text-sm hover:bg-[#0077b6] mt-2">
+                          Buat Laporan Harian
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Tombol Tutup */}
             <div className="mt-6 text-right">
               <button
-                onClick={() => setSelectedLaporan(null)}
+                onClick={() => {
+                  setSelectedLaporan(null);
+                  setSelectedMinggu(null);
+                }}
                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
               >
                 Tutup
