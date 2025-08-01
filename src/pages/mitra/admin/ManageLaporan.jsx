@@ -2,209 +2,120 @@ import React, { useState } from 'react';
 import {
   Search,
   Eye,
-  Download,
+  FileText,
   Clock,
   CheckCircle,
   XCircle,
-  FileText,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx';
+import * as xlsx from 'xlsx';
 import autoTable from 'jspdf-autotable';
 
-const ManagementLaporan = () => {
+const Card = ({ title, value, icon, gradient, color }) => (
+  <div className="bg-white rounded-xl shadow-sm p-4">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-gray-600">{title}</p>
+        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      </div>
+      <div className={`p-3 rounded-lg bg-gradient-to-br ${gradient}`}>
+        {React.cloneElement(icon, { className: 'text-white' })}
+      </div>
+    </div>
+  </div>
+);
+
+export default function ManagementLaporan() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [bidangFilter, setBidangFilter] = useState('all');
   const [selectedLaporan, setSelectedLaporan] = useState(null);
 
-  // 🔧 Jadikan laporanData ke dalam state agar bisa diperbarui
-  const [dataLaporan, setDataLaporan] = useState([
+  const [laporanData, setLaporanData] = useState([
+    // contoh data
     {
       id: 1,
-      peserta: 'Ahmad Rizki Pratama',
-      avatar: 'AR',
+      peserta: 'Ahmad Rizki',
       bidang: 'Tata Kelola Informatika',
-      tanggal: '2024-01-15',
-      judul: 'Laporan Harian',
-      kegiatan:
-        'Melakukan analisis requirement untuk sistem baru, merancang database schema, dan membuat dokumentasi teknis.',
-      status: 'Disetujui',
-      tanggalSubmit: '2024-01-15 18:30',
-      pembimbing: 'Dr. Siti Nurhaliza',
+      email: 'rizkiahmad@gmail.com',
+      minggu: [
+        {
+          week: 'Minggu ke‑1',
+          tanggal: '2025-07-01',
+          harian: [
+            { tanggal: '2025-07-01', isi: true },
+            { tanggal: '2025-07-02', isi: false },
+          ],
+        },
+        {
+          week: 'Minggu ke‑2',
+          tanggal: '2025-07-08',
+          harian: [
+            { tanggal: '2025-07-08', isi: true },
+            { tanggal: '2025-07-09', isi: true },
+          ],
+        },
+      ],
     },
     {
       id: 2,
       peserta: 'Siti Aminah',
-      avatar: 'SA',
       bidang: 'Sekretariat',
-      tanggal: '2024-01-16',
-      judul: 'Laporan Harian',
-      kegiatan:
-        'Melakukan screening CV kandidat, menyiapkan soal tes, dan mengatur jadwal wawancara.',
-      status: 'Pending',
-      tanggalSubmit: '2024-01-16 19:00',
-      pembimbing: 'Budi Santoso, S.H.',
+      email: 'aminahsiti@gmail.com',
+      minggu: [
+        {
+          week: 'Minggu ke‑1',
+          tanggal: '2025-07-01',
+          harian: [
+            { tanggal: '2025-07-01', isi: false },
+            { tanggal: '2025-07-02', isi: false },
+          ],
+        },
+      ],
     },
-    {
-      id: 3,
-      peserta: 'Dian Permata',
-      avatar: 'DP',
-      bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
-      tanggal: '2024-01-17',
-      judul: 'Laporan Harian',
-      kegiatan:
-        'Membuat konten social media, menganalisis engagement, dan menyiapkan laporan performa.',
-      status: 'Perlu Revisi',
-      tanggalSubmit: '2024-01-17 17:15',
-      pembimbing: 'Maria Gonzalez',
-    },
+    // tambahkan data sesuai kebutuhan
   ]);
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'disetujui':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'perlu revisi':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status.toLowerCase()) {
-      case 'disetujui':
-        return <CheckCircle size={16} className="text-green-600" />;
-      case 'pending':
-        return <Clock size={16} className="text-yellow-600" />;
-      case 'perlu revisi':
-        return <XCircle size={16} className="text-red-600" />;
-      default:
-        return <Clock size={16} className="text-gray-600" />;
-    }
-  };
-
-  // Statistik dinamis
-  const total = dataLaporan.length;
-  const pending = dataLaporan.filter(
-    (l) => l.status.toLowerCase() === 'pending'
-  ).length;
-  const disetujui = dataLaporan.filter(
-    (l) => l.status.toLowerCase() === 'disetujui'
-  ).length;
-  const perluRevisi = dataLaporan.filter(
-    (l) => l.status.toLowerCase() === 'perlu revisi'
+  // stat cards
+  const total = laporanData.length;
+  const pending = laporanData.filter((l) => l.status === 'Pending').length;
+  const disetujui = laporanData.filter((l) => l.status === 'Disetujui').length;
+  const perluRevisi = laporanData.filter(
+    (l) => l.status === 'Perlu Revisi'
   ).length;
 
-  const filteredLaporan = dataLaporan.filter((laporan) => {
-    const matchesSearch =
-      laporan.peserta.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      laporan.judul.toLowerCase().includes(searchTerm.toLowerCase());
+  const filtered = laporanData.filter(
+    (item) =>
+      item.peserta.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (statusFilter === 'all' || item.status?.toLowerCase() === statusFilter) &&
+      (bidangFilter === 'all' || item.bidang === bidangFilter)
+  );
 
-    const normalizedStatus = laporan.status.toLowerCase().replace(/\s+/g, '');
-    return (
-      matchesSearch &&
-      (statusFilter === 'all' || normalizedStatus === statusFilter)
-    );
-  });
-
-  const exportToPDF = () => {
+  const exportPDF = () => {
     const doc = new jsPDF();
     autoTable(doc, {
-      head: [['Peserta', 'Judul', 'Tanggal', 'Status']],
-      body: dataLaporan.map((laporan) => [
-        laporan.peserta,
-        laporan.judul,
-        laporan.tanggal,
-        laporan.status,
-      ]),
+      head: [['Peserta', 'Bidang']],
+      body: filtered.map((d) => [d.peserta, d.bidang]),
     });
-    doc.save('laporan-peserta.pdf');
+    doc.save('laporan.pdf');
   };
 
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(dataLaporan);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan');
-    XLSX.writeFile(workbook, 'laporan-peserta.xlsx');
-  };
-
-  // ✅ Fungsi untuk update status
-  const updateStatus = (id, newStatus) => {
-    const updated = dataLaporan.map((laporan) =>
-      laporan.id === id ? { ...laporan, status: newStatus } : laporan
-    );
-    setDataLaporan(updated);
-
-    if (selectedLaporan && selectedLaporan.id === id) {
-      setSelectedLaporan((prev) => ({ ...prev, status: newStatus }));
-    }
+  const exportExcel = () => {
+    const worksheet = xlsx.utils.json_to_sheet(data);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    xlsx.writeFile(workbook, 'data.xlsx');
   };
 
   return (
-    <div className="space-y-6">
-      {/* Modal */}
-      {selectedLaporan && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-          onClick={() => setSelectedLaporan(null)}
-        >
-          <div
-            className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-4 right-5 text-gray-500 hover:text-red-500 text-xl"
-              onClick={() => setSelectedLaporan(null)}
-            >
-              ✕
-            </button>
-
-            <h2 className="text-xl font-semibold mb-4 text-[#006DA6]">
-              Detail Laporan Harian
-            </h2>
-
-            <div className="space-y-3 text-sm text-gray-700">
-              {[
-                ['Judul', selectedLaporan.judul],
-                ['Peserta', selectedLaporan.peserta],
-                ['Bidang', selectedLaporan.bidang],
-                ['Tanggal', selectedLaporan.tanggal],
-                ['Kegiatan', selectedLaporan.kegiatan],
-                ['Pembimbing', selectedLaporan.pembimbing],
-                ['Tanggal Submit', selectedLaporan.tanggalSubmit],
-                ['Status', selectedLaporan.status],
-              ].map(([label, value], i) => (
-                <div key={i}>
-                  <span className="font-medium block text-gray-500">
-                    {label}
-                  </span>
-                  <p>{value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 text-right">
-              <button
-                onClick={() => setSelectedLaporan(null)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md transition"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats Cards */}
+    <div className="space-y-6 p-6">
+      {/* statistik */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card
           title="Total Laporan"
           value={total}
           icon={<FileText />}
-          gradient="from-[#BFDCFF] to-[#006DA6]"
+          gradient="from-blue-400 to-blue-600"
           color="text-gray-900"
         />
         <Card
@@ -230,147 +141,156 @@ const ManagementLaporan = () => {
         />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1 sm:w-64">
+      {/* filter & export */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center space-x-3 w-full md:w-auto">
+          <div className="relative">
             <Search
               size={20}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
             />
             <input
-              type="text"
-              placeholder="Cari laporan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+              placeholder="Cari peserta..."
+              className="pl-8 pr-3 py-2 border rounded-lg w-64"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+            className="px-3 py-2 border rounded-lg"
           >
             <option value="all">Semua Status</option>
             <option value="pending">Pending</option>
             <option value="disetujui">Disetujui</option>
             <option value="perlurevisi">Perlu Revisi</option>
           </select>
+          <select
+            value={bidangFilter}
+            onChange={(e) => setBidangFilter(e.target.value)}
+            className="px-3 py-2 border rounded-lg"
+          >
+            <option value="all">Semua Bidang</option>
+            <option value="Tata Kelola Informatika">
+              Tata Kelola Informatika
+            </option>
+            <option value="Sekretariat">Sekretariat</option>
+            <option value="Statistik">Statistik</option>
+          </select>
         </div>
-
-        {/* Tombol Ekspor */}
-        <div className="flex justify-end gap-4 mb-4">
+        <div className="flex gap-2">
           <button
-            onClick={exportToPDF}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+            onClick={exportPDF}
+            className="bg-red-600 text-white px-4 py-2 rounded"
           >
             Ekspor PDF
           </button>
           <button
-            onClick={exportToExcel}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+            onClick={exportExcel}
+            className="bg-green-600 text-white px-4 py-2 rounded"
           >
             Ekspor Excel
           </button>
         </div>
       </div>
 
-      {/* Laporan Cards */}
-      <div className="space-y-4">
-        {filteredLaporan.map((laporan) => (
+      {/* tabel */}
+      <div className="overflow-x-auto bg-white shadow rounded-lg">
+        <table className="min-w-full text-sm">
+          <thead className="bg-[#006DA6] text-white">
+            <tr>
+              <th className="px-4 py-2 text-left">Peserta</th>
+              <th className="px-4 py-2 text-left">Bidang</th>
+              <th className="px-4 py-2 text-left">Email</th>
+              <th className="px-4 py-2 text-left">Aksi</th>
+              <th className="px-4 py-2 text-left">Terakhir Submit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => (
+              <tr key={r.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-2 text-left">{r.peserta}</td>
+                <td className="px-4 py-2 text-left">{r.bidang}</td>
+                <td className="px-4 py-2 text-left">{r.email}</td>
+                <td className="px-4 py-2 text-left">
+                  <button
+                    onClick={() => setSelectedLaporan(r)}
+                    className="text-blue-600 hover:underline flex items-center"
+                  >
+                    <Eye size={16} /> Detail
+                  </button>
+                </td>
+                <td className="px-4 py-2 text-left">
+                  {r.minggu?.slice(-1)[0]?.tanggal || '-'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* modal detail */}
+      {selectedLaporan && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center"
+          onClick={() => setSelectedLaporan(null)}
+        >
           <div
-            key={laporan.id}
-            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+            className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium">
-                    {laporan.avatar}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {laporan.judul}
+            <div className="bg-white p-6 rounded-lg shadow mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                <h2 className="text-xl font-semibold text-[#006DA6]">
+                  Detail Laporan Harian
+                </h2>
+              </div>
+              <div className="border-t border-gray-200 pt-4">
+                <h1 className="text-lg font-bold text-gray-800 mb-1">
+                  Nama Peserta:
+                </h1>
+                <p className="text-md text-black">{selectedLaporan.peserta}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {selectedLaporan.minggu.map((week) => (
+                <div key={week.week}>
+                  <h3 className="font-medium">
+                    {week.week} - {week.tanggal}
                   </h3>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                    <span>Peserta: {laporan.peserta}</span>
-                    <span>•</span>
-                    <span>{laporan.tanggal}</span>
-                    <span>•</span>
-                    <span>Bidang: {laporan.bidang}</span>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {week.harian.map((day) => (
+                      <div
+                        key={day.tanggal}
+                        className="flex items-center px-3 py-1 border rounded text-sm"
+                      >
+                        <span className="mr-2">
+                          {day.isi ? (
+                            <CheckCircle className="text-green-600" />
+                          ) : (
+                            <XCircle className="text-gray-400" />
+                          )}
+                        </span>
+                        <span>{day.tanggal}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    laporan.status
-                  )}`}
-                >
-                  {getStatusIcon(laporan.status)}
-                  <span className="ml-2">{laporan.status}</span>
-                </span>
-                <button
-                  onClick={() => setSelectedLaporan(laporan)}
-                  className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg transition-colors"
-                >
-                  <Eye size={20} />
-                </button>
-              </div>
+              ))}
             </div>
-
-            <p className="text-gray-700 mb-4 leading-relaxed">
-              {laporan.kegiatan}
-            </p>
-
-            <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
-              <div>
-                <span className="font-bold">Pembimbing:</span>{' '}
-                {laporan.pembimbing}
-              </div>
-              <div>
-                <span className="font-bold">Disubmit: </span>{' '}
-                {laporan.tanggalSubmit}
-              </div>
+            <div className="mt-6 text-right">
+              <button
+                onClick={() => setSelectedLaporan(null)}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Tutup
+              </button>
             </div>
-
-            {laporan.status.toLowerCase() === 'pending' && (
-              <div className="flex space-x-3 mt-4 pt-4 border-t">
-                <button
-                  onClick={() => updateStatus(laporan.id, 'Disetujui')}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                >
-                  Setujui
-                </button>
-                <button
-                  onClick={() => updateStatus(laporan.id, 'Perlu Revisi')}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                >
-                  Minta Revisi
-                </button>
-              </div>
-            )}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
-};
-
-// Reusable Card component
-const Card = ({ title, value, icon, gradient, color }) => (
-  <div className="bg-white rounded-xl shadow-sm p-4">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-gray-600">{title}</p>
-        <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      </div>
-      <div className={`p-3 rounded-lg bg-gradient-to-br ${gradient}`}>
-        {React.cloneElement(icon, { className: 'text-white' })}
-      </div>
-    </div>
-  </div>
-);
-
-export default ManagementLaporan;
+}
