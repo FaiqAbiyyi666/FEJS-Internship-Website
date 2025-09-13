@@ -79,7 +79,7 @@ export default function AdminDashboardHome() {
   const COLORS = ['#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#6366F1'];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Ringkasan Statistik */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((stat, idx) => (

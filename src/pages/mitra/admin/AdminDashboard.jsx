@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AdminSidebar from '../../../components/navigations/AdminSidebar';
 import AdminHeader from '../../../components/navigations/AdminHeader';
 import DashboardHome from './AdminDashboardHome';
-import ManagementPeserta from './ManagePesertaMagang';
+import ManagementVerifikasiAkun from './ManageVerifAkun';
 import ManagementSubKoorbid from './ManageSubKoorbid';
 import ManagementLaporan from './ManageLaporan';
 import ManagementLaporanAkhir from './ManageLaporanAkhir';
@@ -22,8 +22,8 @@ const AdminDashboard = () => {
     switch (activeMenu) {
       case 'dashboard':
         return <DashboardHome />;
-      case 'peserta':
-        return <ManagementPeserta />;
+      case 'verifikasi':
+        return <ManagementVerifikasiAkun />;
       case 'subkoorbid':
         return <ManagementSubKoorbid />;
       case 'laporan':
@@ -55,8 +55,8 @@ const AdminDashboard = () => {
     switch (activeMenu) {
       case 'dashboard':
         return 'Dashboard';
-      case 'peserta':
-        return 'Peserta Magang';
+      case 'verifikasi':
+        return 'Verifikasi Akun Peserta Magang';
       case 'subkoorbid':
         return 'Sub Koordinator Bidang';
       case 'laporan':

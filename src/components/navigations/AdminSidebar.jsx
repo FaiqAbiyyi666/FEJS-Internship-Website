@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard,
-  Users,
+  UserRoundCheck,
   FileText,
   Briefcase,
   User,
@@ -18,7 +18,7 @@ import {
 const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'peserta', label: 'Peserta Magang', icon: Users },
+    { id: 'verifikasi', label: 'Verifikasi Akun', icon: UserRoundCheck },
     { id: 'subkoorbid', label: 'Sub Koor Bidang', icon: UserCog2 },
     { id: 'laporan', label: 'Laporan Harian', icon: FileText },
     { id: 'laporanAkhir', label: 'Laporan Akhir', icon: FileCheck },
