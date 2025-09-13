@@ -13,6 +13,7 @@ import AdminProfile from './AdminProfile';
 import ManageAjuanMagang from './ManageAjuanMagang';
 import ManageSertifikat from './ManageSertifikat';
 import ManageSuratMagang from './ManageSuratMagang';
+import ManageDataMagang from './ManageDataMagang';
 
 const AdminDashboard = () => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -33,6 +34,8 @@ const AdminDashboard = () => {
         return <ManageAjuanMagang />;
       case 'bidang':
         return <ManagementBidang />;
+      case 'dataMagang':
+        return <ManageDataMagang />;
       case 'sertifikat':
         return <ManageSertifikat />;
       case 'suratMagang':

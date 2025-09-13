@@ -12,6 +12,7 @@ import {
   ThumbsUp,
   FileSignature,
   TicketCheck,
+  Database,
 } from 'lucide-react';
 
 const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
@@ -23,6 +24,7 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
     { id: 'laporanAkhir', label: 'Laporan Akhir', icon: FileCheck },
     { id: 'ajuan', label: 'Ajuan Magang', icon: Files },
     { id: 'bidang', label: 'Bidang Magang', icon: Briefcase },
+    { id: 'dataMagang', label: 'Data Magang', icon: Database },
     { id: 'sertifikat', label: 'Sertifikat', icon: TicketCheck },
     { id: 'suratMagang', label: 'Surat Magang', icon: FileSignature },
     { id: 'kritik', label: 'Kritik & Saran', icon: Mail },
@@ -75,7 +77,7 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
       </nav>
 
       {/* User Info */}
-      <div className="p-4 border-t border-gray-200">
+      {/* <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-[#20A0E6] rounded-full flex items-center justify-center">
             <span className="text-white font-medium text-sm">A</span>
@@ -85,7 +87,7 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
             <p className="text-xs text-gray-500 truncate">admin@simagang.com</p>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

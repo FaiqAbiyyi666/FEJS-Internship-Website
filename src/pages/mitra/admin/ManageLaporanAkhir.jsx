@@ -4,40 +4,40 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-const laporanHasilMagang = [
-  {
-    id: '1',
-    peserta: {
-      nama: 'Andi Saputra',
-      email: 'andi@example.com',
-      bidang: 'Pemrograman',
-    },
-    fileLaporan: 'public/files/laporan-akhir01.pdf',
-    createdAt: '2024-07-01',
-  },
-  {
-    id: '2',
-    peserta: {
-      nama: 'Rina Marlina',
-      email: 'rina@example.com',
-      bidang: 'Desain Grafis',
-    },
-    fileLaporan: 'public/files/laporan-akhir02.pdf',
-    createdAt: '2024-07-02',
-  },
-  {
-    id: '3',
-    peserta: {
-      nama: 'Budi Santoso',
-      email: 'budi@example.com',
-      bidang: 'Jaringan',
-    },
-    fileLaporan: 'public/files/laporan-akhir03.pdf',
-    createdAt: '2024-06-25',
-  },
-];
-
 const ManageLaporanAkhir = () => {
+  const [laporanHasilMagang, setLaporanHasilMagang] = useState([
+    {
+      id: '1',
+      peserta: {
+        nama: 'Andi Saputra',
+        email: 'andi@example.com',
+        bidang: 'Pemrograman',
+      },
+      fileLaporan: 'public/files/laporan-akhir01.pdf',
+      createdAt: '2024-07-01',
+    },
+    {
+      id: '2',
+      peserta: {
+        nama: 'Rina Marlina',
+        email: 'rina@example.com',
+        bidang: 'Desain Grafis',
+      },
+      fileLaporan: 'public/files/laporan-akhir02.pdf',
+      createdAt: '2024-07-02',
+    },
+    {
+      id: '3',
+      peserta: {
+        nama: 'Budi Santoso',
+        email: 'budi@example.com',
+        bidang: 'Jaringan',
+      },
+      fileLaporan: 'public/files/laporan-akhir03.pdf',
+      createdAt: '2024-06-25',
+    },
+  ]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [previewFile, setPreviewFile] = useState(null);
   const [filterBidang, setFilterBidang] = useState('all');
@@ -106,6 +106,27 @@ const ManageLaporanAkhir = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [previewFile]);
+
+  // State riwayat keputusan
+  const [riwayat, setRiwayat] = useState([]);
+
+  // Fungsi ketika admin klik diterima / ditolak
+  const handleResponse = (laporan, status) => {
+    // Hapus dari tabel ajuan masuk
+    setFilteredData(
+      laporanHasilMagang.filter((item) => item.id !== laporan.id)
+    );
+
+    // Tambah ke tabel riwayat
+    setRiwayat([
+      ...riwayat,
+      {
+        ...laporan,
+        status,
+        respondedAt: new Date().toISOString(),
+      },
+    ]);
+  };
 
   return (
     <div className="space-y-6">
@@ -219,10 +240,16 @@ const ManageLaporanAkhir = () => {
                   </button>
                 </td>
                 <td className="px-6 py-4 text-sm space-x-2">
-                  <button className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700">
+                  <button
+                    onClick={() => handleResponse(laporan, 'Diterima')}
+                    className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
+                  >
                     Diterima
                   </button>
-                  <button className="px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700">
+                  <button
+                    onClick={() => handleResponse(laporan, 'Ditolak')}
+                    className="px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700"
+                  >
                     Ditolak
                   </button>
                 </td>
@@ -237,6 +264,80 @@ const ManageLaporanAkhir = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Table Riwayat */}
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Riwayat Laporan Akhir</h2>
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-100 text-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                  Nama Peserta
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                  Bidang
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                  File
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                  Tanggal Respon
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {riwayat.map((laporan) => (
+                <tr key={laporan.id}>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {laporan.peserta.nama}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {laporan.peserta.email}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {laporan.peserta.bidang}
+                  </td>
+                  <td
+                    className={`px-6 py-4 text-sm font-semibold ${
+                      laporan.status === 'Diterima'
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    {laporan.status}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-blue-600">
+                    <button
+                      onClick={() => setPreviewFile(laporan.fileLaporan)}
+                      className="flex items-center space-x-2 hover:underline"
+                    >
+                      <Eye size={16} />
+                      <span>Lihat</span>
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {new Date(laporan.respondedAt).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+              {riwayat.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-gray-500">
+                    Belum ada riwayat.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal Preview PDF */}

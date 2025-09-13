@@ -52,7 +52,7 @@ export default function UsulanMagangPage() {
 
           <div className="bg-white border rounded-lg shadow overflow-x-auto">
             <table className="min-w-full text-sm text-center text-gray-700">
-              <thead className="bg-gray-100 border-b font-semibold">
+              <thead className="bg-[#006DA6] border-b font-semibold text-white">
                 <tr>
                   <th className="px-6 py-3">ID MAGANG</th>
                   <th className="px-6 py-3">TANGGAL PENGAJUAN</th>

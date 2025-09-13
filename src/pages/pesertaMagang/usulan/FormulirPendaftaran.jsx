@@ -10,18 +10,48 @@ export default function FormulirPendaftaran() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">
-              Jenis Magang
+              Nama Lengkap Peserta
             </label>
-            <input className="form-input w-full" placeholder="Pilih Jenis Magang" />
+            <input
+              className="form-input w-full"
+              placeholder="Masukkan Nama Lengkap"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">NIS / NIM</label>
+            <input
+              className="form-input w-full"
+              placeholder="Masukkan NIS / NIM"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
               Kategori Magang
             </label>
-            <input
-              className="form-input w-full"
-              placeholder="Pilih Kategori Magang"
-            />
+            <div className="relative">
+              <select
+                className="w-full border rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none text-sm font-normal"
+                defaultValue=""
+              >
+                <option value="" disabled className="text-sm font-medium">
+                  Pilih Kategori Magang
+                </option>
+                <option value="reguler" className="text-sm font-medium">
+                  Reguler
+                </option>
+                <option value="mandiri" className="text-sm font-medium">
+                  Mandiri
+                </option>
+                <option value="mou" className="text-sm font-medium">
+                  MoU
+                </option>
+              </select>
+
+              {/* Ikon panah dropdown */}
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                ▼
+              </div>
+            </div>
             <label className="block text-xs font-light mt-1 text-gray-600">
               *) MoU (Khusus untuk peserta yang masuk dalam program kerja sama
               magang)
@@ -31,19 +61,68 @@ export default function FormulirPendaftaran() {
             <label className="block text-sm font-medium mb-1">
               Status Pendidikan
             </label>
-            <input
-              className="form-input w-full"
-              placeholder="Pilih Status Pendidikan"
-            />
+            <div className="relative">
+              <select
+                className="w-full border rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none text-sm font-normal"
+                defaultValue=""
+              >
+                <option value="" disabled className="text-sm font-medium">
+                  Pilih Status Pendidikan
+                </option>
+                <option value="sekolah" className="text-sm font-medium">
+                  Sekolah
+                </option>
+                <option value="kuliah" className="text-sm font-medium">
+                  Kuliah
+                </option>
+                <option value="luluskuliah" className="text-sm font-medium">
+                  Lulus Kuliah
+                </option>
+              </select>
+
+              {/* Ikon panah dropdown */}
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                ▼
+              </div>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
               Jenjang Pendidikan
             </label>
-            <input
-              className="form-input w-full"
-              placeholder="Pilih Jenjang Pendidikan"
-            />
+            <div className="relative">
+              <select
+                className="w-full border rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none text-sm font-normal"
+                defaultValue=""
+              >
+                <option value="" disabled className="text-sm font-medium">
+                  Pilih Jenjang Pendidikan
+                </option>
+                <option value="smk" className="text-sm font-medium">
+                  SMK
+                </option>
+                <option value="d1" className="text-sm font-medium">
+                  D1
+                </option>
+                <option value="d2" className="text-sm font-medium">
+                  D2
+                </option>
+                <option value="d3" className="text-sm font-medium">
+                  D3
+                </option>
+                <option value="d4" className="text-sm font-medium">
+                  D4
+                </option>
+                <option value="s1" className="text-sm font-medium">
+                  S1
+                </option>
+              </select>
+
+              {/* Ikon panah dropdown */}
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                ▼
+              </div>
+            </div>
           </div>
         </div>
 
@@ -60,7 +139,10 @@ export default function FormulirPendaftaran() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Jurusan</label>
-            <input className="form-input w-full" placeholder="Masukkan Jurusan" />
+            <input
+              className="form-input w-full"
+              placeholder="Masukkan Jurusan"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
@@ -84,7 +166,10 @@ export default function FormulirPendaftaran() {
             <label className="block text-sm font-medium mb-1">
               Tema Magang
             </label>
-            <input className="form-input w-full" placeholder="Masukkan Tema Magang" />
+            <input
+              className="form-input w-full"
+              placeholder="Masukkan Tema Magang"
+            />
             <label className="block text-xs font-light mt-1 text-gray-600">
               *) Tema Magang (tidak diwajibkan) adalah hal/data yang diharapkan
               diperoleh peserta magang yang akan dilakukan saat mengikuti
@@ -95,7 +180,7 @@ export default function FormulirPendaftaran() {
       </div>
 
       {/* Data Peserta */}
-      <h2 className="text-lg font-bold text-center text-[#002942] mt-8">
+      {/* <h2 className="text-lg font-bold text-center text-[#002942] mt-8">
         Data Peserta Magang
       </h2>
 
@@ -105,14 +190,20 @@ export default function FormulirPendaftaran() {
             <label className="block text-sm font-medium mb-1">
               Nama Lengkap Peserta
             </label>
-            <input className="form-input w-full" placeholder="Masukkan Nama Lengkap" />
+            <input
+              className="form-input w-full"
+              placeholder="Masukkan Nama Lengkap"
+            />
           </div>
           <div className="w-full md:w-1/2">
             <label className="block text-sm font-medium mb-1">NIS / NIM</label>
-            <input className="form-input w-full" placeholder="Masukkan NIS / NIM" />
+            <input
+              className="form-input w-full"
+              placeholder="Masukkan NIS / NIM"
+            />
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

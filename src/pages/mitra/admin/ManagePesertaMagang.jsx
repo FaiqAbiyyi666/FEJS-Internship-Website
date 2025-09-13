@@ -879,7 +879,7 @@ export default function ManagePesertaMagang() {
       <div className="overflow-x-auto bg-white shadow rounded-lg">
         <div className="flex justify-between items-center px-4 py-3">
           <h3 className="text-lg font-semibold text-gray-700">
-            Akun Peserta Magang
+            Riwayat Persetujuan Akun Peserta Magang
           </h3>
           <div className="flex gap-2">
             <button
@@ -897,7 +897,7 @@ export default function ManagePesertaMagang() {
           </div>
         </div>
         <table className="min-w-full text-sm text-left">
-          <thead className="bg-[#76b200] text-white">
+          <thead className="bg-[#002942] text-white">
             <tr>
               <th className="px-4 py-3">Nama</th>
               <th className="px-4 py-3">Email</th>

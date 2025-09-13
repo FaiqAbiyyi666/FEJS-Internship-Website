@@ -86,9 +86,11 @@ export default function PilihBidang() {
           <div className="w-2/3 relative">
             <select
               className="w-full border border-gray-400 rounded-md pl-3 pr-8 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none"
-              style={{ backgroundPosition: 'right 0.75rem center' }}
+              style={{ backgroundPosition: 'right 0.75rem center' }} defaultValue=""
             >
-              <option value="">Pilih bidang yang diinginkan</option>
+              <option value="" disabled>
+                Pilih bidang yang diinginkan
+              </option>
               <option value="Sekretariat">Sekretariat</option>
               <option value="Pengelolaan Informasi dan Komunikasi Publik">
                 Pengelolaan Informasi dan Komunikasi Publik
