@@ -1,175 +1,109 @@
 import React, { useState } from 'react';
-import {
-  Search,
-  Filter,
-  Eye,
-  Download,
-  Calendar,
-  Clock,
-  CheckCircle,
-  XCircle,
-  FileText,
-} from 'lucide-react';
+import { Search, Eye, Download, X } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const ManagementLaporan = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [bidangFilter, setBidangFilter] = useState('all');
+  const [tanggalFilter, setTanggalFilter] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedLaporan, setSelectedLaporan] = useState(null);
 
   const laporanData = [
     {
       id: 1,
       peserta: 'Ahmad Rizki Pratama',
+      bidang: 'Tata Kelola Informatika',
+      instansi: 'UPN Veteran Jawa Timur',
       avatar: 'AR',
       tanggal: '2024-01-15',
-      judul: 'Laporan Harian - Pengembangan Sistem',
       kegiatan:
         'Melakukan analisis requirement untuk sistem baru, merancang database schema, dan membuat dokumentasi teknis. ',
-      jamMasuk: '08:00',
-      jamKeluar: '17:00',
-      status: 'Disetujui',
       tanggalSubmit: '2024-01-15 18:30',
-      pembimbing: 'Dr. Siti Nurhaliza',
     },
     {
       id: 2,
       peserta: 'Siti Aminah',
+      bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
+      instansi: 'SMK Negeri 1 Sidoarjo',
       avatar: 'SA',
       tanggal: '2024-01-16',
-      judul: 'Laporan Harian - Rekrutmen Karyawan',
       kegiatan:
         'Melakukan screening CV kandidat, menyiapkan soal tes, dan mengatur jadwal wawancara.',
-      jamMasuk: '08:15',
-      jamKeluar: '17:00',
-      status: 'Pending',
       tanggalSubmit: '2024-01-16 19:00',
-      pembimbing: 'Budi Santoso, S.H.',
     },
     {
       id: 3,
       peserta: 'Dian Permata',
+      bidang: 'Sekretariat',
+      instansi: 'Universitas Muhammadiyah Sidoarjo',
       avatar: 'DP',
       tanggal: '2024-01-17',
-      judul: 'Laporan Harian - Kampanye Marketing',
       kegiatan:
         'Membuat konten social media, menganalisis engagement, dan menyiapkan laporan performa.',
-      jamMasuk: '08:30',
-      jamKeluar: '16:45',
-      status: 'Perlu Revisi',
       tanggalSubmit: '2024-01-17 17:15',
-      pembimbing: 'Maria Gonzalez',
     },
   ];
-
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'disetujui':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'perlu revisi':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status.toLowerCase()) {
-      case 'disetujui':
-        return <CheckCircle size={16} className="text-green-600" />;
-      case 'pending':
-        return <Clock size={16} className="text-yellow-600" />;
-      case 'perlu revisi':
-        return <XCircle size={16} className="text-red-600" />;
-      default:
-        return <Clock size={16} className="text-gray-600" />;
-    }
-  };
 
   const filteredLaporan = laporanData.filter((laporan) => {
     const matchesSearch =
       laporan.peserta.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      laporan.judul.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' ||
-      laporan.status.toLowerCase().replace(' ', '').includes(statusFilter);
+      laporan.instansi.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesBidang =
       bidangFilter === 'all' ||
-      laporan.bidang.toLowerCase().replace(' ', '').includes(statusFilter);
-    return matchesSearch && matchesStatus && matchesBidang;
+      laporan.bidang.toLowerCase() === bidangFilter.toLowerCase();
+    const matchesTanggal =
+      tanggalFilter === '' || laporan.tanggal === tanggalFilter;
+    return matchesSearch && matchesBidang && matchesTanggal;
   });
+
+  // === HANDLE EXPORT TO EXCEL ===
+  const handleExportExcel = () => {
+    // Hapus field avatar sebelum export
+    const exportData = filteredLaporan.map(({ avatar, ...rest }) => rest);
+
+    // Buat worksheet
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    // Buat workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Harian');
+
+    // Buat tanggal export (YYYY-MM-DD)
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+
+    // Simpan file dengan tanggal
+    XLSX.writeFile(workbook, `laporan_harian_${formattedDate}.xlsx`);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Laporan</p>
-              <p className="text-2xl font-bold text-gray-900">156</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-[#BFDCFF] to-[#006DA6] rounded-lg">
-              <FileText size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">23</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg">
-              <Clock size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Disetujui</p>
-              <p className="text-2xl font-bold text-green-600">125</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-lg">
-              <CheckCircle size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Perlu Revisi</p>
-              <p className="text-2xl font-bold text-red-600">8</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-red-400 to-red-600 rounded-lg">
-              <XCircle size={24} className="text-white" />
-            </div>
-          </div>
-        </div>
-      </div> */}
-
       {/* Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex w-full sm:w-auto items-center gap-4">
+          {/* Search Input */}
+          <div className="relative flex-1">
             <Search
               size={20}
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
             />
             <input
               type="text"
-              placeholder="Cari nama peserta..."
+              placeholder="Cari berdasarkan nama atau instansi peserta..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+              className="w-full min-w-[430px] pl-10 pr-4 py-2 border border-gray-300 rounded-lg 
+                  focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
             />
           </div>
+
+          {/* Bidang Filter */}
           <select
             value={bidangFilter}
             onChange={(e) => setBidangFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg 
+                focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
           >
             <option value="all">Semua Bidang</option>
             <option value="Tata Kelola Informatika">
@@ -184,18 +118,23 @@ const ManagementLaporan = () => {
             <option value="Sekretariat">Sekretariat</option>
             <option value="Statistik">Statistik</option>
           </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-          >
-            <option value="all">Semua Status</option>
-            <option value="pending">Pending</option>
-            <option value="disetujui">Disetujui</option>
-            <option value="perlurevisi">Perlu Revisi</option>
-          </select>
+
+          {/* Filter tanggal */}
+          <input
+            type="date"
+            value={tanggalFilter}
+            onChange={(e) => setTanggalFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none 
+              focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+          />
         </div>
-        <button className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] transition-colors flex items-center space-x-2">
+
+        {/* Export Button */}
+        <button
+          onClick={handleExportExcel}
+          className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] 
+            transition-colors flex items-center space-x-2"
+        >
           <Download size={20} />
           <span>Export Laporan</span>
         </button>
@@ -217,29 +156,37 @@ const ManagementLaporan = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {laporan.judul}
+                    {laporan.peserta} <span>• </span>
+                    <span className="text-gray-900">{laporan.instansi}</span>
                   </h3>
                   <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                    <span>Peserta: {laporan.peserta}</span>
-                    <span>•</span>
-                    <span>{laporan.tanggal}</span>
+                    <span>
+                      <span className="font-semibold">Bidang:</span>{' '}
+                      {laporan.bidang}
+                    </span>
                     <span>•</span>
                     <span>
-                      {laporan.jamMasuk} - {laporan.jamKeluar}
+                      <span className="font-semibold">Tanggal Laporan:</span>{' '}
+                      {new Date(laporan.tanggal).toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
                 </div>
               </div>
+
+              {/* Tombol Eye */}
               <div className="flex items-center space-x-3">
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    laporan.status
-                  )}`}
+                <button
+                  onClick={() => {
+                    setSelectedLaporan(laporan);
+                    setIsOpen(true);
+                  }}
+                  className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg"
                 >
-                  {getStatusIcon(laporan.status)}
-                  <span className="ml-2">{laporan.status}</span>
-                </span>
-                <button className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg transition-colors">
                   <Eye size={20} />
                 </button>
               </div>
@@ -251,28 +198,78 @@ const ManagementLaporan = () => {
 
             <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
               <div>
-                <span className="font-medium">Pembimbing:</span>{' '}
-                {laporan.pembimbing}
-              </div>
-              <div>
                 <span className="font-medium">Disubmit:</span>{' '}
                 {laporan.tanggalSubmit}
               </div>
             </div>
-
-            {laporan.status === 'Pending' && (
-              <div className="flex space-x-3 mt-4 pt-4 border-t">
-                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                  Setujui
-                </button>
-                <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
-                  Minta Revisi
-                </button>
-              </div>
-            )}
           </div>
         ))}
       </div>
+
+      {/* Modal Detail Laporan */}
+      {isOpen && selectedLaporan && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative">
+            <div className="flex items-start space-x-4 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center">
+                <span className="text-white font-medium">
+                  {selectedLaporan.avatar}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedLaporan.peserta} <span>• </span>
+                  <span className="text-gray-900">
+                    {selectedLaporan.instansi}
+                  </span>
+                </h3>
+
+                {/* Bidang */}
+                <div className="text-sm text-gray-500 mt-1">
+                  <span className="font-semibold">Bidang:</span>{' '}
+                  {selectedLaporan.bidang}
+                </div>
+
+                {/* Tanggal laporan */}
+                <div className="text-sm text-gray-500 mt-1">
+                  <span className="font-semibold">Tanggal Laporan:</span>{' '}
+                  {new Date(selectedLaporan.tanggal).toLocaleDateString(
+                    'id-ID',
+                    {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    }
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <h4 className="text-md font-semibold text-gray-800 mb-2">
+                Detail Kegiatan:
+              </h4>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                {selectedLaporan.kegiatan}
+              </p>
+            </div>
+
+            <div className="mt-6 flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                <span className="font-semibold">Submit:</span>{' '}
+                {selectedLaporan.tanggalSubmit}
+              </span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#005080]"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
