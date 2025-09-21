@@ -127,11 +127,6 @@ export default function ManagementSubKoorbid() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const getStatusColor = (status) =>
-    status === 'Aktif'
-      ? 'text-green-600 bg-green-100'
-      : 'text-red-600 bg-red-100';
-
   return (
     <div className="space-y-6">
       {/* Search & Create Button */}
@@ -164,7 +159,6 @@ export default function ManagementSubKoorbid() {
                 <th className="px-4 py-3">Nama</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Bidang</th>
-                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Aksi</th>
               </tr>
             </thead>
@@ -174,15 +168,6 @@ export default function ManagementSubKoorbid() {
                   <td className="px-4 py-3">{item.nama}</td>
                   <td className="px-4 py-3">{item.email}</td>
                   <td className="px-4 py-3">{item.bidang}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(
-                        item.status
-                      )}`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
                   <td className="px-4 py-3 flex gap-2">
                     <button
                       className="text-[#006DA6] hover:underline flex items-center text-sm"
@@ -294,12 +279,6 @@ export default function ManagementSubKoorbid() {
                     'Sekretariat',
                     'Statistik',
                   ],
-                },
-                {
-                  label: 'Status',
-                  name: 'status',
-                  type: 'select',
-                  options: ['Aktif', 'Tidak Aktif'],
                 },
               ].map(({ label, name, type = 'text', options }) => (
                 <div key={name}>

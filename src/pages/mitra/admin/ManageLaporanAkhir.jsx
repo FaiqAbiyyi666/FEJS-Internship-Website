@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Eye, Search, X } from 'lucide-react';
+import { Eye, Search, Download, X } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -61,35 +61,30 @@ const ManageLaporanAkhir = () => {
         : new Date(a.createdAt) - new Date(b.createdAt)
     );
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Laporan Hasil Magang', 14, 20);
-    autoTable(doc, {
-      startY: 30,
-      head: [['Nama Peserta', 'Email', 'Bidang', 'Tanggal Kirim']],
-      body: laporanHasilMagang.map((l) => [
-        l.peserta.nama,
-        l.peserta.email,
-        l.peserta.bidang,
-        new Date(l.createdAt).toLocaleDateString(),
-      ]),
-    });
-    doc.save('laporan-hasil-magang.pdf');
-  };
+  // ===== Export Excel untuk Riwayat =====
+  const exportRiwayatToExcel = () => {
+    if (riwayat.length === 0) {
+      alert('Belum ada data riwayat untuk diekspor.');
+      return;
+    }
 
-  const exportToExcel = () => {
+    // Buat tanggal export (YYYY-MM-DD)
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+
     const worksheet = XLSX.utils.json_to_sheet(
-      laporanHasilMagang.map((l) => ({
+      riwayat.map((l) => ({
         Nama: l.peserta.nama,
         Email: l.peserta.email,
         Bidang: l.peserta.bidang,
-        Tanggal: new Date(l.createdAt).toLocaleDateString(),
+        Status: l.status,
+        'Tanggal Respon': new Date(l.respondedAt).toLocaleString(),
       }))
     );
+
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan');
-    XLSX.writeFile(workbook, 'laporan-hasil-magang.xlsx');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Riwayat Laporan');
+    XLSX.writeFile(workbook, `riwayat_laporan_akhir_${formattedDate}.xlsx`);
   };
 
   // Klik luar modal untuk tutup
@@ -113,13 +108,13 @@ const ManageLaporanAkhir = () => {
   // Fungsi ketika admin klik diterima / ditolak
   const handleResponse = (laporan, status) => {
     // Hapus dari tabel ajuan masuk
-    setFilteredData(
-      laporanHasilMagang.filter((item) => item.id !== laporan.id)
+    setLaporanHasilMagang((prev) =>
+      prev.filter((item) => item.id !== laporan.id)
     );
 
     // Tambah ke tabel riwayat
-    setRiwayat([
-      ...riwayat,
+    setRiwayat((prev) => [
+      ...prev,
       {
         ...laporan,
         status,
@@ -130,10 +125,6 @@ const ManageLaporanAkhir = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-[#006DA6]">
-        Manajemen Laporan Akhir
-      </h1>
-
       {/* Search & Filter */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex flex-col sm:flex-row gap-2 w-full">
@@ -172,21 +163,6 @@ const ManageLaporanAkhir = () => {
             <option value="newest">Terbaru</option>
             <option value="oldest">Terlama</option>
           </select>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={exportToPDF}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-          >
-            Ekspor PDF
-          </button>
-          <button
-            onClick={exportToExcel}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-          >
-            Ekspor Excel
-          </button>
         </div>
       </div>
 
@@ -268,8 +244,22 @@ const ManageLaporanAkhir = () => {
 
       {/* Table Riwayat */}
       <div>
-        <h2 className="text-lg font-semibold mb-2">Riwayat Laporan Akhir</h2>
         <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="flex justify-between items-center px-4 py-3">
+            <h3 className="text-lg font-semibold text-gray-700  rounded-t-lg">
+              Riwayat Laporan Akhir Peserta Magang
+            </h3>
+            <div className="flex gap-2">
+              <button
+                onClick={exportRiwayatToExcel}
+                className="flex items-center gap-2 px-4 py-2 bg-[#006DA6] text-white rounded-md hover:bg-[#00476d] text-sm"
+              >
+                <Download size={18} />
+                <span>Eksport Riwayat</span>
+              </button>
+            </div>
+          </div>
+
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100 text-gray-700">
               <tr>
