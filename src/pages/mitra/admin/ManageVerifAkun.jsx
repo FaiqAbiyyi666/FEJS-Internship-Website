@@ -363,7 +363,7 @@ export default function ManageVerifAkun() {
       {isDetailModalOpen && selectedPeserta && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-          onClick={closeModal}
+          onClick={handleCloseDetail}
         >
           <div
             className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]"

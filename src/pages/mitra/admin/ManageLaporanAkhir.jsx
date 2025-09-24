@@ -261,7 +261,7 @@ const ManageLaporanAkhir = () => {
           </div>
 
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-100 text-gray-700">
+            <thead className="bg-gray-200 text-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Nama Peserta

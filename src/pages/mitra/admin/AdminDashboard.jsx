@@ -63,7 +63,7 @@ const AdminDashboard = () => {
         return 'Laporan Harian';
       case 'laporanAkhir':
         return 'Laporan Akhir';
-      case 'Ajuan':
+      case 'ajuan':
         return 'Ajuan Magang';
       case 'bidang':
         return 'Bidang Magang';
