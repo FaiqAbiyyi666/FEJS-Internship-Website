@@ -12,8 +12,9 @@ export default function ManagementSubKoorbid() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [namaError, setNamaError] = useState('');
 
-  const subKoorData = [
+  const [subKoorList, setSubKoorList] = useState([
     {
       id: 1,
       nama: 'Dian Prasetyo',
@@ -49,8 +50,9 @@ export default function ManagementSubKoorbid() {
       bidang: 'Infrastruktur & Keamanan TIK',
       status: 'Aktif',
     },
-  ];
+  ]);
 
+  // === State untuk modal edit & create ===
   const [formData, setFormData] = useState({});
   const [createFormData, setCreateFormData] = useState({
     nama: '',
@@ -59,6 +61,7 @@ export default function ManagementSubKoorbid() {
     bidang: '',
   });
 
+  // === Edit Modal ===
   const openModal = (subKoor) => {
     setSelectedSubKoor(subKoor);
     setFormData(subKoor);
@@ -70,6 +73,52 @@ export default function ManagementSubKoorbid() {
     setSelectedSubKoor(null);
   };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = () => {
+    // ambil semua email & nama kecuali yang sedang diedit
+    const existingEmails = subKoorList
+      .filter((item) => item.id !== selectedSubKoor.id)
+      .map((item) => item.email.toLowerCase());
+
+    const existingNames = subKoorList
+      .filter((item) => item.id !== selectedSubKoor.id)
+      .map((item) => item.nama.toLowerCase());
+
+    // validasi email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      alert('Format email tidak valid');
+      return;
+    }
+    if (existingEmails.includes(formData.email.toLowerCase())) {
+      alert('Email sudah digunakan');
+      return;
+    }
+
+    // validasi nama
+    if (!formData.nama.trim()) {
+      alert('Nama wajib diisi');
+      return;
+    }
+    if (existingNames.includes(formData.nama.toLowerCase())) {
+      alert('Nama sudah digunakan');
+      return;
+    }
+
+    // kalau lolos validasi, update data
+    setSubKoorList((prev) =>
+      prev.map((item) =>
+        item.id === selectedSubKoor.id ? { ...item, ...formData } : item
+      )
+    );
+    closeModal();
+  };
+
+  // === Create modal ===
   const openCreateModal = () => {
     setIsCreateModalOpen(true);
   };
@@ -81,44 +130,63 @@ export default function ManagementSubKoorbid() {
     setShowPassword(false);
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleCreateChange = (e) => {
     const { name, value } = e.target;
     setCreateFormData((prev) => ({ ...prev, [name]: value }));
 
+    // ambil semua nama dan email dari list subKoor
+    const existingEmails = subKoorList.map((item) => item.email.toLowerCase());
+    const existingNames = subKoorList.map((item) => item.nama.toLowerCase());
+
     if (name === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      setEmailError(emailRegex.test(value) ? '' : 'Format email tidak valid');
-    }
-  };
 
-  const handleSave = () => {
-    console.log('Data disimpan:', formData);
-    closeModal();
+      if (!emailRegex.test(value)) {
+        setEmailError('Format email tidak valid');
+      } else if (existingEmails.includes(value)) {
+        setEmailError('Email sudah digunakan');
+      } else {
+        setEmailError('');
+      }
+    }
+
+    if (name === 'nama') {
+      if (!value.trim()) {
+        setNamaError('Nama wajib diisi');
+      } else if (existingNames.includes(value.toLowerCase())) {
+        setNamaError('Nama sudah digunakan');
+      } else {
+        setNamaError('');
+      }
+    }
   };
 
   const handleCreate = () => {
     if (emailError) return;
-    console.log('Akun Sub Koor dibuat:', createFormData);
+
+    const newSubKoor = {
+      id: subKoorList.length + 1,
+      nama: createFormData.nama,
+      email: createFormData.email,
+      bidang: createFormData.bidang,
+    };
+
+    setSubKoorList((prev) => [...prev, newSubKoor]);
     closeCreateModal();
   };
 
+  // === Delete Sub Koor ===
   const handleDeleteSubkoor = (id) => {
     if (confirm('Yakin ingin menghapus akun ini?')) {
-      // Panggil API hapus atau update state di sini
-      console.log('Hapus subkoor dengan id:', id);
+      setSubKoorList(subKoorList.filter((item) => item.id !== id));
     }
   };
 
-  const filteredData = subKoorData.filter(
-    (subkoor) =>
-      subkoor.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subkoor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subkoor.bidang.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = subKoorList.filter(
+    (item) =>
+      item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.bidang.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
@@ -163,31 +231,34 @@ export default function ManagementSubKoorbid() {
               </tr>
             </thead>
             <tbody>
-              {paginatedData.map((item) => (
-                <tr key={item.id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-3">{item.nama}</td>
-                  <td className="px-4 py-3">{item.email}</td>
-                  <td className="px-4 py-3">{item.bidang}</td>
-                  <td className="px-4 py-3 flex gap-2">
-                    <button
-                      className="text-[#006DA6] hover:underline flex items-center text-sm"
-                      onClick={() => openModal(item)}
-                    >
-                      <Edit size={16} className="mr-1" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSubkoor(subKoorData.id)}
-                      className="text-red-500 hover:text-red-700"
-                      title="Hapus Akun"
-                    >
-                      <FaTrash />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {paginatedData.length === 0 && (
+              {paginatedData.length > 0 ? (
+                paginatedData.map((item) => (
+                  <tr key={item.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-3">{item.nama}</td>
+                    <td className="px-4 py-3">{item.email}</td>
+                    <td className="px-4 py-3">{item.bidang}</td>
+                    <td className="px-4 py-3 flex gap-6">
+                      <button
+                        className="text-[#006DA6] hover:underline flex items-center text-sm"
+                        onClick={() => openModal(item)}
+                      >
+                        <Edit size={18} className="mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSubkoor(item.id)}
+                        className="text-red-500 hover:text-red-700 flex items-center text-sm"
+                        title="Hapus Akun"
+                      >
+                        <FaTrash size={18} className="mr-1" />
+                        Hapus
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan="5" className="text-center py-4 text-gray-500">
+                  <td colSpan="4" className="text-center py-4 text-gray-500">
                     Tidak ada data ditemukan.
                   </td>
                 </tr>
@@ -348,6 +419,9 @@ export default function ManagementSubKoorbid() {
                   onChange={handleCreateChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
+                {namaError && (
+                  <p className="text-red-500 text-sm mt-1">{namaError}</p>
+                )}
               </div>
               <div>
                 <label className="block mb-1 text-gray-700">Email</label>
