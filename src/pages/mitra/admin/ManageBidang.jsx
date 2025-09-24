@@ -1,139 +1,194 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Users, Search, MoreHorizontal, X } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
+import { FaTrash } from 'react-icons/fa';
+
+const ITEMS_PER_PAGE = 5;
 
 const ManagementBidang = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [errorNama, setErrorNama] = useState('');
+  const [errorKuota, setErrorKuota] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editId, setEditId] = useState(null);
+
   const [bidangList, setBidangList] = useState([
     {
       id: 1,
       nama: 'Tata Kelola Informatika',
-      deskripsi:
-        'Merancang kebijakan, pengelolaan infrastruktur TI, dan pengawasan sistem informasi di lingkungan pemerintah.',
-      requirements: [
-        'Minimal semester 5',
-        'Menguasai programming (Java/PHP/JavaScript)',
-        'Memahami database',
-      ],
-      durasi: '3-6 bulan',
-      kapasitas: 10,
+      kuota: 10,
       pesertaAktif: 5,
-      mitra: ['PT. Teknologi Nusantara', 'PT. Digital Solusi'],
-      skills: ['Programming', 'Database', 'System Analysis'],
-      status: 'Aktif',
-      icon: '🖥️',
     },
     {
       id: 2,
       nama: 'Pengelolaan Informasi dan Komunikasi Publik',
-      deskripsi:
-        'Mengelola penyebaran informasi publik, hubungan media, dan konten komunikasi digital pemerintah.',
-      requirements: [
-        'Minimal semester 4',
-        'Jurusan Psikologi/Manajemen',
-        'Komunikasi yang baik',
-      ],
-      durasi: '2-4 bulan',
-      kapasitas: 10,
+      kuota: 10,
       pesertaAktif: 7,
-      mitra: ['PT. Maju Bersama', 'CV. Konsultan Prima'],
-      skills: ['Communication', 'Administration', 'Employee Relations'],
-      status: 'Aktif',
-      icon: '📢',
     },
     {
       id: 3,
       nama: 'Sekretariat',
-      deskripsi:
-        'Mendukung administrasi, penyusunan laporan, jadwal kegiatan, dan dokumentasi kegiatan kedinasan.',
-      requirements: [
-        'Minimal semester 3',
-        'Kreatif dan inovatif',
-        'Menguasai social media',
-      ],
-      durasi: '2-3 bulan',
-      kapasitas: 10,
+      kuota: 10,
       pesertaAktif: 4,
-      mitra: ['CV. Kreatif Mandiri', 'PT. Media Digital'],
-      skills: ['Content Creation', 'Social Media', 'Analytics'],
-      status: 'Aktif',
-      icon: '📂',
     },
     {
       id: 4,
       nama: 'Statistik',
-      deskripsi:
-        'Pengolahan, analisis, dan visualisasi data statistik untuk mendukung pengambilan keputusan.',
-      requirements: [
-        'Minimal semester 6',
-        'Menguasai Python/R',
-        'Statistika dan matematika',
-      ],
-      durasi: '4-6 bulan',
-      kapasitas: 10,
+      kuota: 10,
       pesertaAktif: 3,
-      mitra: ['PT. Teknologi Nusantara'],
-      skills: ['Python', 'Statistics', 'Machine Learning'],
-      status: 'Aktif',
-      icon: '📊',
     },
     {
       id: 5,
       nama: 'Infrastruktur & Keamanan TIK',
-      deskripsi:
-        'Mengelola jaringan, server, perangkat keras, dan sistem keamanan teknologi informasi di instansi.',
-      requirements: [
-        'Minimal semester 5',
-        'Menguasai jaringan komputer dan keamanan siber',
-        'Memahami arsitektur sistem',
-      ],
-      durasi: '3-6 bulan',
-      kapasitas: 10,
+      kuota: 10,
       pesertaAktif: 8,
-      mitra: ['PT. Teknologi Nusantara', 'PT. Digital Solusi'],
-      skills: ['Networking', 'Cybersecurity', 'System Admin'],
-      status: 'Aktif',
-      icon: '🔐',
     },
   ]);
 
   const [formBidang, setFormBidang] = useState({
     nama: '',
-    deskripsi: '',
-    requirements: '',
-    skills: '',
-    kapasitas: 0,
-    icon: '',
+    kuota: 0,
+    pesertaAktif: 0,
   });
 
+  // === Tambah bidang baru ===
   const handleAddBidang = () => {
-    const newBidang = {
-      ...formBidang,
-      id: bidangList.length + 1,
-      requirements: formBidang.requirements.split(',').map((r) => r.trim()),
-      skills: formBidang.skills.split(',').map((s) => s.trim()),
-      pesertaAktif: 0,
-      status: 'Aktif',
-      durasi: '3 bulan',
-      mitra: [],
-    };
-    setBidangList([newBidang, ...bidangList]);
+    setErrorKuota('');
+    // cek duplikat nama
+    const isDuplicate = bidangList.some(
+      (bidang) => bidang.nama.toLowerCase() === formBidang.nama.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setErrorNama('Nama bidang sudah ada, gunakan nama lain.');
+      return;
+    }
+
+    if (!formBidang.nama.trim()) {
+      setErrorNama('Nama bidang wajib diisi.');
+      return;
+    }
+
+    // parsing kuota ke number & minimal 1
+    const kuota = parseInt(formBidang.kuota, 10);
+
+    if (!kuota || kuota < 1) {
+      setErrorKuota('Kuota minimal 1 orang.');
+      return;
+    }
+
+    setBidangList([
+      ...bidangList,
+      {
+        id: bidangList.length + 1,
+        nama: formBidang.nama,
+        kuota: kuota,
+        pesertaAktif: 0,
+      },
+    ]);
     setIsModalOpen(false);
     setFormBidang({
       nama: '',
-      deskripsi: '',
-      requirements: '',
-      skills: '',
-      kapasitas: 0,
-      icon: '',
+      kuota: 0,
+      pesertaAktif: 0,
     });
   };
 
-  const filteredBidang = bidangList.filter(
-    (bidang) =>
-      bidang.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bidang.deskripsi.toLowerCase().includes(searchTerm.toLowerCase())
+  // Edit Bidang
+  const handleOpenEdit = (bidang) => {
+    setIsEditMode(true);
+    setEditId(bidang.id);
+    setFormBidang({
+      nama: bidang.nama,
+      kuota: bidang.kuota,
+      pesertaAktif: bidang.pesertaAktif,
+    });
+    setErrorNama('');
+    setErrorKuota('');
+    setIsModalOpen(true);
+  };
+
+  // Save Edit Bidang
+  const handleSaveBidang = () => {
+    setErrorNama('');
+    setErrorKuota('');
+
+    // validasi nama
+    const isDuplicate = bidangList.some(
+      (bidang) =>
+        bidang.nama.toLowerCase() === formBidang.nama.toLowerCase() &&
+        bidang.id !== editId
+    );
+
+    if (isDuplicate) {
+      setErrorNama('Nama bidang sudah ada, gunakan nama lain.');
+      return;
+    }
+
+    if (!formBidang.nama.trim()) {
+      setErrorNama('Nama bidang wajib diisi.');
+      return;
+    }
+
+    if (!formBidang.kuota || formBidang.kuota < 1) {
+      setErrorKuota('Kuota minimal 1 orang.');
+      return;
+    }
+
+    if (isEditMode) {
+      // update bidang
+      setBidangList(
+        bidangList.map((bidang) =>
+          bidang.id === editId
+            ? { ...bidang, nama: formBidang.nama, kuota: formBidang.kuota }
+            : bidang
+        )
+      );
+    } else {
+      // tambah bidang
+      setBidangList([
+        ...bidangList,
+        {
+          id: bidangList.length + 1,
+          nama: formBidang.nama,
+          kuota: formBidang.kuota,
+          pesertaAktif: 0,
+        },
+      ]);
+    }
+
+    setIsModalOpen(false);
+  };
+
+  // === Delete bidang ===
+  const handleDeleteBidang = (id) => {
+    const confirmDelete = window.confirm(
+      'Apakah Anda yakin ingin menghapus bidang ini?'
+    );
+    if (confirmDelete) {
+      setBidangList(bidangList.filter((item) => item.id !== id));
+    }
+  };
+
+  // filter berdasarkan input pencarian
+  const filteredBidang = bidangList.filter((bidang) =>
+    bidang.nama.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // pagination setelah filter
+  const totalPages = Math.ceil(filteredBidang.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginated = filteredBidang.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
+  const totalPagesBidang = Math.ceil(filteredBidang.length / ITEMS_PER_PAGE);
+  const paginatedBidang = filteredBidang.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   return (
@@ -149,7 +204,10 @@ const ManagementBidang = () => {
             type="text"
             placeholder="Cari bidang magang..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // reset ke halaman 1 kalau melakukan pencarian
+            }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
           />
         </div>
@@ -162,100 +220,103 @@ const ManagementBidang = () => {
         </button>
       </div>
 
-      {/* Bidang Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredBidang.map((bidang) => (
-          <div
-            key={bidang.id}
-            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#BFDCFF] to-[#006DA6] rounded-xl flex items-center justify-center text-2xl">
-                  {bidang.icon}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {bidang.nama}
-                  </h3>
-                </div>
-              </div>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreHorizontal size={20} className="text-gray-400" />
-              </button>
-            </div>
-
-            <p className="text-gray-600 mb-4 text-sm leading-relaxed">
-              {bidang.deskripsi}
-            </p>
-
-            <div className="space-y-4 mb-4">
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Requirements:
-                </h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  {bidang.requirements.slice(0, 2).map((req, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="w-1.5 h-1.5 bg-[#006DA6] rounded-full mr-2 mt-2 flex-shrink-0"></span>
-                      {req}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Skills:
-                </h4>
-                <div className="flex flex-wrap gap-1">
-                  {bidang.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs"
+      {/* Tabel Bidang */}
+      <div className="overflow-x-auto bg-white shadow rounded-lg">
+        <div className="overflow-x-auto rounded-lg shadow mt-4">
+          <table className="min-w-full text-sm text-left">
+            <thead className="bg-[#006DA6] text-white">
+              <tr>
+                <th className="px-4 py-3">Nama Bidang</th>
+                <th className="px-4 py-3">Kuota</th>
+                <th className="px-4 py-3">Peserta Aktif</th>
+                <th className="px-4 py-3">Kuota Tersedia</th>
+                <th className="px-4 py-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedBidang.map((item) => (
+                <tr key={item.id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-3">{item.nama}</td>
+                  <td className="px-4 py-3">{item.kuota}</td>
+                  <td className="px-4 py-3">{item.pesertaAktif}</td>
+                  <td className="px-4 py-3">
+                    {item.kuota - item.pesertaAktif}
+                  </td>
+                  <td className="px-4 py-3 flex gap-6">
+                    <button
+                      className="text-[#006DA6] hover:underline flex items-center text-sm"
+                      onClick={() => handleOpenEdit(item)}
                     >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+                      <Edit size={18} className="mr-1" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBidang(item.id)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Hapus Bidang"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {paginatedBidang.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-gray-500">
+                    Tidak ada data ditemukan.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
-            <div className="flex items-center justify-between py-3 border-t border-gray-200 mb-4">
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <span className="flex items-center">
-                  <Users size={16} className="mr-1" />
-                  {bidang.pesertaAktif} / {bidang.kapasitas}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-16 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-[#006DA6] to-[#BFDCFF] h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${
-                        (bidang.pesertaAktif / bidang.kapasitas) * 100
-                      }%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-gray-500">
-                  {Math.round((bidang.pesertaAktif / bidang.kapasitas) * 100)}%
-                </span>
-              </div>
-            </div>
-
-            <div className="flex space-x-2">
-              <button className="flex-1 px-3 py-2 text-[#006DA6] border border-[#006DA6] rounded-lg hover:bg-[#006DA6] hover:text-white transition-colors text-sm">
-                <Edit size={16} className="inline mr-1" />
-                Edit
+          {/* Pagination */}
+          <div className="flex flex-col md:flex-row items-center justify-between px-4 py-3 bg-white border-t">
+            <p className="text-sm text-gray-700 mb-2 md:mb-0">
+              Menampilkan{' '}
+              <span className="font-medium">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+              </span>{' '}
+              -{' '}
+              <span className="font-medium">
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredBidang.length)}
+              </span>{' '}
+              dari <span className="font-medium">{filteredBidang.length}</span>{' '}
+              hasil
+            </p>
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
+                disabled={currentPage === 1}
+              >
+                Previous
               </button>
-              <button className="flex-1 px-3 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] transition-colors text-sm">
-                Detail
+              {[...Array(totalPagesBidang)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-3 py-1 border rounded text-sm ${
+                    currentPage === i + 1
+                      ? 'bg-[#006DA6] text-white'
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPagesBidang))
+                }
+                className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
+                disabled={currentPage === totalPagesBidang}
+              >
+                Next
               </button>
             </div>
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Modal Tambah */}
@@ -267,12 +328,12 @@ const ManagementBidang = () => {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="w-full max-w-md bg-white rounded-lg p-6 shadow-lg space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-2">
               <Dialog.Title className="text-lg font-semibold text-gray-800">
                 Tambah Bidang
               </Dialog.Title>
               <button onClick={() => setIsModalOpen(false)}>
-                <X size={20} className="text-gray-500" />
+                <X size={20} className="text-gray-500 hover:text-gray-700" />
               </button>
             </div>
 
@@ -285,98 +346,124 @@ const ManagementBidang = () => {
                 type="text"
                 placeholder="Nama Bidang"
                 value={formBidang.nama}
-                onChange={(e) =>
-                  setFormBidang({ ...formBidang, nama: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
+                onChange={(e) => {
+                  setFormBidang({ ...formBidang, nama: e.target.value });
+                  setErrorNama(''); // hapus error saat user mengetik ulang
+                }}
+                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
+                  errorNama ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {errorNama && (
+                <p className="text-red-500 text-xs mt-1">{errorNama}</p>
+              )}
             </div>
 
-            {/* Deskripsi */}
+            {/* Kuota */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Deskripsi Bidang
-              </label>
-              <textarea
-                placeholder="Deskripsi"
-                value={formBidang.deskripsi}
-                onChange={(e) =>
-                  setFormBidang({ ...formBidang, deskripsi: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
-              />
-            </div>
-
-            {/* Requirements */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Persyaratan (pisahkan dengan koma)
-              </label>
-              <input
-                type="text"
-                placeholder="Requirements"
-                value={formBidang.requirements}
-                onChange={(e) =>
-                  setFormBidang({ ...formBidang, requirements: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
-              />
-            </div>
-
-            {/* Skills */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Keahlian yang Dibutuhkan (pisahkan dengan koma)
-              </label>
-              <input
-                type="text"
-                placeholder="Skills"
-                value={formBidang.skills}
-                onChange={(e) =>
-                  setFormBidang({ ...formBidang, skills: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
-              />
-            </div>
-
-            {/* Kapasitas */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kuota Peserta Magang
+                Kuota Bidang Magang
               </label>
               <input
                 type="number"
-                placeholder="Kapasitas"
-                value={formBidang.kapasitas}
+                placeholder="Masukkan jumlah kuota"
+                value={formBidang.kuota}
                 onChange={(e) =>
-                  setFormBidang({ ...formBidang, kapasitas: e.target.value })
+                  setFormBidang({
+                    ...formBidang,
+                    kuota: Number(e.target.value),
+                  })
                 }
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
+                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
+                  errorKuota ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-            </div>
-
-            {/* Icon */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Icon Emoji (contoh: 🖥️)
-              </label>
-              <input
-                type="text"
-                placeholder="Icon Emoji"
-                value={formBidang.icon}
-                onChange={(e) =>
-                  setFormBidang({ ...formBidang, icon: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
-              />
+              {errorKuota && (
+                <p className="text-red-500 text-xs mt-1">{errorKuota}</p>
+              )}
             </div>
 
             {/* Tombol Simpan */}
             <button
               onClick={handleAddBidang}
-              className="bg-[#006DA6] w-full text-white px-4 py-2 rounded-lg hover:bg-[#002942] transition"
+              className="bg-[#006DA6] w-full text-white px-4 py-2 rounded-lg hover:bg-[#00476d] transition"
             >
               Simpan
+            </button>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* Modal Edit Bidang */}
+      <Dialog
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md bg-white rounded-lg p-6 shadow-lg space-y-4">
+            <div className="flex justify-between items-center mb-2">
+              <Dialog.Title className="text-lg font-semibold text-gray-800">
+                {isEditMode ? 'Edit Bidang' : 'Tambah Bidang'}
+              </Dialog.Title>
+              <button onClick={() => setIsModalOpen(false)}>
+                <X size={20} className="text-gray-500 hover:text-gray-700" />
+              </button>
+            </div>
+
+            {/* Nama Bidang */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nama Bidang
+              </label>
+              <input
+                type="text"
+                placeholder="Nama Bidang"
+                value={formBidang.nama}
+                onChange={(e) => {
+                  setFormBidang({ ...formBidang, nama: e.target.value });
+                  setErrorNama('');
+                }}
+                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
+                  errorNama ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errorNama && (
+                <p className="text-red-500 text-xs mt-1">{errorNama}</p>
+              )}
+            </div>
+
+            {/* Kuota */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kuota Bidang Magang
+              </label>
+              <input
+                type="number"
+                placeholder="Masukkan jumlah kuota"
+                value={formBidang.kuota}
+                onChange={(e) =>
+                  setFormBidang({
+                    ...formBidang,
+                    kuota: Number(e.target.value),
+                  })
+                }
+                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
+                  errorKuota ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errorKuota && (
+                <p className="text-red-500 text-xs mt-1">{errorKuota}</p>
+              )}
+            </div>
+
+            {/* Tombol Simpan */}
+            <button
+              onClick={handleSaveBidang}
+              className="bg-[#006DA6] w-full text-white px-4 py-2 rounded-lg hover:bg-[#00476d] transition"
+            >
+              {isEditMode ? 'Update' : 'Simpan'}
             </button>
           </Dialog.Panel>
         </div>

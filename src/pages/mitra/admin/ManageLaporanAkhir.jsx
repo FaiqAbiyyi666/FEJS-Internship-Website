@@ -171,19 +171,19 @@ const ManageLaporanAkhir = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-[#006DA6] text-white">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider rounded-tl-xl">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider rounded-tl-xl">
                 Nama Peserta
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">
                 Bidang
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">
                 Tanggal Kirim
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">
                 File
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider rounded-tr-xl">
