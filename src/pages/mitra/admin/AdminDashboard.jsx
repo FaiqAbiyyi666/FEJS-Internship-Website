@@ -67,6 +67,8 @@ const AdminDashboard = () => {
         return 'Ajuan Magang';
       case 'bidang':
         return 'Bidang Magang';
+      case 'dataMagang':
+        return 'Arsip Data Magang';
       case 'sertifikat':
         return 'Sertifikat';
       case 'suratMagang':
