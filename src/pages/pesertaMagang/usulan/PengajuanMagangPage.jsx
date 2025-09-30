@@ -11,6 +11,7 @@ export default function PengajuanMagangPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [isAgreed, setIsAgreed] = useState(false);
 
   const steps = [
     'Formulir Pendaftaran Magang',
@@ -28,7 +29,9 @@ export default function PengajuanMagangPage() {
       case 2:
         return <PilihBidang />;
       case 3:
-        return <KonfirmasiSimpan />;
+        return (
+          <KonfirmasiSimpan isAgreed={isAgreed} setIsAgreed={setIsAgreed} />
+        );
       default:
         return null;
     }
@@ -102,7 +105,12 @@ export default function PengajuanMagangPage() {
             ) : (
               <button
                 onClick={() => setShowModal(true)}
-                className="bg-[#DDB900] text-black font-medium px-5 py-2 rounded-lg flex items-center gap-2"
+                disabled={!isAgreed}
+                className={`px-5 py-2 rounded-lg flex items-center gap-2 ${
+                  isAgreed
+                    ? 'bg-[#DDB900] text-black font-medium hover:bg-yellow-500'
+                    : 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                }`}
               >
                 <FaSave />
                 Simpan

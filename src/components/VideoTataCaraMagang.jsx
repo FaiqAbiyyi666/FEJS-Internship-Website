@@ -8,7 +8,7 @@ export default function VideoTataCaraMagang() {
           <h2 className="text-2xl md:text-3xl font-bold text-[#006DA6]">
             Tata Cara Pendaftaran Magang
           </h2>
-          <p className="text-xl md:text-xl mt-1">
+          <p className="text-xl md:text-2xl mt-1">
             di Dinas Komunikasi dan Informatika
             <br />
             Kabupaten Sidoarjo

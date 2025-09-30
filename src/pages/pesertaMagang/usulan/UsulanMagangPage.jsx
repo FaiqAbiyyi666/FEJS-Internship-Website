@@ -51,10 +51,9 @@ export default function UsulanMagangPage() {
           </div>
 
           <div className="bg-white border rounded-lg shadow overflow-x-auto">
-            <table className="min-w-full text-sm text-center text-gray-700">
+            <table className="min-w-full text-sm text-left text-gray-700">
               <thead className="bg-[#006DA6] border-b font-semibold text-white">
                 <tr>
-                  <th className="px-6 py-3">ID MAGANG</th>
                   <th className="px-6 py-3">TANGGAL PENGAJUAN</th>
                   <th className="px-6 py-3">TEMA MAGANG</th>
                   <th className="px-6 py-3">PERIODE MAGANG</th>
@@ -63,7 +62,7 @@ export default function UsulanMagangPage() {
                   <th className="px-6 py-3">AKSI</th>
                 </tr>
               </thead>
-              <tbody className="text-center">
+              <tbody className="text-left">
                 {usulanMagang.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-10 text-gray-500">
@@ -73,7 +72,6 @@ export default function UsulanMagangPage() {
                 ) : (
                   usulanMagang.map((item, index) => (
                     <tr key={index} className="border-t hover:bg-gray-50">
-                      <td className="px-6 py-4">{item.id}</td>
                       <td className="px-6 py-4">{item.tanggal}</td>
                       <td className="px-6 py-4">{item.tema}</td>
                       <td className="px-6 py-4">{item.periode}</td>

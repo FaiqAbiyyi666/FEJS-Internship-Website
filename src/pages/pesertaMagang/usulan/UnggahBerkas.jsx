@@ -2,20 +2,24 @@ import { useState } from 'react';
 
 export default function UnggahBerkas() {
   const [files, setFiles] = useState({
+    suratBakesbangSDA: null,
+    suratBakesbangProv: null,
     suratPengantar: null,
     proposalMagang: null,
     cvPeserta: null,
-    fotoPeserta: null,
+    ktp: null,
   });
 
   const [errors, setErrors] = useState({});
   const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
   const allowedFileTypes = {
+    suratBakesbangSDA: ['application/pdf'],
+    suratBakesbangProv: ['application/pdf'],
     suratPengantar: ['application/pdf'],
     proposalMagang: ['application/pdf'],
     cvPeserta: ['application/pdf'],
-    fotoPeserta: ['image/jpeg', 'image/jpg', 'image/png'],
+    ktp: ['application/pdf'],
   };
 
   const handleFileChange = (e, name) => {
@@ -29,7 +33,7 @@ export default function UnggahBerkas() {
         setErrors((prev) => ({
           ...prev,
           [name]: `Format file tidak valid. ${
-            name === 'fotoPeserta'
+            name === 'ktp'
               ? 'Hanya JPG atau PNG yang diperbolehkan.'
               : 'Hanya PDF yang diperbolehkan.'
           }`,
@@ -98,10 +102,52 @@ export default function UnggahBerkas() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {renderFileInput('Surat Pengantar', 'suratPengantar', '.pdf')}
-        {renderFileInput('Proposal Magang', 'proposalMagang', '.pdf')}
-        {renderFileInput('Curriculum Vitae (CV)', 'cvPeserta', '.pdf')}
-        {renderFileInput('Pas Foto 3x4', 'fotoPeserta', '.jpg,.jpeg,.png')}
+        <div>
+          {renderFileInput(
+            'Surat Rekomendasi Bakesbangpol Sidoarjo',
+            'suratBakesbangSDA',
+            '.pdf'
+          )}
+          <p className="text-sm text-gray-500 mt-1">
+            *) Wajib bagi semua peserta magang
+          </p>
+        </div>
+
+        <div>
+          {renderFileInput(
+            'Surat Rekomendasi Bakesbangpol Provinsi',
+            'suratBakesbangProv',
+            '.pdf'
+          )}
+          <p className="text-sm text-gray-500 mt-1">
+            *) Wajib bagi calon peserta magang yang instansinya di luar
+            Kabupaten Sidoarjo
+          </p>
+        </div>
+
+        <div>
+          {renderFileInput(
+            'Surat Pengantar Instansi',
+            'suratPengantar',
+            '.pdf'
+          )}
+        </div>
+
+        <div>
+          {renderFileInput('Proposal Magang', 'proposalMagang', '.pdf')}
+        </div>
+
+        <div>
+          {renderFileInput('Curriculum Vitae (CV)', 'cvPeserta', '.pdf')}
+        </div>
+
+        <div>
+          {renderFileInput(
+            'KTP / Kartu Pelajar / Kartu Mahasiswa',
+            'ktp',
+            '.pdf'
+          )}
+        </div>
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ export default function FormulirPendaftaran() {
                 ▼
               </div>
             </div>
-            <label className="block text-xs font-light mt-1 text-gray-600">
+            <label className="block text-xs font-light mt-1 text-gray-600 text-justify">
               *) MoU (Khusus untuk peserta yang masuk dalam program kerja sama
               magang)
             </label>
@@ -170,10 +170,19 @@ export default function FormulirPendaftaran() {
               className="form-input w-full"
               placeholder="Masukkan Tema Magang"
             />
-            <label className="block text-xs font-light mt-1 text-gray-600">
+            <label className="block text-xs font-light mt-1 text-gray-600 text-justify">
               *) Tema Magang (tidak diwajibkan) adalah hal/data yang diharapkan
               diperoleh peserta magang yang akan dilakukan saat mengikuti
               magang.
+            </label>
+            <label className="block text-xs font-light mt-1 text-gray-600 text-justify">
+              *){' '}
+              <label className=" text-xs font-bold text-gray-600 ">
+                Contoh Tema Magang
+              </label>{' '}
+              seperti Manajemen arsip digital, Efektivitas media sosial,
+              Strategi konten publik, Pengembangan aplikasi internal, Keamanan
+              jaringan, Analisis big data, Visualisasi data interaktif, dsb.
             </label>
           </div>
         </div>

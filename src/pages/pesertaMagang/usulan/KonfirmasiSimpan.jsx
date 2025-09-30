@@ -1,4 +1,4 @@
-export default function KonfirmasiSimpan() {
+export default function KonfirmasiSimpan({ isAgreed, setIsAgreed }) {
   return (
     <div className="space-y-6 text-[#002942]">
       {/* Pakta Integritas */}
@@ -40,6 +40,8 @@ export default function KonfirmasiSimpan() {
         <input
           type="checkbox"
           id="setuju"
+          checked={isAgreed}
+          onChange={(e) => setIsAgreed(e.target.checked)} // 🔹 update state parent
           className="form-checkbox w-5 h-5 bg-white border-white focus:ring-0"
         />
         <label htmlFor="setuju" className="text-sm font-semibold">

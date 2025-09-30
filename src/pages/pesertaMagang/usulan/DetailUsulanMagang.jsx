@@ -9,20 +9,24 @@ export default function DetailUsulanMagang() {
   const detailData = {
     id: id,
     tanggal: '2025-07-01',
-    tema: 'Penerapan Sistem Informasi Manajemen',
-    periode: 'Agustus - November 2025',
-    bidang: 'Pemrograman Web',
-    status: 'Menunggu',
     namaLengkap: 'Faiq Abiyyi',
     nim: '123456789',
-    jurusan: 'Sistem Informasi',
     universitas: 'UPN Veteran Jawa Timur',
-    email: 'faiq@example.com',
-    noHp: '081234567890',
+    jurusan: 'Sistem Informasi',
+    kategori: 'Reguler',
+    statusPendidikan: 'Kuliah',
+    jenjangPendidikan: 'S1',
+    tema: 'Penerapan Sistem Informasi Manajemen',
+    periode: '12 Agustus - 12 November 2025',
+    bidang: 'Infrastruktur & Keamanan TIK',
+    status: 'Menunggu',
     berkas: {
+      suratBakesbangProv: '/files/bakesbangprov-1.pdf',
+      suratBakesbangSDA: '/files/bakesbangsda-1.pdf',
       suratPengantar: '/berkas/surat-pengantar.pdf',
-      transkripNilai: '/berkas/transkrip.pdf',
-      cv: '/berkas/cv.pdf',
+      proposalMagang: '/files/proposal-1.pdf',
+      cv: '/files/cv-1.pdf',
+      ktp: '/files/ktpdummy-1.pdf',
     },
   };
 
@@ -54,21 +58,21 @@ export default function DetailUsulanMagang() {
           </div>
 
           <div className="space-y-4 text-sm">
-            {renderField('ID Magang', detailData.id)}
             {renderField('Tanggal Pengajuan', detailData.tanggal)}
-            {renderField('Tema Magang', detailData.tema)}
-            {renderField('Periode Magang', detailData.periode)}
-            {renderField('Bidang', detailData.bidang)}
-            {renderField('Status', detailData.status)}
+            {renderField('Nama Lengkap', detailData.namaLengkap)}
+            {renderField('NIM', detailData.nim)}
+            {renderField('Universitas', detailData.universitas)}
+            {renderField('Jurusan', detailData.jurusan)}
 
             <hr className="my-6" />
 
-            {renderField('Nama Lengkap', detailData.namaLengkap)}
-            {renderField('NIM', detailData.nim)}
-            {renderField('Jurusan', detailData.jurusan)}
-            {renderField('Universitas', detailData.universitas)}
-            {renderField('Email', detailData.email)}
-            {renderField('No. HP', detailData.noHp)}
+            {renderField('Kategori Magang', detailData.kategori)}
+            {renderField('Periode Magang', detailData.periode)}
+            {renderField('Status Pendidikan', detailData.statusPendidikan)}
+            {renderField('Jenjang Pendidikan', detailData.jenjangPendidikan)}
+            {renderField('Tema Magang', detailData.tema)}
+            {renderField('Bidang', detailData.bidang)}
+            {renderField('Status', detailData.status)}
 
             <hr className="my-6" />
 
@@ -77,6 +81,26 @@ export default function DetailUsulanMagang() {
                 Berkas Pendukung:
               </label>
               <ul className="list-disc pl-6 space-y-1 text-sm">
+                <li>
+                  <a
+                    href={detailData.berkas.suratBakesbangProv}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Surat Bakesbangpol Provinsi
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={detailData.berkas.suratBakesbangSDA}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Surat Bakesbangpol Sidoarjo
+                  </a>
+                </li>
                 <li>
                   <a
                     href={detailData.berkas.suratPengantar}
@@ -89,12 +113,12 @@ export default function DetailUsulanMagang() {
                 </li>
                 <li>
                   <a
-                    href={detailData.berkas.transkripNilai}
+                    href={detailData.berkas.proposalMagang}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
                   >
-                    Transkrip Nilai
+                    Proposal Magang
                   </a>
                 </li>
                 <li>
@@ -105,6 +129,16 @@ export default function DetailUsulanMagang() {
                     className="text-blue-600 hover:underline"
                   >
                     Curriculum Vitae (CV)
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={detailData.berkas.ktp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    KTP / Kartu Pelajar / Kartu Mahasiswa
                   </a>
                 </li>
               </ul>

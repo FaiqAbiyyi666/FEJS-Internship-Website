@@ -54,24 +54,20 @@ export default function PesertaDashboardHome() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent>
-            <p className="text-sm font-semibold text-gray-600">Nama Lengkap</p>
+            <p className="text-sm font-bold text-black">Nama Lengkap</p>
             <p className="text-base font-medium text-gray-800">
               {profile.nama}
             </p>
 
-            <p className="text-sm font-semibold text-gray-600 mt-3">
-              NIM / NIS
-            </p>
+            <p className="text-sm font-bold text-black mt-3">NIM / NIS</p>
             <p className="text-base font-medium text-gray-800">{profile.nim}</p>
 
-            <p className="text-sm font-semibold text-gray-600 mt-3">
-              No Telepon
-            </p>
+            <p className="text-sm font-bold text-black mt-3">No Telepon</p>
             <p className="text-base font-medium text-gray-800">
               {profile.telp}
             </p>
 
-            <p className="text-sm font-semibold text-gray-600 mt-3">Email</p>
+            <p className="text-sm font-bold text-black mt-3">Email</p>
             <p className="text-base font-medium text-gray-800">
               {profile.email}
             </p>
@@ -80,26 +76,22 @@ export default function PesertaDashboardHome() {
 
         <Card>
           <CardContent>
-            <p className="text-sm font-semibold text-gray-600">Instansi</p>
+            <p className="text-sm font-bold text-black">Instansi</p>
             <p className="text-base font-medium text-gray-800">
               {profile.instansi}
             </p>
 
-            <p className="text-sm font-semibold text-gray-600 mt-3">Jurusan</p>
+            <p className="text-sm font-bold text-black mt-3">Jurusan</p>
             <p className="text-base font-medium text-gray-800">
               {profile.jurusan}
             </p>
 
-            <p className="text-sm font-semibold text-gray-600 mt-3">
-              Bidang Magang
-            </p>
+            <p className="text-sm font-bold text-black mt-3">Bidang Magang</p>
             <p className="text-base font-medium text-gray-800">
               {profile.bidang}
             </p>
 
-            <p className="text-sm font-semibold text-gray-600 mt-3">
-              Periode Magang
-            </p>
+            <p className="text-sm font-bold text-black mt-3">Periode Magang</p>
             <p className="text-base font-medium text-gray-800">
               {profile.periode}
             </p>
@@ -117,7 +109,7 @@ export default function PesertaDashboardHome() {
           <div className="flex-1">
             {/* Judul + Detail Bidang & Tanggal */}
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-gray-600">
+              <span className="text-sm font-bold text-black">
                 Status Usulan Magang
               </span>
               <span className="text-xs text-gray-500">
@@ -134,7 +126,7 @@ export default function PesertaDashboardHome() {
           {/* Status Badge */}
           {(() => {
             const statusStyles = {
-              'Belum Mengajukan Usulan': 'bg-gray-100 text-gray-600',
+              'Belum Mengajukan Usulan': 'bg-gray-100 text-black',
               'Menunggu Persetujuan': 'bg-blue-100 text-blue-600',
               Diterima: 'bg-green-100 text-green-600',
               Ditolak: 'bg-red-100 text-red-600',
@@ -143,7 +135,7 @@ export default function PesertaDashboardHome() {
             return (
               <span
                 className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  statusStyles[statusUsulan] || 'bg-gray-100 text-gray-600'
+                  statusStyles[statusUsulan] || 'bg-gray-100 text-black'
                 }`}
               >
                 {statusUsulan}
@@ -161,7 +153,7 @@ export default function PesertaDashboardHome() {
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-semibold text-gray-600">
+              <span className="text-sm font-bold text-black">
                 Progres Laporan Harian
               </span>
               <span className="text-sm font-medium text-gray-700">
@@ -183,7 +175,7 @@ export default function PesertaDashboardHome() {
         <Card>
           <CardContent className="flex flex-col items-center text-center">
             <FileText className="text-blue-500 mb-2" size={28} />
-            <p className="text-sm font-semibold text-gray-600">Laporan Akhir</p>
+            <p className="text-sm font-bold text-black">Laporan Akhir</p>
             <p className="text-base font-medium text-gray-800">
               {laporanAkhir}
             </p>
@@ -193,7 +185,7 @@ export default function PesertaDashboardHome() {
         <Card>
           <CardContent className="flex flex-col items-center text-center">
             <Star className="text-yellow-500 mb-2" size={28} />
-            <p className="text-sm font-semibold text-gray-600">Ulasan Magang</p>
+            <p className="text-sm font-bold text-black">Ulasan Magang</p>
             <p className="text-base font-medium text-gray-800">{ulasan}</p>
           </CardContent>
         </Card>
@@ -201,7 +193,7 @@ export default function PesertaDashboardHome() {
         <Card>
           <CardContent className="flex flex-col items-center text-center">
             <Award className="text-indigo-500 mb-2" size={28} />
-            <p className="text-sm font-semibold text-gray-600">Sertifikat</p>
+            <p className="text-sm font-bold text-black">Sertifikat</p>
             <p className="text-base font-medium text-gray-800">{sertifikat}</p>
           </CardContent>
         </Card>

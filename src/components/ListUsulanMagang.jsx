@@ -5,115 +5,95 @@ const usulanData = [
   {
     nama: 'Joko Widodo',
     tanggal: '30/09/2026',
-    tema: 'Teknologi Informasi',
+    tema: 'Pengembangan aplikasi internal',
     periode: '30/11/2026 - 30/12/2026',
-    posisi: 'Tata Kelola Informatika',
+    bidang: 'Tata Kelola Informatika',
     status: 'Diterima',
   },
   {
     nama: 'Gibran FufuFafa',
     tanggal: '13/06/2026',
-    tema: 'Statistika',
+    tema: 'Analisis big data',
     periode: '25/07/2026 - 25/08/2026',
-    posisi: 'Statistik',
+    bidang: 'Statistik',
     status: 'Diterima',
   },
   {
     nama: 'Susi Susanti',
     tanggal: '02/01/2025',
-    tema: 'Komunikasi',
+    tema: 'Efektivitas media sosial',
     periode: '01/03/2025 - 01/04/2025',
-    posisi: 'Humas',
+    bidang: 'Pengelolaan Informasi & Komunikasi Publik',
     status: 'Diproses',
   },
   {
     nama: 'Andi Wijaya',
     tanggal: '15/04/2025',
-    tema: 'Teknik Informatika',
+    tema: 'Keamanan jaringan',
     periode: '01/06/2025 - 01/07/2025',
-    posisi: 'Pemrograman Web',
+    bidang: 'Infrastruktur & Keamanan TIK',
     status: 'Ditolak',
   },
   {
     nama: 'Budi Santoso',
     tanggal: '10/05/2025',
-    tema: 'Data Science',
+    tema: 'Manajemen arsip digital',
     periode: '01/07/2025 - 01/08/2025',
-    posisi: 'Analisis Data',
+    bidang: 'Sekretariat',
     status: 'Diproses',
   },
   {
     nama: 'Dewi Lestari',
     tanggal: '18/06/2025',
-    tema: 'Desain Grafis',
+    tema: 'Visualisasi data interaktif',
     periode: '15/07/2025 - 15/08/2025',
-    posisi: 'Desainer UI/UX',
+    bidang: 'Statistik',
     status: 'Diterima',
   },
   {
     nama: 'Fajar Pratama',
     tanggal: '22/07/2025',
-    tema: 'Jaringan Komputer',
+    tema: 'Pemanfaatan cloud pada sistem',
     periode: '01/08/2025 - 01/09/2025',
-    posisi: 'Network Engineer',
+    bidang: 'Infrastruktur & Keamanan TIK',
     status: 'Diproses',
   },
   {
     nama: 'Intan Permata',
     tanggal: '05/08/2025',
-    tema: 'Sistem Informasi',
+    tema: 'Strategi konten publik',
     periode: '10/09/2025 - 10/10/2025',
-    posisi: 'Manajemen Sistem',
+    bidang: 'Pengelolaan Informasi & Komunikasi Publik',
     status: 'Ditolak',
   },
   {
     nama: 'Gilang Ramadhan',
     tanggal: '12/09/2025',
-    tema: 'Keamanan Siber',
+    tema: 'Manajemen sistem surat elektronik',
     periode: '15/10/2025 - 15/11/2025',
-    posisi: 'Cybersecurity',
+    bidang: 'Sekretariat',
     status: 'Diterima',
-  },
-  {
-    nama: 'Lisa Marlina',
-    tanggal: '20/10/2025',
-    tema: 'Data Mining',
-    periode: '01/11/2025 - 01/12/2025',
-    posisi: 'Penambangan Data',
-    status: 'Diterima',
-  },
-  {
-    nama: 'Tommy Sihotang',
-    tanggal: '30/10/2025',
-    tema: 'AI',
-    periode: '05/12/2025 - 05/01/2026',
-    posisi: 'AI Engineer',
-    status: 'Diproses',
-  },
-  {
-    nama: 'Putri Anggraini',
-    tanggal: '05/11/2025',
-    tema: 'Multimedia',
-    periode: '15/01/2026 - 15/02/2026',
-    posisi: 'Multimedia Editor',
-    status: 'Ditolak',
   },
 ];
 
 export default function ListUsulanMagang() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [bidangFilter, setBidangFilter] = useState('all');
   const [tahun, setTahun] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   const filteredData = usulanData.filter((item) => {
     const matchSearch =
-      item.tema.toLowerCase().includes(search.toLowerCase()) ||
-      item.posisi.toLowerCase().includes(search.toLowerCase());
+      item.nama.toLowerCase().includes(search.toLowerCase()) ||
+      item.tema.toLowerCase().includes(search.toLowerCase());
+    const matchesBidang =
+      bidangFilter === 'all' ||
+      item.bidang.toLowerCase() === bidangFilter.toLowerCase();
     const matchStatus = status ? item.status === status : true;
     const matchTahun = tahun ? item.periode.includes(tahun) : true;
-    return matchSearch && matchStatus && matchTahun;
+    return matchSearch && matchesBidang && matchStatus && matchTahun;
   });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -140,36 +120,62 @@ export default function ListUsulanMagang() {
 
         {/* Filter Input */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
+          {/* Search diperpanjang */}
           <input
             type="text"
-            placeholder="Cari posisi magang"
+            placeholder="Cari berdasarkan nama atau tema magang..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full md:w-1/3 px-4 py-2 border rounded shadow-sm"
+            className="flex-grow min-w-[20rem] px-4 py-2 border rounded shadow-sm"
           />
+
+          {/* Bidang Filter */}
+          <select
+            value={bidangFilter}
+            onChange={(e) => setBidangFilter(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg 
+                focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+          >
+            <option value="all">Semua Bidang</option>
+            <option value="Tata Kelola Informatika">
+              Tata Kelola Informatika
+            </option>
+            <option value="Pengelolaan Informasi & Komunikasi Publik">
+              Pengelolaan Informasi & Komunikasi Publik
+            </option>
+            <option value="Infrastruktur & Keamanan TIK">
+              Infrastruktur & Keamanan TIK
+            </option>
+            <option value="Sekretariat">Sekretariat</option>
+            <option value="Statistik">Statistik</option>
+          </select>
+
+          {/* Status diperkecil */}
           <select
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full md:w-1/3 px-4 py-2 border rounded shadow-sm"
+            className="w-auto min-w-[8rem] px-4 py-2 border rounded shadow-sm"
           >
             <option value="">Semua status</option>
             <option value="Diterima">Diterima</option>
             <option value="Diproses">Diproses</option>
             <option value="Ditolak">Ditolak</option>
           </select>
+
+          {/* Tahun tetap sedang */}
           <select
             value={tahun}
             onChange={(e) => {
               setTahun(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full md:w-1/3 px-4 py-2 border rounded shadow-sm"
+            className="w-auto min-w-[10rem] px-4 py-2 border rounded shadow-sm"
           >
             <option value="">Semua tahun</option>
             <option value="2026">2026</option>
@@ -186,7 +192,7 @@ export default function ListUsulanMagang() {
                 <th className="py-3 px-4 font-semibold">TANGGAL PENGAJUAN</th>
                 <th className="py-3 px-4 font-semibold">TEMA MAGANG</th>
                 <th className="py-3 px-4 font-semibold">PERIODE MAGANG</th>
-                <th className="py-3 px-4 font-semibold">POSISI MAGANG</th>
+                <th className="py-3 px-4 font-semibold">bidang MAGANG</th>
                 <th className="py-3 px-4 font-semibold">STATUS</th>
               </tr>
             </thead>
@@ -204,7 +210,7 @@ export default function ListUsulanMagang() {
                     <td className="py-3 px-4">{item.tanggal}</td>
                     <td className="py-3 px-4">{item.tema}</td>
                     <td className="py-3 px-4">{item.periode}</td>
-                    <td className="py-3 px-4">{item.posisi}</td>
+                    <td className="py-3 px-4">{item.bidang}</td>
                     <td className="py-3 px-4">{item.status}</td>
                   </tr>
                 ))

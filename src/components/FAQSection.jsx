@@ -24,10 +24,11 @@ const faqs = [
     answer:
       'Syarat untuk mengajukan magang di Diskominfo Sidoarjo adalah:\n' +
       '1. Surat Rekomendasi Magang Bakesbangpol Provinsi (Untuk Instansi di luar Sidoarjo) \n' +
-      '2. Surat Rekomendasi Magang Bakesbangpol Sidoarjo (Wajib) \n' +
-      '3. Proposal Magang (Wajib) \n' +
-      '4. KTP (Wajib) \n' +
-      '5. Curiculum Vitae (Wajib) \n' +
+      '2. Surat Rekomendasi Magang Bakesbangpol Sidoarjo \n' +
+      '3. Surat Pengantar Instansi \n' +
+      '4. Proposal Magang \n' +
+      '5. KTP \n' +
+      '6. Curiculum Vitae \n' +
       'Pastikan semua berkas telah lengkap dan dalam format PDF.',
   },
   {
