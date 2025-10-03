@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ClipboardList, FileText, Award, Star } from 'lucide-react';
 
 // ✅ Card & CardContent sederhana
@@ -11,26 +12,17 @@ function CardContent({ children, className = '' }) {
 }
 
 export default function PesertaDashboardHome() {
-  // Dummy data (nanti ganti dari backend)
-  const profile = {
-    nama: 'Muhammad Faiq Al Abiyyi',
-    nim: '21082010203',
-    telp: '081259123456',
-    email: 'faiqabiyyi@gmail.com',
-    instansi: 'UPN Veteran Jawa Timur',
-    jurusan: 'Sistem Informasi',
-    bidang: 'Tata Kelola Informatika',
-    periode: '01/03/2025 – 01/04/2025',
-  };
+  // State profil
+  const [profile, setProfile] = useState(null);
 
-  // Data dummy
-  const statusUsulanData = 'Ditolak';
-  const bidangUsulan = '';
-  const tanggalPengajuan = ''; // format YYYY-MM-DD
-  const laporanProgress = 65; // %
-  const laporanAkhir = 'Belum disubmit';
-  const ulasan = 'Belum dikirim';
-  const sertifikat = 'Belum terbit';
+  // State tambahan
+  const [statusUsulanData, setStatusUsulanData] = useState('');
+  const [bidangUsulan, setBidangUsulan] = useState('');
+  const [tanggalPengajuan, setTanggalPengajuan] = useState('');
+  const [laporanProgress, setLaporanProgress] = useState(0);
+  const [laporanAkhir, setLaporanAkhir] = useState('Belum disubmit');
+  const [ulasan, setUlasan] = useState('Belum dikirim');
+  const [sertifikat, setSertifikat] = useState('Belum terbit');
 
   // Format tanggal lokal (Indonesia)
   const formatTanggal = (tanggal) => {
@@ -41,6 +33,54 @@ export default function PesertaDashboardHome() {
       year: 'numeric',
     });
   };
+
+  // Fetch profil dari backend
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+
+        if (!userId || !token) {
+          console.error('User ID atau token tidak ditemukan');
+          return;
+        }
+
+        const res = await fetch(
+          `http://localhost:3000/api/peserta/profile/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const data = await res.json();
+        if (data.status) {
+          // isi profil dari backend
+          setProfile(data.data);
+
+          // contoh: ambil status usulan dll dari response (jika ada di backend)
+          setStatusUsulanData(data.data.statusUsulan || '');
+          setBidangUsulan(data.data.bidangUsulan || '');
+          setTanggalPengajuan(data.data.tanggalPengajuan || '');
+          setLaporanProgress(data.data.laporanProgress || 0);
+          setLaporanAkhir(data.data.laporanAkhir || 'Belum disubmit');
+          setUlasan(data.data.ulasan || 'Belum dikirim');
+          setSertifikat(data.data.sertifikat || 'Belum terbit');
+        } else {
+          console.error('Gagal ambil profil:', data.message);
+        }
+      } catch (err) {
+        console.error('Error fetch profile:', err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // Kalau data belum ada
+  if (!profile) {
+    return <div className="p-6 text-gray-600">Loading profil...</div>;
+  }
 
   // Pengecekan Status Usulan
   const statusUsulan =
@@ -56,15 +96,17 @@ export default function PesertaDashboardHome() {
           <CardContent>
             <p className="text-sm font-bold text-black">Nama Lengkap</p>
             <p className="text-base font-medium text-gray-800">
-              {profile.nama}
+              {profile.namaLengkap}
             </p>
 
             <p className="text-sm font-bold text-black mt-3">NIM / NIS</p>
-            <p className="text-base font-medium text-gray-800">{profile.nim}</p>
+            <p className="text-base font-medium text-gray-800">
+              {profile.nimNis}
+            </p>
 
             <p className="text-sm font-bold text-black mt-3">No Telepon</p>
             <p className="text-base font-medium text-gray-800">
-              {profile.telp}
+              {profile.noTelepon}
             </p>
 
             <p className="text-sm font-bold text-black mt-3">Email</p>
@@ -88,12 +130,16 @@ export default function PesertaDashboardHome() {
 
             <p className="text-sm font-bold text-black mt-3">Bidang Magang</p>
             <p className="text-base font-medium text-gray-800">
-              {profile.bidang}
+              {profile.bidang || '-'}
             </p>
 
             <p className="text-sm font-bold text-black mt-3">Periode Magang</p>
             <p className="text-base font-medium text-gray-800">
-              {profile.periode}
+              {profile.periode
+                ? `${formatTanggal(profile.periode.mulai)} – ${formatTanggal(
+                    profile.periode.selesai
+                  )}`
+                : '-'}
             </p>
           </CardContent>
         </Card>
@@ -118,7 +164,9 @@ export default function PesertaDashboardHome() {
                   : 'Belum memilih bidang'}
               </span>
               <span className="text-xs text-gray-400">
-                {tanggalPengajuan ? `Diajukan pada ${tanggalPengajuan}` : ''}
+                {tanggalPengajuan
+                  ? `Diajukan pada ${formatTanggal(tanggalPengajuan)}`
+                  : ''}
               </span>
             </div>
           </div>

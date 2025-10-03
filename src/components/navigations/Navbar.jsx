@@ -1,3 +1,4 @@
+// src/components/navigations/Navbar.jsx
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -14,6 +15,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [active, setActive] = useState('/');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -22,28 +24,38 @@ export default function Navbar() {
   const notifRef = useRef(null);
 
   useEffect(() => {
-    setActive(location.pathname + location.hash);
-    const loginStatus = localStorage.getItem('isLoggedIn') === 'true';
-    setIsLoggedIn(loginStatus);
-  }, [location]);
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setShowProfileMenu(false);
-      }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotifMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    if (!token || !userId) {
+      setIsLoggedIn(false);
+      return;
+    }
+
+    fetch(`http://localhost:3000/api/peserta/profile/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status) {
+          setUser(data.data);
+          setIsLoggedIn(true); // ✅ pastikan dianggap login
+        } else {
+          setIsLoggedIn(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Gagal fetch user navbar:', err);
+        setIsLoggedIn(false);
+      });
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setIsLoggedIn(false);
-    navigate('/login-admin');
+    setUser(null);
+    navigate('/login-peserta');
   };
 
   const handleScroll = (id) => {
@@ -92,7 +104,7 @@ export default function Navbar() {
       id: 1,
       tipe: 'usulan',
       judul: 'Usulan',
-      isi: 'Pendaftaran magang telah berhasil, silahkan tunggu dan pantau pengumumannya',
+      isi: 'Pendaftaran magang berhasil, silakan pantau pengumumannya.',
       tanggal: '2025-05-27',
       status: 'sukses',
     },
@@ -100,7 +112,7 @@ export default function Navbar() {
       id: 2,
       tipe: 'logbook',
       judul: 'Logbook',
-      isi: 'Pengisian logbook telah berhasil, jangan lupa untuk mengisi logbook selanjutnya ya!',
+      isi: 'Pengisian logbook berhasil, jangan lupa mengisi selanjutnya.',
       tanggal: '2025-07-13',
       status: 'sukses',
     },
@@ -108,7 +120,7 @@ export default function Navbar() {
       id: 3,
       tipe: 'autentikasi',
       judul: 'Login Gagal',
-      isi: 'Login gagal, pastikan email dan password sudah benar!',
+      isi: 'Login gagal, pastikan email dan password benar.',
       tanggal: '2025-07-16',
       status: 'gagal',
     },
@@ -128,6 +140,7 @@ export default function Navbar() {
           <img src="/LogoSimagang.svg" alt="SIMAGANG" className="h-12" />
         </Link>
 
+        {/* Mobile menu button + notif */}
         <div className="flex items-center gap-4 md:hidden">
           {isLoggedIn && (
             <div ref={notifRef} className="relative">
@@ -136,17 +149,17 @@ export default function Navbar() {
                 onClick={() => setShowNotifMenu(!showNotifMenu)}
               />
               {showNotifMenu && (
-                <div className="absolute right-0 mt-2 w-[350px] bg-white border rounded-lg shadow-lg z-50 overflow-hidden">
-                  <h3 className="text-center text-lg font-semibold py-4 border-b">
+                <div className="absolute right-0 mt-2 w-[300px] bg-white border rounded-lg shadow-lg z-50 overflow-hidden">
+                  <h3 className="text-center text-lg font-semibold py-3 border-b">
                     Notifikasi
                   </h3>
-                  <ul className="divide-y divide-gray-200 max-h-[480px] overflow-y-auto">
+                  <ul className="divide-y divide-gray-200 max-h-[400px] overflow-y-auto">
                     {notifikasi.map((notif) => (
                       <li
                         key={notif.id}
-                        className="flex gap-4 px-5 py-4 text-sm items-start"
+                        className="flex gap-3 px-4 py-3 text-sm items-start"
                       >
-                        <div className="mt-1 text-xl">
+                        <div className="mt-1 text-lg">
                           {notif.tipe === 'usulan' && (
                             <FaEnvelope className="text-[#006DA6]" />
                           )}
@@ -164,19 +177,17 @@ export default function Navbar() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <div className="pr-2">
-                              <p className="font-semibold text-base">
-                                {notif.judul}
-                              </p>
-                              <p className="text-gray-700 text-sm mt-1 leading-snug">
-                                {notif.isi}
-                              </p>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
+                          <div className="flex justify-between">
+                            <p className="font-semibold text-base">
+                              {notif.judul}
+                            </p>
+                            <p className="text-xs text-gray-500">
                               {formatTanggalIndonesia(notif.tanggal)}
                             </p>
                           </div>
+                          <p className="text-gray-700 text-sm mt-1 leading-snug">
+                            {notif.isi}
+                          </p>
                         </div>
                       </li>
                     ))}
@@ -194,6 +205,7 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Menu tengah (desktop) */}
       <ul className="hidden md:flex gap-8 text-sm text-[#002942] font-medium">
         {[
           ['/', 'Beranda'],
@@ -215,11 +227,11 @@ export default function Navbar() {
         ))}
       </ul>
 
-      {/* Login/Profile */}
+      {/* Login/Profile (desktop) */}
       <div className="hidden md:flex">
         {isLoggedIn ? (
           <div className="flex items-center gap-6 relative">
-            {/* Notifikasi Desktop */}
+            {/* Notifikasi */}
             <div ref={notifRef} className="relative">
               <FaBell
                 className="text-[#002942] text-xl cursor-pointer hover:text-[#006DA6]"
@@ -254,8 +266,8 @@ export default function Navbar() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <div className="pr-2">
+                          <div className="flex justify-between">
+                            <div>
                               <p className="font-semibold text-base">
                                 {notif.judul}
                               </p>
@@ -263,7 +275,7 @@ export default function Navbar() {
                                 {notif.isi}
                               </p>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500">
                               {formatTanggalIndonesia(notif.tanggal)}
                             </p>
                           </div>
@@ -282,12 +294,12 @@ export default function Navbar() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
               >
                 <img
-                  src="public/FOTO KTM.jpg"
+                  src={user?.pasFoto || '/default-profile.png'}
                   alt="Foto Profil"
                   className="w-10 h-10 rounded-full object-cover border-2 border-white"
                 />
                 <span className="text-sm text-white font-medium truncate max-w-[120px]">
-                  Faiq Abiyyi
+                  {user?.namaLengkap || user?.email || 'User'}
                 </span>
                 <svg
                   className="w-3 h-3 text-white ml-1"
@@ -354,71 +366,6 @@ export default function Navbar() {
           </div>
         )}
       </div>
-
-      {/* Mobile Menu */}
-      {showMobileMenu && isLoggedIn && (
-        <div className="absolute top-[100px] left-0 right-0 bg-white border-t px-6 py-4 z-40 md:hidden">
-          <ul className="space-y-4 text-sm text-[#002942]">
-            <li>
-              <Link
-                to="/"
-                onClick={() => {
-                  setShowMobileMenu(false);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                Beranda
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={() => {
-                  handleScroll('kuota-magang');
-                  setShowMobileMenu(false);
-                }}
-              >
-                Informasi Lowongan
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => {
-                  handleScroll('tata-cara');
-                  setShowMobileMenu(false);
-                }}
-              >
-                Cara Mendaftar
-              </button>
-            </li>
-            <li>
-              <Link to="/profile" onClick={() => setShowMobileMenu(false)}>
-                Profil
-              </Link>
-            </li>
-            <li>
-              <Link to="/dashboard" onClick={() => setShowMobileMenu(false)}>
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link to="/usulan" onClick={() => setShowMobileMenu(false)}>
-                Usulan
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setShowMobileMenu(false);
-                }}
-                className="text-red-600"
-              >
-                Keluar
-              </button>
-            </li>
-          </ul>
-        </div>
-      )}
     </nav>
   );
 }

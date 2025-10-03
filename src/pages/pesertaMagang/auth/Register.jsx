@@ -8,13 +8,13 @@ export default function Register() {
     noTelepon: '',
     email: '',
     nik: '',
-    nim: '',
+    nimNis: '',
     instansi: '',
     jurusan: '',
     alamat: '',
     password: '',
     confirmPassword: '',
-    foto: null,
+    pasFoto: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -38,8 +38,8 @@ export default function Register() {
     }
 
     // Validasi Tanggal Lahir
-    if (!formData.tanggalLahir) {
-      newErrors.tanggalLahir = 'Tanggal lahir wajib diisi.';
+    if (!formData.tglLahir) {
+      newErrors.tglLahir = 'Tanggal lahir wajib diisi.';
     }
 
     // Validasi NIK
@@ -61,11 +61,30 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      alert('Form valid, lanjutkan submit.');
-      // Lanjut submit ke server di sini
+      const data = new FormData();
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key]);
+      });
+
+      try {
+        const res = await fetch('http://localhost:3000/api/auth/register', {
+          method: 'POST',
+          body: data, // ❗ penting: jangan pakai JSON.stringify
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+          alert(result.message);
+        } else {
+          alert(result.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Terjadi kesalahan koneksi');
+      }
     }
   };
 
@@ -102,25 +121,23 @@ export default function Register() {
 
             <div>
               <label
-                htmlFor="tanggalLahir"
+                htmlFor="tglLahir"
                 className="block text-sm font-medium text-gray-700"
               >
                 Tanggal Lahir
               </label>
               <input
                 type="date"
-                id="tanggalLahir"
-                value={formData.tanggalLahir}
+                id="tglLahir"
+                value={formData.tglLahir}
                 onChange={handleChange}
                 max={today} // ❗ Membatasi hanya hingga hari ini
                 className={`mt-1 w-full px-4 py-2 border ${
-                  errors.tanggalLahir ? 'border-red-500' : 'border-gray-300'
+                  errors.tglLahir ? 'border-red-500' : 'border-gray-300'
                 } rounded-md focus:outline-none focus:ring-2 focus:ring-[#006DA6]`}
               />
-              {errors.tanggalLahir && (
-                <p className="text-sm text-red-500 mt-1">
-                  {errors.tanggalLahir}
-                </p>
+              {errors.tglLahir && (
+                <p className="text-sm text-red-500 mt-1">{errors.tglLahir}</p>
               )}
             </div>
 
@@ -148,8 +165,8 @@ export default function Register() {
             />
             <Input
               label="NIM / NIS"
-              id="nim"
-              value={formData.nim}
+              id="nimNis"
+              value={formData.nimNis}
               onChange={handleChange}
             />
             <Input
@@ -237,14 +254,14 @@ export default function Register() {
             {/* Foto */}
             <div>
               <label
-                htmlFor="foto"
+                htmlFor="pasFoto"
                 className="block text-sm font-medium text-gray-700"
               >
                 Foto
               </label>
               <input
                 type="file"
-                id="foto"
+                id="pasFoto"
                 accept=".jpg,.jpeg,.png"
                 onChange={handleChange}
                 className="mt-1 block w-full text-sm border border-gray-300 rounded-md px-4 py-2 bg-white"

@@ -3,16 +3,53 @@ import { Link, useNavigate } from 'react-router-dom';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
 
-    // Simulasi login berhasil
-    localStorage.setItem('isLoggedIn', 'true');
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Redirect ke halaman utama
-    navigate('/');
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || 'Login gagal, coba lagi.');
+        setLoading(false);
+        return;
+      }
+
+      // Simpan token JWT & user ke localStorage
+      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('userId', data.data.user.id);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+
+      // Cek role
+      if (data.data.user.role === 'peserta_magang') {
+        navigate('/'); // ✅ arahkan ke dashboard peserta
+      } else if (data.data.user.role === 'admin') {
+        navigate('/dashboard-admin'); // ✅ arahkan ke dashboard admin
+      } else {
+        navigate('/'); // fallback
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Terjadi kesalahan server.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,6 +75,8 @@ export default function Login() {
           </p>
 
           <form className="space-y-5" onSubmit={handleLogin}>
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+
             <div>
               <label
                 htmlFor="email"
@@ -48,9 +87,11 @@ export default function Login() {
               <input
                 type="email"
                 id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Masukkan email"
-                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004A72]"
                 required
+                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004A72]"
               />
             </div>
 
@@ -65,9 +106,11 @@ export default function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="********"
-                  className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004A72]"
                   required
+                  className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004A72]"
                 />
                 <button
                   type="button"
@@ -94,9 +137,10 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full bg-[#004A72] text-white py-2 rounded-md hover:bg-[#005b8c] transition"
+              disabled={loading}
+              className="w-full bg-[#004A72] text-white py-2 rounded-md hover:bg-[#005b8c] transition disabled:opacity-60"
             >
-              Masuk
+              {loading ? 'Memproses...' : 'Masuk'}
             </button>
           </form>
 

@@ -1,68 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import autoTable from 'jspdf-autotable';
 
 const ITEMS_PER_PAGE_PENDING = 5;
+const ITEMS_PER_PAGE_APPROVED = 5;
 
 export default function ManageVerifAkun() {
   // === State Utama ===
-  const [pesertaMagang, setPesertaMagang] = useState([
-    {
-      id: 1,
-      nik: '3175091501990001',
-      nim: '0101234567',
-      nama: 'Ahmad Prabowo Subianto',
-      email: 'ahmad.prabowo@email.com',
-      phone: '081234567890',
-      alamat: 'Jl. Merdeka No.10, Jakarta',
-      instansi: 'Universitas Jimbaran',
-      jurusan: 'Sistem Informasi',
-      bidang: '',
-      status: 'Pending',
-      createdAt: '2024-01-12',
-      tanggalMulai: '',
-      tanggalSelesai: '',
-      progress: 0,
-      foto: 'https://randomuser.me/api/portraits/men/32.jpg',
-    },
-    {
-      id: 2,
-      nik: '3374092202000002',
-      nim: '0202345678',
-      nama: 'Siti Aminah',
-      email: 'siti.aminah@email.com',
-      phone: '081234567891',
-      alamat: 'Jl. Kaliurang Km.7, Yogyakarta',
-      instansi: 'Universitas Gadjah Mada',
-      jurusan: 'Manajemen',
-      bidang: '',
-      status: 'Pending',
-      createdAt: '2024-02-02',
-      tanggalMulai: '',
-      tanggalSelesai: '',
-      progress: 0,
-      foto: 'https://randomuser.me/api/portraits/women/44.jpg',
-    },
-    {
-      id: 3,
-      nik: '3374011802000005',
-      nim: '0505678901',
-      nama: 'Andi Nugroho',
-      email: 'andi.nugroho@email.com',
-      phone: '081234567894',
-      alamat: 'Jl. Siliwangi No.12, Semarang',
-      instansi: 'Universitas Diponegoro',
-      jurusan: 'Hukum',
-      bidang: '',
-      status: 'Pending',
-      createdAt: '2024-01-25',
-      tanggalMulai: '',
-      tanggalSelesai: '',
-      progress: 0,
-      foto: 'https://randomuser.me/api/portraits/men/51.jpg',
-    },
-  ]);
+  const [pendingPeserta, setPendingPeserta] = useState([]);
+  const [approvedPeserta, setApprovedPeserta] = useState([]);
 
   // === State Filter & Modal ===
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,27 +19,130 @@ export default function ManageVerifAkun() {
   const [selectedPeserta, setSelectedPeserta] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // === Pagination Setup ===
-  const ITEMS_PER_PAGE_PENDING = 5;
-  const ITEMS_PER_PAGE_APPROVED = 5;
+  // === Fetch Data ===
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Token tidak ada, silakan login ulang');
 
-  const [currentPendingPage, setCurrentPendingPage] = useState(1);
-  const [currentApprovedPage, setCurrentApprovedPage] = useState(1);
+      // Jalankan keduanya sekaligus dengan Promise.all
+      const [pendingRes, historyRes] = await Promise.all([
+        fetch('http://localhost:3000/api/admin/peserta-magang/pending', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('http://localhost:3000/api/admin/peserta-magang/history', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-  // === Data Turunan ===
-  const pendingPeserta = pesertaMagang.filter((p) => p.status === 'Pending');
-  const approvedPeserta = pesertaMagang.filter(
-    (p) => p.status === 'Diterima' || p.status === 'Ditolak'
-  );
+      // Ambil data JSON
+      const pending = await pendingRes.json();
+      const history = await historyRes.json();
+
+      if (!pendingRes.ok)
+        throw new Error(pending.message || 'Gagal ambil pending');
+      if (!historyRes.ok)
+        throw new Error(history.message || 'Gagal ambil history');
+
+      // Set state
+      setPendingPeserta(pending.data || []); // tergantung response backend
+      setApprovedPeserta(history.data || []); // tergantung response backend
+    } catch (err) {
+      console.error('Gagal fetch data:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Terima Peserta
+  const handleAccPeserta = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `http://localhost:3000/api/admin/peserta-magang/${id}/approve`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result = await res.json();
+
+      if (res.ok) {
+        alert(result.message);
+        setPesertaMagang((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? { ...p, status: 'Diterima', updatedAt: new Date() }
+              : p
+          )
+        );
+      } else {
+        alert(result.message || 'Gagal approve peserta');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Terjadi kesalahan koneksi');
+    }
+  };
+
+  // Tolak Peserta
+  const handleTolakPeserta = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `http://localhost:3000/api/admin/peserta-magang/${id}/reject`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result = await res.json();
+
+      if (res.ok) {
+        alert(result.message);
+        setPesertaMagang((prev) =>
+          prev.map((p) =>
+            p.id === id ? { ...p, status: 'Ditolak', updatedAt: new Date() } : p
+          )
+        );
+      } else {
+        alert(result.message || 'Gagal menolak peserta');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Terjadi kesalahan koneksi');
+    }
+  };
+
+  // === Modal Handler ===
+  const handleOpenDetail = (peserta) => {
+    setSelectedPeserta(peserta);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setIsDetailModalOpen(false);
+    setSelectedPeserta(null);
+  };
 
   // === Filter Approved ===
   const filteredApprovedPeserta = approvedPeserta.filter((p) => {
     const term = searchTerm.toLowerCase();
 
     const matchUmum =
-      p.nama.toLowerCase().includes(term) ||
-      p.email.toLowerCase().includes(term) ||
-      p.nim.toLowerCase().includes(term) ||
+      p.namaLengkap.toLowerCase().includes(term) ||
+      p.peserta.user.email.toLowerCase().includes(term) ||
+      p.nimNis.toLowerCase().includes(term) ||
       p.nik.toLowerCase().includes(term) ||
       p.instansi.toLowerCase().includes(term) ||
       p.jurusan.toLowerCase().includes(term) ||
@@ -110,6 +160,17 @@ export default function ManageVerifAkun() {
     return matchUmum && matchTanggal && matchStatus;
   });
 
+  // === Pagination ===
+  const [currentPendingPage, setCurrentPendingPage] = useState(1);
+  const [currentApprovedPage, setCurrentApprovedPage] = useState(1);
+
+  const totalPendingPages = Math.ceil(
+    pendingPeserta.length / ITEMS_PER_PAGE_PENDING
+  );
+  const totalApprovedPages = Math.ceil(
+    filteredApprovedPeserta.length / ITEMS_PER_PAGE_APPROVED
+  );
+
   // === Pagination Helper ===
   const paginate = (data, page, itemsPerPage) =>
     data.slice((page - 1) * itemsPerPage, page * itemsPerPage);
@@ -126,117 +187,44 @@ export default function ManageVerifAkun() {
     ITEMS_PER_PAGE_APPROVED
   );
 
-  const totalPendingPages = Math.ceil(
-    pendingPeserta.length / ITEMS_PER_PAGE_PENDING
-  );
-  const totalApprovedPages = Math.ceil(
-    filteredApprovedPeserta.length / ITEMS_PER_PAGE_APPROVED
-  );
-
-  // === Aksi ACC / Tolak ===
-  const handleAccPeserta = (id) => {
-    setPesertaMagang((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, status: 'Diterima', updatedAt: new Date() } : p
-      )
-    );
-  };
-
-  const handleTolakPeserta = (id) => {
-    setPesertaMagang((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, status: 'Ditolak', updatedAt: new Date() } : p
-      )
-    );
-  };
-
-  // === Modal Handler ===
-  const handleOpenDetail = (peserta) => {
-    setSelectedPeserta(peserta);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetail = () => {
-    setIsDetailModalOpen(false);
-    setSelectedPeserta(null);
-  };
-
-  // === Export PDF ===
+  // === Export PDF / Excel ===
   const handleExportPDFHistory = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(13);
     doc.text('History Persetujuan Akun Peserta Magang', 14, 15);
-
     const tableColumn = [
       'Nama',
       'Email',
       'NIM/NIS',
-      'Telepon',
       'Instansi',
       'Jurusan',
-      'Alamat',
       'Tanggal',
       'Status',
     ];
-
     const tableRows = filteredApprovedPeserta.map((p) => [
       p.nama,
       p.email,
       p.nim,
-      p.phone,
       p.instansi,
       p.jurusan,
-      p.alamat.length > 35 ? p.alamat.slice(0, 32) + '...' : p.alamat,
       new Date(p.createdAt).toLocaleDateString('id-ID'),
       p.status,
     ]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 25,
-      styles: {
-        fontSize: 8,
-        cellPadding: 2.5,
-        overflow: 'linebreak',
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: [255, 255, 255],
-        halign: 'center',
-      },
-      columnStyles: {
-        0: { cellWidth: 30 }, // Nama
-        1: { cellWidth: 40 }, // Email
-        2: { cellWidth: 25 }, // NIM/NIS
-        3: { cellWidth: 25 }, // Telepon
-        4: { cellWidth: 35 }, // Instansi
-        5: { cellWidth: 30 }, // Jurusan
-        6: { cellWidth: 40 }, // Alamat
-        7: { cellWidth: 20 }, // Tanggal
-        8: { cellWidth: 20 }, // Status
-      },
-      margin: { top: 20 },
-    });
-
+    autoTable(doc, { head: [tableColumn], body: tableRows, startY: 25 });
     doc.save('RiwayatPersetujuanAkun.pdf');
   };
 
-  // === Export Excel ===
   const handleExportExcelHistory = () => {
     const exportData = filteredApprovedPeserta.map((p) => ({
       Nama: p.nama,
       Email: p.email,
       Instansi: p.instansi,
-      Bidang: p.bidang,
-      Progres: `${p.progress}%`,
+      Jurusan: p.jurusan,
       Status: p.status,
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'PesertaMagang');
-
     XLSX.writeFile(workbook, 'RiwayatPersetujuanAkun.xlsx');
   };
 
@@ -261,8 +249,8 @@ export default function ManageVerifAkun() {
           <tbody>
             {paginatedPendingPeserta.map((peserta) => (
               <tr key={peserta.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3">{peserta.nama}</td>
-                <td className="px-4 py-3">{peserta.email}</td>
+                <td className="px-4 py-3">{peserta.namaLengkap}</td>
+                <td className="px-4 py-3">{peserta.user.email}</td>
                 <td className="px-4 py-3">{peserta.instansi}</td>
                 <td className="px-4 py-3">{peserta.jurusan}</td>
                 <td className="px-4 py-3">
@@ -312,12 +300,12 @@ export default function ManageVerifAkun() {
               <span className="font-medium">
                 {Math.min(
                   currentPendingPage * ITEMS_PER_PAGE_PENDING,
-                  filteredPendingPeserta.length
+                  paginatedPendingPeserta.length
                 )}
               </span>{' '}
               dari{' '}
               <span className="font-medium">
-                {filteredPendingPeserta.length}
+                {paginatedPendingPeserta.length}
               </span>{' '}
               hasil
             </p>
@@ -366,83 +354,93 @@ export default function ManageVerifAkun() {
           onClick={handleCloseDetail}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]"
+            className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Foto Peserta */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-6">
               <img
-                src={selectedPeserta.foto || '/default-user.png'}
+                src={selectedPeserta.pasFoto || '/default-user.png'}
                 alt="Foto Peserta"
-                className="w-28 h-28 rounded-full object-cover border-2 border-gray-300"
+                className="w-36 h-36 rounded-full object-cover border-2 border-gray-300"
               />
             </div>
 
-            <h2 className="text-xl font-semibold mb-4 text-center text-[#006DA6]">
+            <h2 className="text-3xl font-bold mb-8 text-center text-[#006DA6]">
               Detail Peserta Magang
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Nama Lengkap</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.nama}
+            {/* Grid data */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-base">
+              <div className="border rounded p-3">
+                <label className="text-gray-600 text-sm">Nama Lengkap</label>
+                <p className="text-gray-800 font-semibold">
+                  {selectedPeserta.namaLengkap}
                 </p>
               </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Email</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.email}
+
+              <div className="border rounded p-3 sm:col-span-1">
+                <label className="text-gray-600 text-sm">Email</label>
+                <p className="text-gray-800 font-semibold break-all">
+                  {selectedPeserta.user.email}
                 </p>
               </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">NIM/NIS</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.nim}
+
+              <div className="border rounded p-3">
+                <label className="text-gray-600 text-sm">NIM/NIS</label>
+                <p className="text-gray-800 font-semibold">
+                  {selectedPeserta.nimNis}
                 </p>
               </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">NIK</label>
-                <p className="text-gray-800 font-medium">
+
+              <div className="border rounded p-3">
+                <label className="text-gray-600 text-sm">NIK</label>
+                <p className="text-gray-800 font-semibold">
                   {selectedPeserta.nik}
                 </p>
               </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">No Telepon</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.phone}
+
+              <div className="border rounded p-3">
+                <label className="text-gray-600 text-sm">No Telepon</label>
+                <p className="text-gray-800 font-semibold">
+                  {selectedPeserta.noTelepon}
                 </p>
               </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Instansi</label>
-                <p className="text-gray-800 font-medium">
+
+              <div className="border rounded p-3">
+                <label className="text-gray-600 text-sm">Instansi</label>
+                <p className="text-gray-800 font-semibold">
                   {selectedPeserta.instansi}
                 </p>
               </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Jurusan</label>
-                <p className="text-gray-800 font-medium">
+
+              <div className="border rounded p-3">
+                <label className="text-gray-600 text-sm">Jurusan</label>
+                <p className="text-gray-800 font-semibold">
                   {selectedPeserta.jurusan}
                 </p>
               </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Alamat</label>
-                <p className="text-gray-800 font-medium">
+
+              <div className="border rounded p-3 sm:col-span-2">
+                <label className="text-gray-600 text-sm">Alamat</label>
+                <p className="text-gray-800 font-semibold">
                   {selectedPeserta.alamat}
                 </p>
               </div>
-              <div className="border rounded p-2 sm:col-span-2">
-                <label className="text-gray-600 text-xs">Tanggal Daftar</label>
-                <p className="text-gray-800 font-medium">
+
+              <div className="border rounded p-3 sm:col-span-2">
+                <label className="text-gray-600 text-sm">Tanggal Daftar</label>
+                <p className="text-gray-800 font-semibold">
                   {new Date(selectedPeserta.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 text-right">
+            {/* Tombol */}
+            <div className="mt-8 text-right">
               <button
                 onClick={handleCloseDetail}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                className="bg-gray-200 text-gray-700 px-6 py-2.5 rounded hover:bg-gray-300 transition text-base font-medium"
               >
                 Tutup
               </button>
@@ -528,10 +526,10 @@ export default function ManageVerifAkun() {
           <tbody>
             {paginatedApprovedPeserta.map((peserta) => (
               <tr key={peserta.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3">{peserta.nama}</td>
-                <td className="px-4 py-3">{peserta.email}</td>
-                <td className="px-4 py-3">{peserta.nim}</td>
-                <td className="px-4 py-3">{peserta.phone}</td>
+                <td className="px-4 py-3">{peserta.namaLengkap}</td>
+                <td className="px-4 py-3">{peserta.user.email}</td>
+                <td className="px-4 py-3">{peserta.nimNis}</td>
+                <td className="px-4 py-3">{peserta.noTelepon}</td>
                 <td className="px-4 py-3">{peserta.nik}</td>
                 <td className="px-4 py-3">{peserta.instansi}</td>
                 <td className="px-4 py-3">{peserta.jurusan}</td>

@@ -1,21 +1,21 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera } from 'lucide-react';
 import Navbar from '../../../src/components/navigations/Navbar';
 
 export default function Profile() {
   const [formData, setFormData] = useState({
-    namaLengkap: 'Muhammad Faiq Al Abiyyi',
-    nim: '21082010203',
-    asalInstansi: 'Universitas Pembangunan Veteran Jawa Timur',
-    jurusan: 'Sistem Informasi',
-    tanggalLahir: '25 Januari 2003',
-    nomorTelepon: '081259702550',
-    email: '21082010203@student.upnjatim.ac.id',
-    nomorIndukKependudukan: '3515101234567890',
-    alamat: 'Desa Jimbaran Kulon RT04/RW01, Wonoayu, Kab. Sidoarjo, Jawa Timur',
+    namaLengkap: '',
+    nimNis: '',
+    instansi: '',
+    jurusan: '',
+    tglLahir: '',
+    noTelepon: '',
+    email: '',
+    nik: '',
+    alamat: '',
   });
 
-  const [profileImage, setProfileImage] = useState('/FOTO KTM.jpg');
+  const [profileImage, setProfileImage] = useState('/default-profile.png');
   const fileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
@@ -41,6 +41,52 @@ export default function Profile() {
     e.preventDefault();
     console.log('Form submitted:', formData);
   };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+
+        if (!userId) {
+          console.error('User ID tidak ditemukan di localStorage');
+          return;
+        }
+
+        const res = await fetch(
+          `http://localhost:3000/api/peserta/profile/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const data = await res.json();
+
+        if (data.status) {
+          setFormData({
+            namaLengkap: data.data.namaLengkap || '',
+            nimNis: data.data.nimNis || '',
+            instansi: data.data.instansi || '',
+            jurusan: data.data.jurusan || '',
+            tglLahir: data.data.tglLahir
+              ? new Date(data.data.tglLahir).toISOString().split('T')[0] // ✅ format untuk input date
+              : '',
+            noTelepon: data.data.noTelepon || '',
+            email: data.data.email || '',
+            nik: data.data.nik || '',
+            alamat: data.data.alamat || '',
+          });
+          setProfileImage(data.data.foto || '/default-profile.png');
+        } else {
+          console.error('Gagal ambil data profil:', data.message);
+        }
+      } catch (err) {
+        console.error('Gagal fetch profile:', err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <>
@@ -85,18 +131,13 @@ export default function Profile() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 ['namaLengkap', 'Nama Lengkap', 'text'],
-                ['tanggalLahir', 'Tanggal Lahir', 'text', true],
-                ['nim', 'NIM / NIS', 'text'],
-                ['nomorTelepon', 'Nomor Telepon', 'tel'],
-                ['asalInstansi', 'Asal Instansi', 'text'],
+                ['tglLahir', 'Tanggal Lahir', 'date', true],
+                ['nimNis', 'NIM / NIS', 'text'],
+                ['noTelepon', 'Nomor Telepon', 'tel'],
+                ['instansi', 'Asal Instansi', 'text'],
                 ['email', 'Email', 'email', true],
                 ['jurusan', 'Jurusan', 'text'],
-                [
-                  'nomorIndukKependudukan',
-                  'Nomor Induk Kependudukan',
-                  'text',
-                  true,
-                ],
+                ['nik', 'Nomor Induk Kependudukan', 'text', true],
               ].map(([id, label, type, readOnly]) => (
                 <div key={id}>
                   <label
@@ -109,7 +150,7 @@ export default function Profile() {
                     type={type}
                     id={id}
                     name={id}
-                    value={formData[id]}
+                    value={formData[id] || ''}
                     onChange={handleInputChange}
                     readOnly={readOnly}
                     className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none ${
@@ -131,7 +172,7 @@ export default function Profile() {
                 <textarea
                   id="alamat"
                   name="alamat"
-                  value={formData.alamat}
+                  value={formData.alamat || ''}
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent resize-none"

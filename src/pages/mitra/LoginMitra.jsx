@@ -6,17 +6,48 @@ export default function LoginMitra() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
 
-    // Simulasi login admin (tanpa fetch ke backend)
-    if (email === 'admin@simagang.com' && password === 'admin123') {
-      localStorage.setItem('isLoggedIn', 'true');
-      navigate('/dashboard-admin');
-    } else {
-      setError('Email atau password salah.');
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || 'Login gagal, coba lagi.');
+        setLoading(false);
+        return;
+      }
+
+      // Simpan token JWT di localStorage
+      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+
+      // Redirect sesuai role user
+      if (data.data.user.role === 'admin') {
+        navigate('/dashboard-admin');
+      } else if (data.data.user.role === 'sub_koordinator_bidang') {
+        navigate('/dashboard-subkoor-bidang');
+      } else {
+        navigate('/'); // fallback
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Terjadi kesalahan server.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -52,6 +83,7 @@ export default function LoginMitra() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Masukkan email"
+                required
                 className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004A72]"
               />
             </div>
@@ -70,6 +102,7 @@ export default function LoginMitra() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="********"
+                  required
                   className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004A72]"
                 />
                 <button
@@ -97,9 +130,10 @@ export default function LoginMitra() {
 
             <button
               type="submit"
-              className="w-full bg-[#004A72] text-white py-2 rounded-md hover:bg-[#005b8c] transition"
+              disabled={loading}
+              className="w-full bg-[#004A72] text-white py-2 rounded-md hover:bg-[#005b8c] transition disabled:opacity-60"
             >
-              Masuk
+              {loading ? 'Memproses...' : 'Masuk'}
             </button>
           </form>
         </div>
