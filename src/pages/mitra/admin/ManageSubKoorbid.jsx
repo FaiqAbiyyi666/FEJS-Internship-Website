@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// ManageSubKoorbid.jsx
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Edit, Plus } from 'lucide-react';
 import { FaTrash } from 'react-icons/fa';
 
@@ -13,183 +14,241 @@ export default function ManagementSubKoorbid() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [namaError, setNamaError] = useState('');
+  const [subKoorList, setSubKoorList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [bidangList, setBidangList] = useState([]);
+  const [subKoors, setSubKoors] = useState([]);
 
-  const [subKoorList, setSubKoorList] = useState([
-    {
-      id: 1,
-      nama: 'Dian Prasetyo',
-      email: 'dian.prasetyo@simagang.com',
-      bidang: 'Tata Kelola Informatika',
-      status: 'Aktif',
-    },
-    {
-      id: 2,
-      nama: 'Yuliana Rahmawati',
-      email: 'yuliana.rahma@simagang.com',
-      bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
-      status: 'Aktif',
-    },
-    {
-      id: 3,
-      nama: 'Agus Setiawan',
-      email: 'agus.setiawan@simagang.com',
-      bidang: 'Sekretariat',
-      status: 'Aktif',
-    },
-    {
-      id: 4,
-      nama: 'Nina Marlina',
-      email: 'nina.marlina@simagang.com',
-      bidang: 'Statistik',
-      status: 'Aktif',
-    },
-    {
-      id: 5,
-      nama: 'Bambang Susilo',
-      email: 'bambang.susilo@simagang.com',
-      bidang: 'Infrastruktur & Keamanan TIK',
-      status: 'Aktif',
-    },
-  ]);
-
-  // === State untuk modal edit & create ===
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    nama: '',
+    email: '',
+    bidangId: '',
+    password: '',
+  });
   const [createFormData, setCreateFormData] = useState({
     nama: '',
     email: '',
     password: '',
-    bidang: '',
+    bidangId: '',
   });
 
-  // === Edit Modal ===
-  const openModal = (subKoor) => {
-    setSelectedSubKoor(subKoor);
-    setFormData(subKoor);
-    setIsModalOpen(true);
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    fetchSubKoorList();
+    fetchBidangList();
+  }, []);
+
+  // Fetch semua sub koordinator
+  const fetchSubKoorList = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        'http://localhost:3000/api/admin/subkoordinator',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const json = await res.json();
+      if (json.status) {
+        // API diharapkan mengembalikan array berisi { id, nama, email, bidang: 'Nama Bidang' }
+        setSubKoorList(json.data);
+      } else {
+        console.error(json.message || 'Gagal ambil data');
+      }
+    } catch (err) {
+      console.error('Gagal fetch subkoordinator:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Ambil daftar bidang (untuk dropdown)
+  const fetchBidangList = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/admin/bidang', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.status) {
+        // API bidang diharapkan mengembalikan array { id, nama }
+        setBidangList(json.data);
+      } else {
+        console.error('Gagal ambil bidang:', json.message);
+      }
+    } catch (err) {
+      console.error('Gagal fetch bidang:', err);
+    }
+  };
+
+  // Ambil detail sub koordinator by sub.id
+  const openModal = async (subKoor) => {
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/admin/subkoordinator/${subKoor.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (data.status) {
+        setSelectedSubKoor(data.data); // data.data contains id, userId, nama, email, bidang:{id,nama}
+        setFormData({
+          nama: data.data.nama || '',
+          email: data.data.email || '',
+          bidangId: data.data.bidang?.id || '',
+          password: '',
+        });
+        setIsModalOpen(true);
+      } else {
+        alert(data.message || 'Gagal ambil detail sub koordinator');
+      }
+    } catch (err) {
+      console.error('Gagal ambil data sub koor:', err);
+    }
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedSubKoor(null);
+    setFormData({ nama: '', email: '', bidangId: '', password: '' });
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
-  const handleSave = () => {
-    // ambil semua email & nama kecuali yang sedang diedit
-    const existingEmails = subKoorList
-      .filter((item) => item.id !== selectedSubKoor.id)
-      .map((item) => item.email.toLowerCase());
+  // Simpan (PUT) perubahan — menggunakan sub.id di URL
+  const handleSave = async () => {
+    if (!selectedSubKoor) return;
 
-    const existingNames = subKoorList
-      .filter((item) => item.id !== selectedSubKoor.id)
-      .map((item) => item.nama.toLowerCase());
-
-    // validasi email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      alert('Format email tidak valid');
-      return;
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/admin/subkoordinator/${selectedSubKoor.id}`, // pakai sub.id (bukan userId)
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            nama: formData.nama,
+            email: formData.email,
+            bidangId: formData.bidangId,
+            password: formData.password || undefined,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.status) {
+        // Update list: cari item.id === data.data.id
+        setSubKoorList((prev) =>
+          prev.map((item) =>
+            item.id === data.data.id
+              ? {
+                  ...item,
+                  nama: data.data.nama,
+                  email: data.data.email,
+                  bidang: data.data.bidang?.nama || item.bidang,
+                }
+              : item
+          )
+        );
+        closeModal();
+        alert('Data berhasil diperbarui');
+      } else {
+        alert(data.message || 'Gagal update');
+      }
+    } catch (err) {
+      console.error('Gagal update sub koor:', err);
+      alert('Terjadi kesalahan saat mengupdate');
     }
-    if (existingEmails.includes(formData.email.toLowerCase())) {
-      alert('Email sudah digunakan');
-      return;
-    }
-
-    // validasi nama
-    if (!formData.nama.trim()) {
-      alert('Nama wajib diisi');
-      return;
-    }
-    if (existingNames.includes(formData.nama.toLowerCase())) {
-      alert('Nama sudah digunakan');
-      return;
-    }
-
-    // kalau lolos validasi, update data
-    setSubKoorList((prev) =>
-      prev.map((item) =>
-        item.id === selectedSubKoor.id ? { ...item, ...formData } : item
-      )
-    );
-    closeModal();
   };
 
-  // === Create modal ===
-  const openCreateModal = () => {
-    setIsCreateModalOpen(true);
+  // Hapus sub koordinator by sub.id
+  const handleDeleteSubkoor = async (id) => {
+    if (!confirm('Yakin ingin menghapus akun ini?')) return;
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/admin/subkoordinator/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const json = await res.json();
+      if (json.status) {
+        alert('Sub koordinator berhasil dihapus');
+        fetchSubKoorList();
+      } else {
+        alert(json.message || 'Gagal menghapus');
+      }
+    } catch (err) {
+      console.error('Gagal menghapus subkoordinator:', err);
+      alert('Terjadi kesalahan saat menghapus');
+    }
   };
 
+  // Create (not implemented backend) - placeholder
+  const openCreateModal = () => setIsCreateModalOpen(true);
   const closeCreateModal = () => {
     setIsCreateModalOpen(false);
-    setCreateFormData({ nama: '', email: '', password: '', bidang: '' });
+    setCreateFormData({ nama: '', email: '', password: '', bidangId: '' });
     setEmailError('');
     setShowPassword(false);
   };
-
   const handleCreateChange = (e) => {
     const { name, value } = e.target;
-    setCreateFormData((prev) => ({ ...prev, [name]: value }));
+    setCreateFormData((p) => ({ ...p, [name]: value }));
+  };
+  const handleCreate = async () => {
+    try {
+      const res = await fetch(
+        'http://localhost:3000/api/admin/create-subkoordinator',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`, // kalau pakai JWT
+          },
+          body: JSON.stringify(createFormData),
+        }
+      );
 
-    // ambil semua nama dan email dari list subKoor
-    const existingEmails = subKoorList.map((item) => item.email.toLowerCase());
-    const existingNames = subKoorList.map((item) => item.nama.toLowerCase());
+      const data = await res.json();
 
-    if (name === 'email') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-      if (!emailRegex.test(value)) {
-        setEmailError('Format email tidak valid');
-      } else if (existingEmails.includes(value)) {
-        setEmailError('Email sudah digunakan');
-      } else {
-        setEmailError('');
+      if (!res.ok) {
+        alert(data.message || 'Terjadi kesalahan');
+        return;
       }
-    }
 
-    if (name === 'nama') {
-      if (!value.trim()) {
-        setNamaError('Nama wajib diisi');
-      } else if (existingNames.includes(value.toLowerCase())) {
-        setNamaError('Nama sudah digunakan');
-      } else {
-        setNamaError('');
-      }
-    }
-  };
+      alert('Akun Sub Koordinator berhasil dibuat!');
 
-  const handleCreate = () => {
-    if (emailError) return;
+      await fetchSubKoorList();
 
-    const newSubKoor = {
-      id: subKoorList.length + 1,
-      nama: createFormData.nama,
-      email: createFormData.email,
-      bidang: createFormData.bidang,
-    };
-
-    setSubKoorList((prev) => [...prev, newSubKoor]);
-    closeCreateModal();
-  };
-
-  // === Delete Sub Koor ===
-  const handleDeleteSubkoor = (id) => {
-    if (confirm('Yakin ingin menghapus akun ini?')) {
-      setSubKoorList(subKoorList.filter((item) => item.id !== id));
+      closeCreateModal();
+    } catch (err) {
+      console.error(err);
+      alert('Gagal membuat akun Sub Koordinator');
     }
   };
 
-  const filteredData = subKoorList.filter(
-    (item) =>
-      item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.bidang.toLowerCase().includes(searchTerm.toLowerCase())
+  // safe filter usage (hindari undefined.toLowerCase())
+  const filteredData = subKoorList.filter((item) => {
+    const s = searchTerm.toLowerCase();
+    return (
+      (item.nama || '').toLowerCase().includes(s) ||
+      (item.email || '').toLowerCase().includes(s) ||
+      ((item.bidang && (item.bidang.nama || item.bidang)) || '')
+        .toString()
+        .toLowerCase()
+        .includes(s)
+    );
+  });
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredData.length / ITEMS_PER_PAGE)
   );
-
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const paginatedData = filteredData.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -197,7 +256,6 @@ export default function ManagementSubKoorbid() {
 
   return (
     <div className="space-y-6">
-      {/* Search & Create Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <input
           type="text"
@@ -218,9 +276,10 @@ export default function ManagementSubKoorbid() {
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto bg-white shadow rounded-lg">
-        <div className="overflow-x-auto rounded-lg shadow mt-4">
+        {loading ? (
+          <p className="p-4 text-center">Loading data...</p>
+        ) : (
           <table className="min-w-full text-sm text-left">
             <thead className="bg-[#006DA6] text-white">
               <tr>
@@ -236,7 +295,9 @@ export default function ManagementSubKoorbid() {
                   <tr key={item.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3">{item.nama}</td>
                     <td className="px-4 py-3">{item.email}</td>
-                    <td className="px-4 py-3">{item.bidang}</td>
+                    <td className="px-4 py-3">
+                      {item.bidang?.nama || item.bidang}
+                    </td>
                     <td className="px-4 py-3 flex gap-6">
                       <button
                         className="text-[#006DA6] hover:underline flex items-center text-sm"
@@ -265,8 +326,9 @@ export default function ManagementSubKoorbid() {
               )}
             </tbody>
           </table>
+        )}
 
-          {/* ✅ Pagination - di luar table */}
+        {!loading && (
           <div className="flex flex-col md:flex-row items-center justify-between px-4 py-3 bg-white border-t">
             <p className="text-sm text-gray-700 mb-2 md:mb-0">
               Menampilkan{' '}
@@ -312,7 +374,7 @@ export default function ManagementSubKoorbid() {
               </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Modal Edit */}
@@ -334,51 +396,67 @@ export default function ManagementSubKoorbid() {
             <h2 className="text-xl font-semibold mb-4 text-[#006DA6]">
               Edit Data Sub Koor
             </h2>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              {/* Nama, Email, Bidang, Status */}
-              {[
-                { label: 'Nama', name: 'nama' },
-                { label: 'Email', name: 'email' },
-                {
-                  label: 'Bidang',
-                  name: 'bidang',
-                  type: 'select',
-                  options: [
-                    'Tata Kelola Informatika',
-                    'Infrastruktur & Keamanan TIK',
-                    'Pengelolaan Informasi dan Komunikasi Publik',
-                    'Sekretariat',
-                    'Statistik',
-                  ],
-                },
-              ].map(({ label, name, type = 'text', options }) => (
-                <div key={name}>
-                  <label className="block mb-1 text-gray-700">{label}</label>
-                  {type === 'select' ? (
-                    <select
-                      name={name}
-                      value={formData[name]}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6]"
-                    >
-                      {options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={type}
-                      name={name}
-                      value={formData[name]}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6]"
-                    />
-                  )}
-                </div>
-              ))}
+              <div>
+                <label className="block mb-1 text-gray-700">Nama</label>
+                <input
+                  name="nama"
+                  value={formData.nama || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-gray-700">Email</label>
+                <input
+                  name="email"
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-gray-700">Bidang</label>
+                <select
+                  name="bidangId"
+                  value={formData.bidangId || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">-- Pilih Bidang --</option>
+                  {bidangList.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block mb-1 text-gray-700">
+                  Password (kosong = tidak diubah)
+                </label>
+                <input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="mt-2 text-sm text-gray-600"
+                >
+                  {showPassword ? 'Sembunyikan' : 'Tampilkan'}
+                </button>
+              </div>
             </div>
+
             <div className="mt-6 text-right">
               <button
                 onClick={handleSave}
@@ -391,7 +469,7 @@ export default function ManagementSubKoorbid() {
         </div>
       )}
 
-      {/* Modal Create */}
+      {/* Modal Create (sederhana) */}
       {isCreateModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
@@ -419,9 +497,6 @@ export default function ManagementSubKoorbid() {
                   onChange={handleCreateChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
-                {namaError && (
-                  <p className="text-red-500 text-sm mt-1">{namaError}</p>
-                )}
               </div>
               <div>
                 <label className="block mb-1 text-gray-700">Email</label>
@@ -432,41 +507,31 @@ export default function ManagementSubKoorbid() {
                   onChange={handleCreateChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
-                {emailError && (
-                  <p className="text-red-500 text-xs mt-1">{emailError}</p>
-                )}
               </div>
-              <div className="relative">
+              <div>
                 <label className="block mb-1 text-gray-700">Password</label>
                 <input
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type="password"
                   value={createFormData.password}
                   onChange={handleCreateChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md pr-10"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute top-8 right-3 text-gray-500"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
               <div>
                 <label className="block mb-1 text-gray-700">Bidang</label>
                 <select
-                  name="bidang"
-                  value={createFormData.bidang}
+                  name="bidangId"
+                  value={createFormData.bidangId}
                   onChange={handleCreateChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="">Pilih Bidang</option>
-                  <option>Tata Kelola Informatika</option>
-                  <option>Pengelolaan Informasi dan Komunikasi Publik</option>
-                  <option>Statistik</option>
-                  <option>Sekretariat</option>
-                  <option>Infrastruktur & Keamanan TIK</option>
+                  {bidangList.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nama}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -474,7 +539,6 @@ export default function ManagementSubKoorbid() {
               <button
                 onClick={handleCreate}
                 className="bg-[#006DA6] text-white px-4 py-2 rounded hover:bg-[#00517c]"
-                disabled={!!emailError}
               >
                 Buat Akun
               </button>
