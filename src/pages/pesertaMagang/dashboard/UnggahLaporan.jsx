@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function UnggahLaporanPage({ onBack }) {
+export default function UnggahLaporanPage() {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
 
@@ -17,12 +19,12 @@ export default function UnggahLaporanPage({ onBack }) {
 
   const handleSubmit = () => {
     alert('Laporan berhasil dikirim!');
-    onBack(); // kembali ke halaman laporan
+    navigate('/dashboard/laporan');
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-6 rounded shadow mt-10">
-      <button onClick={onBack} className="text-[#006DA6] mb-4">
+    <div className="w-full bg-white p-6 rounded shadow ">
+      <button onClick={() => navigate(-1)} className="text-[#006DA6] mb-4">
         ← Kembali
       </button>
 

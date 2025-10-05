@@ -1,10 +1,17 @@
 import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Modal from '../../../components/modals/Modal';
 
-export default function LaporanHarianForm({ weekIndex, dayIndex, onBack }) {
+export default function LaporanHarianForm() {
+  const navigate = useNavigate();
+  const { minggu, hari } = useParams(); // ambil param dari URL
+
+  const weekIndex = parseInt(minggu, 10);
+  const dayIndex = parseInt(hari, 10);
+
   const [modalIndex, setModalIndex] = useState(null); // untuk input modal
   const [showFullIndex, setShowFullIndex] = useState(null); // untuk detail modal
-  const [hari, setHari] = useState([
+  const [hariData, setHariData] = useState([
     {
       hari: 'Senin',
       tanggal: '30 November 2026',
@@ -32,10 +39,12 @@ export default function LaporanHarianForm({ weekIndex, dayIndex, onBack }) {
     },
   ]);
 
+  const handleBack = () => navigate('/dashboard/laporan');
+
   const handleSubmitIsi = (index, text) => {
-    const updated = [...hari];
+    const updated = [...hariData];
     updated[index].isi = text;
-    setHari(updated);
+    setHariData(updated);
     setModalIndex(null);
   };
 
@@ -46,7 +55,7 @@ export default function LaporanHarianForm({ weekIndex, dayIndex, onBack }) {
         <Modal onClose={() => setModalIndex(null)}>
           <h2 className="text-xl font-bold text-center">Laporan Harian</h2>
           <p className="text-center mb-4">
-            {hari[modalIndex].hari}, {hari[modalIndex].tanggal}
+            {hariData[modalIndex].hari}, {hariData[modalIndex].tanggal}
           </p>
           <label className="block font-semibold text-gray-700 mb-2">
             Bagaimana kegiatanmu hari ini?
@@ -54,7 +63,7 @@ export default function LaporanHarianForm({ weekIndex, dayIndex, onBack }) {
           <textarea
             className="w-full h-40 border rounded p-3 text-sm mb-4"
             placeholder="Tips: Deskripsikan kegiatanmu hari ini"
-            defaultValue={hari[modalIndex].isi}
+            defaultValue={hariData[modalIndex].isi}
             onBlur={(e) => handleSubmitIsi(modalIndex, e.target.value)}
           />
           <div className="text-center">
@@ -90,7 +99,7 @@ export default function LaporanHarianForm({ weekIndex, dayIndex, onBack }) {
         {/* Sidebar */}
         <div className="w-full md:w-1/4 bg-white p-4 rounded shadow h-fit">
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="text-[#006DA6] flex items-center gap-1 mb-4 font-bold"
           >
             <span className="text-lg">←</span> Kembali
@@ -99,7 +108,7 @@ export default function LaporanHarianForm({ weekIndex, dayIndex, onBack }) {
           <h2 className="text-lg font-bold">30 Nov – 4 Des 2026</h2>
           <hr className="my-4 border-t border-gray-300" />
           <div className="flex justify-between px-2">
-            {hari.map((item, i) => (
+            {hariData.map((item, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
                 <span className="text-xs font-semibold">{item.hari[0]}</span>
                 <div
@@ -118,7 +127,7 @@ export default function LaporanHarianForm({ weekIndex, dayIndex, onBack }) {
 
         {/* Konten laporan */}
         <div className="flex-1 space-y-6">
-          {hari.map((item, i) => (
+          {hariData.map((item, i) => (
             <div key={i} className="bg-white p-6 rounded shadow">
               <div className="flex items-center gap-4 mb-2">
                 <div

@@ -1,24 +1,10 @@
-import { useState } from 'react';
+// src/pages/pesertaMagang/dashboard/DashboardLayout.jsx
+
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import DashboardHome from './DashboradHome';
-import LaporanPage from './LaporanPage';
-import LaporanHarianForm from './LaporanHarianForm';
-import SertifikatPage from './SertifikatPage';
 import Navbar from '../../../components/navigations/Navbar';
-import UnggahLaporanPage from './UnggahLaporan';
-import UlasanMagangPage from './UlasanMagangPage';
 
 export default function DashboardLayout() {
-  const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [selectedWeek, setSelectedWeek] = useState(null);
-  const [selectedDay, setSelectedDay] = useState(null);
-
-  const handleOpenForm = (weekIndex, dayIndex) => {
-    setSelectedWeek(weekIndex);
-    setSelectedDay(dayIndex);
-    setActiveMenu('form-laporan');
-  };
-
   return (
     <>
       <Navbar />
@@ -31,40 +17,17 @@ export default function DashboardLayout() {
       </div>
 
       <div className="flex bg-[#F5F7FA] min-h-screen max-w-7xl mx-auto px-4">
-        {/* Sidebar hanya ditampilkan jika bukan halaman form laporan dan unggah laporan */}
-        {activeMenu !== 'form-laporan' && activeMenu !== 'unggah-laporan' && (
-          <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-        )}
-
-        <main className="flex-1 p-6">
-          {activeMenu === 'dashboard' && <DashboardHome />}
-
-          {activeMenu === 'laporan' && (
-            <LaporanPage
-              onOpenForm={handleOpenForm}
-              onNavigateToUpload={() => setActiveMenu('unggah-laporan')}
-            />
-          )}
-
-          {activeMenu === 'form-laporan' &&
-            selectedWeek !== null &&
-            selectedDay !== null && (
-              <LaporanHarianForm
-                weekIndex={selectedWeek}
-                dayIndex={selectedDay}
-                onBack={() => setActiveMenu('laporan')}
-              />
-            )}
-
-          {activeMenu === 'unggah-laporan' && (
-            <UnggahLaporanPage onBack={() => setActiveMenu('laporan')} />
-          )}
-
-          {activeMenu === 'sertifikat' && <SertifikatPage />}
-
-          {/* ✅ Tambahan untuk halaman Ulasan Magang */}
-          {activeMenu === 'ulasan-magang' && <UlasanMagangPage />}
-        </main>
+        {/* Catatan: Komponen Sidebar sekarang harus menggunakan <NavLink> atau <Link> 
+          dari react-router-dom untuk navigasi, bukan lagi prop setActiveMenu.
+          Contoh di dalam Sidebar: <NavLink to="/dashboard/laporan">Laporan</NavLink>
+        */}
+        <Sidebar />
+        <div className="flex-1 p-6">
+          {/* Outlet akan merender komponen anak sesuai rute yang aktif */}
+          <main className="flex-1">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </>
   );

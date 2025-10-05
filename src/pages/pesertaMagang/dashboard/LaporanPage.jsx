@@ -1,4 +1,10 @@
-export default function LaporanPage({ onOpenForm, onNavigateToUpload }) {
+// src/pages/pesertaMagang/dashboard/LaporanPage.jsx
+
+import { useNavigate } from 'react-router-dom';
+
+export default function LaporanPage() {
+  const navigate = useNavigate();
+
   const minggu = [
     {
       tanggal: '30 Nov – 4 Des 2026',
@@ -11,6 +17,16 @@ export default function LaporanPage({ onOpenForm, onNavigateToUpload }) {
       isi: [true, false, false, false, false],
     },
   ];
+
+  const handleNavigateUpload = () => {
+    // Navigasi ke rute yang sudah didefinisikan di App.jsx
+    navigate('/dashboard/unggah-laporan-akhir');
+  };
+
+  const handleOpenForm = (mingguIndex, dayIndex) => {
+    // Navigasi ke rute form dengan parameter
+    navigate(`/dashboard/laporan-harian-form/${mingguIndex}/${dayIndex}`);
+  };
 
   return (
     <div>
@@ -26,7 +42,7 @@ export default function LaporanPage({ onOpenForm, onNavigateToUpload }) {
         <hr className="my-6 border-t border-gray-200" />
         <div className="flex justify-center">
           <button
-            onClick={onNavigateToUpload}
+            onClick={handleNavigateUpload}
             className="px-4 py-2 bg-[#006DA6] text-white rounded"
           >
             Unggah Laporan Hasil Magang
@@ -63,8 +79,9 @@ export default function LaporanPage({ onOpenForm, onNavigateToUpload }) {
           </div>
           <hr className="my-6 border-t border-gray-200" />
           <div className="flex justify-center">
+            {/* Hardcode dayIndex ke 0, Anda mungkin perlu logika lebih lanjut di sini */}
             <button
-              onClick={() => onOpenForm(idx, 0)}
+              onClick={() => handleOpenForm(idx, 0)}
               className="bg-[#006DA6] text-white px-6 py-2 rounded"
             >
               Lengkapi Laporan Harian
