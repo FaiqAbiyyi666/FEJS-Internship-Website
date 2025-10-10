@@ -1,4 +1,15 @@
+import { useContext } from 'react';
+import { FormDataContext } from './PengajuanMagangPage'; // Import context
+
 export default function FormulirPendaftaran() {
+  // Gunakan context untuk mendapatkan state dan setter
+  const { formData, setFormData } = useContext(FormDataContext);
+
+  // Buat handler untuk memudahkan update
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-bold text-center text-[#002942]">
@@ -13,6 +24,9 @@ export default function FormulirPendaftaran() {
               Nama Lengkap Peserta
             </label>
             <input
+              name="namaLengkap"
+              value={formData.namaLengkap}
+              onChange={handleChange}
               className="form-input w-full"
               placeholder="Masukkan Nama Lengkap"
             />
@@ -20,6 +34,9 @@ export default function FormulirPendaftaran() {
           <div>
             <label className="block text-sm font-medium mb-1">NIS / NIM</label>
             <input
+              name="nis_nim"
+              value={formData.nis_nim}
+              onChange={handleChange}
               className="form-input w-full"
               placeholder="Masukkan NIS / NIM"
             />
@@ -30,8 +47,10 @@ export default function FormulirPendaftaran() {
             </label>
             <div className="relative">
               <select
+                name="kategori"
+                value={formData.kategori}
+                onChange={handleChange}
                 className="w-full border rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none text-sm font-normal"
-                defaultValue=""
               >
                 <option value="" disabled className="text-sm font-medium">
                   Pilih Kategori Magang
@@ -46,8 +65,6 @@ export default function FormulirPendaftaran() {
                   MoU
                 </option>
               </select>
-
-              {/* Ikon panah dropdown */}
               <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
                 ▼
               </div>
@@ -63,8 +80,10 @@ export default function FormulirPendaftaran() {
             </label>
             <div className="relative">
               <select
+                name="statusPendidikan"
+                value={formData.statusPendidikan}
+                onChange={handleChange}
                 className="w-full border rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none text-sm font-normal"
-                defaultValue=""
               >
                 <option value="" disabled className="text-sm font-medium">
                   Pilih Status Pendidikan
@@ -79,8 +98,6 @@ export default function FormulirPendaftaran() {
                   Lulus Kuliah
                 </option>
               </select>
-
-              {/* Ikon panah dropdown */}
               <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
                 ▼
               </div>
@@ -92,8 +109,10 @@ export default function FormulirPendaftaran() {
             </label>
             <div className="relative">
               <select
+                name="jenjangPendidikan"
+                value={formData.jenjangPendidikan}
+                onChange={handleChange}
                 className="w-full border rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none text-sm font-normal"
-                defaultValue=""
               >
                 <option value="" disabled className="text-sm font-medium">
                   Pilih Jenjang Pendidikan
@@ -117,8 +136,6 @@ export default function FormulirPendaftaran() {
                   S1
                 </option>
               </select>
-
-              {/* Ikon panah dropdown */}
               <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
                 ▼
               </div>
@@ -133,6 +150,9 @@ export default function FormulirPendaftaran() {
               Sekolah / Perguruan Tinggi
             </label>
             <input
+              name="instansi"
+              value={formData.instansi}
+              onChange={handleChange}
               className="form-input w-full"
               placeholder="Masukkan Sekolah / Perguruan Tinggi"
             />
@@ -140,6 +160,9 @@ export default function FormulirPendaftaran() {
           <div>
             <label className="block text-sm font-medium mb-1">Jurusan</label>
             <input
+              name="jurusan"
+              value={formData.jurusan}
+              onChange={handleChange}
               className="form-input w-full"
               placeholder="Masukkan Jurusan"
             />
@@ -150,14 +173,18 @@ export default function FormulirPendaftaran() {
             </label>
             <div className="flex items-center gap-2">
               <input
+                name="durasiMulai"
+                value={formData.durasiMulai}
+                onChange={handleChange}
                 className="form-input w-full"
-                placeholder="Mulai"
                 type="date"
               />
               <span className="text-sm font-medium text-gray-600">s/d</span>
               <input
+                name="durasiSelesai"
+                value={formData.durasiSelesai}
+                onChange={handleChange}
                 className="form-input w-full"
-                placeholder="Selesai"
                 type="date"
               />
             </div>
@@ -167,6 +194,9 @@ export default function FormulirPendaftaran() {
               Tema Magang
             </label>
             <input
+              name="tema"
+              value={formData.tema}
+              onChange={handleChange}
               className="form-input w-full"
               placeholder="Masukkan Tema Magang"
             />

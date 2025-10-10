@@ -1,50 +1,84 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, createContext } from 'react';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { FaArrowLeft, FaArrowRight, FaSave } from 'react-icons/fa';
 import Navbar from '../../../../src/components/navigations/Navbar';
-import FormulirPendaftaran from './FormulirPendaftaran';
-import UnggahBerkas from './UnggahBerkas';
-import PilihBidang from './PilihBidang';
-import KonfirmasiSimpan from './KonfirmasiSimpan';
+// Kita tidak lagi perlu mengimpor komponen anak di sini
+// import FormulirPendaftaran from './FormulirPendaftaran';
+// import UnggahBerkas from './UnggahBerkas';
+// import PilihBidang from './PilihBidang';
+// import KonfirmasiSimpan from './KonfirmasiSimpan';
+
+export const FormDataContext = createContext(null);
 
 export default function PengajuanMagangPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const location = useLocation();
+
+  // State untuk modal tetap diperlukan di sini
   const [showModal, setShowModal] = useState(false);
-  const [isAgreed, setIsAgreed] = useState(false);
+
+  // HAPUS: State ini tidak lagi diperlukan, karena step ditentukan dari URL
+  // const [step, setStep] = useState(0);
+
+  // HAPUS: State ini juga tidak lagi diperlukan, karena sudah masuk ke dalam formData
+  // const [isAgreed, setIsAgreed] = useState(false);
+
+  const [formData, setFormData] = useState({
+    // Step 1: Formulir
+    namaLengkap: '',
+    nis_nim: '',
+    kategori: '',
+    statusPendidikan: '',
+    jenjangPendidikan: '',
+    instansi: '',
+    jurusan: '',
+    durasiMulai: '',
+    durasiSelesai: '',
+    tema: '',
+    // Step 2: Berkas
+    suratBakesbangSDA: null,
+    suratBakesbangProv: null,
+    suratPengantar: null,
+    proposalMagang: null,
+    cvPeserta: null,
+    ktp: null,
+    // Step 3: Bidang
+    bidangPilihan: '',
+    // Step 4: Konfirmasi
+    isAgreed: false,
+  });
 
   const steps = [
-    'Formulir Pendaftaran Magang',
-    'Unggah Berkas',
-    'Pilih Bidang',
-    'Simpan',
+    { label: 'Formulir Pendaftaran', path: 'formulir' },
+    { label: 'Unggah Berkas', path: 'berkas' },
+    { label: 'Pilih Bidang', path: 'bidang' },
+    { label: 'Simpan', path: 'konfirmasi' },
   ];
 
-  const renderStepComponent = () => {
-    switch (step) {
-      case 0:
-        return <FormulirPendaftaran />;
-      case 1:
-        return <UnggahBerkas />;
-      case 2:
-        return <PilihBidang />;
-      case 3:
-        return (
-          <KonfirmasiSimpan isAgreed={isAgreed} setIsAgreed={setIsAgreed} />
-        );
-      default:
-        return null;
+  const currentPath = location.pathname.split('/').pop();
+  const currentStepIndex = steps.findIndex((step) => step.path === currentPath);
+
+  const handleNext = () => {
+    if (currentStepIndex < steps.length - 1) {
+      navigate(`/pengajuan-magang/${steps[currentStepIndex + 1].path}`);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStepIndex > 0) {
+      navigate(`/pengajuan-magang/${steps[currentStepIndex - 1].path}`);
     }
   };
 
   const handleConfirmSubmit = () => {
     setShowModal(false);
+    console.log('Data yang akan dikirim:', formData);
     alert('Data berhasil disimpan!');
-    // lanjutkan simpan ke backend jika diperlukan
+    navigate('/usulan');
   };
 
   return (
-    <>
+    <FormDataContext.Provider value={{ formData, setFormData }}>
       <Navbar />
       <div className="pt-[100px] min-h-screen bg-[#F5F7FA] px-6">
         <div className="max-w-6xl mx-auto py-10">
@@ -53,85 +87,81 @@ export default function PengajuanMagangPage() {
               onClick={() => navigate('/usulan')}
               className="text-sm text-[#006DA6] hover:underline bg-white border-2 border-[#006DA6] px-4 py-2 rounded-lg font-semibold hover:bg-[#f0f9ff] transition-all"
             >
-              ← Kembali
+              ← Kembali ke Usulan
             </button>
             <h1 className="text-2xl font-extrabold bg-gradient-to-r from-[#002942] to-[#006DA6] bg-clip-text text-transparent text-center flex-1">
               Laman Pengajuan Magang
             </h1>
-            <div className="w-[110px]"></div>
+            <div className="w-[160px]"></div> {/* Spacer */}
           </div>
 
           <div className="flex items-center justify-between mb-6">
-            {steps.map((label, index) => (
-              <button
-                key={label}
-                onClick={() => setStep(index)}
-                className={`flex-1 py-3 px-2 text-sm font-medium border-b-4 transition-all duration-200 ${
-                  step === index
+            {steps.map((step, index) => (
+              <div
+                key={step.label}
+                onClick={() => navigate(`/pengajuan-magang/${step.path}`)}
+                className={`flex-1 py-3 px-2 text-sm text-center font-medium border-b-4 transition-all duration-200 cursor-pointer ${
+                  currentStepIndex === index
                     ? 'border-[#006DA6] text-[#006DA6]'
                     : 'border-transparent text-gray-500'
                 }`}
               >
-                {label}
-              </button>
+                {step.label}
+              </div>
             ))}
           </div>
 
           <div className="bg-white border rounded-lg shadow p-6">
-            {renderStepComponent()}
+            <Outlet />
           </div>
 
           <div className="flex justify-between mt-6">
-            {step > 0 ? (
+            {currentStepIndex > 0 ? (
               <button
-                onClick={() => setStep((prev) => prev - 1)}
+                onClick={handlePrev}
                 className="bg-[#006DA6] text-white px-5 py-2 rounded-lg flex items-center gap-2"
               >
-                <FaArrowLeft />
-                Sebelumnya
+                <FaArrowLeft /> Sebelumnya
               </button>
             ) : (
               <div></div>
             )}
 
-            {step < steps.length - 1 ? (
+            {currentStepIndex < steps.length - 1 ? (
               <button
-                onClick={() => setStep((prev) => prev + 1)}
+                onClick={handleNext}
                 className="bg-[#006DA6] text-white px-5 py-2 rounded-lg flex items-center gap-2"
               >
-                Selanjutnya
-                <FaArrowRight />
+                Selanjutnya <FaArrowRight />
               </button>
             ) : (
               <button
                 onClick={() => setShowModal(true)}
-                disabled={!isAgreed}
+                disabled={!formData.isAgreed}
                 className={`px-5 py-2 rounded-lg flex items-center gap-2 ${
-                  isAgreed
+                  formData.isAgreed
                     ? 'bg-[#DDB900] text-black font-medium hover:bg-yellow-500'
                     : 'bg-gray-400 text-gray-700 cursor-not-allowed'
                 }`}
               >
-                <FaSave />
-                Simpan
+                <FaSave /> Simpan
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Modal ditaruh di bawah */}
       {showModal && (
         <ModalKonfirmasi
           onClose={() => setShowModal(false)}
           onConfirm={handleConfirmSubmit}
         />
       )}
-    </>
+    </FormDataContext.Provider>
   );
 }
 
-// Modal Konfirmasi disimpan di bawah
+// Modal Konfirmasi (tidak ada perubahan)
 function ModalKonfirmasi({ onClose, onConfirm }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">

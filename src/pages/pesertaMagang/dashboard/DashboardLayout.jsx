@@ -3,6 +3,7 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from '../../../components/navigations/Navbar';
+import { LaporanProvider } from './LaporanContext';
 
 export default function DashboardLayout() {
   return (
@@ -25,7 +26,9 @@ export default function DashboardLayout() {
         <div className="flex-1 p-6">
           {/* Outlet akan merender komponen anak sesuai rute yang aktif */}
           <main className="flex-1">
-            <Outlet />
+            <LaporanProvider>
+              <Outlet />
+            </LaporanProvider>
           </main>
         </div>
       </div>

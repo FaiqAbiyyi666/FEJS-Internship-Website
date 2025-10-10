@@ -1,4 +1,19 @@
-export default function KonfirmasiSimpan({ isAgreed, setIsAgreed }) {
+import { useContext } from 'react';
+import { FormDataContext } from './PengajuanMagangPage'; // Pastikan path import ini benar
+
+// 1. Hapus props 'isAgreed' dan 'setIsAgreed'
+export default function KonfirmasiSimpan() {
+  // 2. Gunakan Context untuk mendapatkan state dan setter
+  const { formData, setFormData } = useContext(FormDataContext);
+
+  const handleAgreementChange = (e) => {
+    // 3. Update properti 'isAgreed' di dalam state terpusat 'formData'
+    setFormData((prevData) => ({
+      ...prevData,
+      isAgreed: e.target.checked,
+    }));
+  };
+
   return (
     <div className="space-y-6 text-[#002942]">
       {/* Pakta Integritas */}
@@ -40,9 +55,10 @@ export default function KonfirmasiSimpan({ isAgreed, setIsAgreed }) {
         <input
           type="checkbox"
           id="setuju"
-          checked={isAgreed}
-          onChange={(e) => setIsAgreed(e.target.checked)} // 🔹 update state parent
-          className="form-checkbox w-5 h-5 bg-white border-white focus:ring-0"
+          // 4. Hubungkan checkbox ke state terpusat
+          checked={formData.isAgreed}
+          onChange={handleAgreementChange}
+          className="form-checkbox w-5 h-5 bg-white border-white text-[#006DA6] focus:ring-offset-0 focus:ring-0"
         />
         <label htmlFor="setuju" className="text-sm font-semibold">
           Saya menyetujui terkait Pakta Integritas dan Tata Tertib di atas
