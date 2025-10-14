@@ -16,7 +16,10 @@ export default function Profile() {
   });
 
   const [profileImage, setProfileImage] = useState('/default-profile.png');
+  const [imageFile, setImageFile] = useState(null);
   const fileInputRef = useRef(null);
+  const [notification, setNotification] = useState({ message: '', type: '' });
+  const [errors, setErrors] = useState({});
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -24,61 +27,136 @@ export default function Profile() {
       ...prev,
       [name]: value,
     }));
+    // Hapus error untuk field yang sedang diubah
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-      };
-      reader.readAsDataURL(file);
+      setImageFile(file); // Simpan file object untuk dikirim
+      setProfileImage(URL.createObjectURL(file)); // Buat URL sementara untuk pratinjau
     }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+    const phoneRegex = /^0[8]\d{8,11}$/;
+
+    if (!formData.namaLengkap)
+      newErrors.namaLengkap = 'Nama lengkap tidak boleh kosong.';
+    if (!formData.noTelepon)
+      newErrors.noTelepon = 'Nomor telepon tidak boleh kosong.';
+    else if (!phoneRegex.test(formData.noTelepon))
+      newErrors.noTelepon =
+        'Format nomor telepon tidak valid (contoh: 081234567890).';
+    if (!formData.nimNis) newErrors.nimNis = 'NIM/NIS tidak boleh kosong.';
+    else if (formData.nimNis.length < 10 || formData.nimNis.length > 12)
+      newErrors.nimNis = 'NIM/NIS harus 10-12 karakter.';
+    if (!formData.instansi)
+      newErrors.instansi = 'Asal instansi tidak boleh kosong.';
+    if (!formData.jurusan) newErrors.jurusan = 'Jurusan tidak boleh kosong.';
+    if (!formData.alamat) newErrors.alamat = 'Alamat tidak boleh kosong.';
+
+    setErrors(newErrors);
+    // Kembalikan true jika tidak ada error
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setNotification({ message: '', type: '' });
+
+    // Langkah 1: Jalankan validasi frontend. Jika gagal, hentikan proses.
+    if (!validateForm()) {
+      setNotification({
+        message:
+          'Harap periksa kembali isian Anda, terdapat beberapa kesalahan.',
+        type: 'error',
+      });
+      return;
+    }
+
+    // Langkah 2: Jika validasi lolos, siapkan data untuk dikirim
+    const dataToSend = new FormData();
+    dataToSend.append('namaLengkap', formData.namaLengkap);
+    dataToSend.append('noTelepon', formData.noTelepon);
+    dataToSend.append('nimNis', formData.nimNis);
+    dataToSend.append('instansi', formData.instansi);
+    dataToSend.append('jurusan', formData.jurusan);
+    dataToSend.append('alamat', formData.alamat);
+
+    if (imageFile) {
+      dataToSend.append('pasFoto', imageFile);
+    }
+
+    try {
+      // Langkah 3: Kirim data ke backend
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3000/api/peserta/profile', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: dataToSend,
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        // Jika backend menolak (status 400, 500, dll)
+        throw new Error(result.message || 'Gagal memperbarui profil.');
+      }
+
+      setNotification({ message: result.message, type: 'success' });
+      setImageFile(null); // Reset file setelah sukses
+    } catch (err) {
+      // Langkah 4: Tangkap dan tampilkan error dari backend
+      console.error('Error submitting form:', err);
+      setNotification({ message: err.message, type: 'error' });
+    }
   };
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('userId');
-
-        if (!userId) {
-          console.error('User ID tidak ditemukan di localStorage');
+        if (!token) {
+          console.error('Token tidak ditemukan, mohon login ulang.');
           return;
         }
 
-        const res = await fetch(
-          `http://localhost:3000/api/peserta/profile/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await fetch('http://localhost:3000/api/peserta/profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        const data = await res.json();
+        const result = await res.json();
 
-        if (data.status) {
+        if (!res.ok) {
+          throw new Error(result.message || 'Gagal mengambil data profil.');
+        }
+
+        if (result.status) {
+          const profileData = result.data;
           setFormData({
-            namaLengkap: data.data.namaLengkap || '',
-            nimNis: data.data.nimNis || '',
-            instansi: data.data.instansi || '',
-            jurusan: data.data.jurusan || '',
-            tglLahir: data.data.tglLahir
-              ? new Date(data.data.tglLahir).toISOString().split('T')[0] // ✅ format untuk input date
+            namaLengkap: profileData.namaLengkap || '',
+            nimNis: profileData.nimNis || '',
+            instansi: profileData.instansi || '',
+            jurusan: profileData.jurusan || '',
+            tglLahir: profileData.tglLahir
+              ? new Date(profileData.tglLahir).toISOString().split('T')[0]
               : '',
-            noTelepon: data.data.noTelepon || '',
-            email: data.data.email || '',
-            nik: data.data.nik || '',
-            alamat: data.data.alamat || '',
+            noTelepon: profileData.noTelepon || '',
+            email: profileData.email || '',
+            nik: profileData.nik || '',
+            alamat: profileData.alamat || '',
           });
-          setProfileImage(data.data.foto || '/default-profile.png');
+          setProfileImage(
+            profileData.pasFoto
+              ? `http://localhost:3000${profileData.pasFoto}`
+              : '/default-profile.png'
+          );
         } else {
-          console.error('Gagal ambil data profil:', data.message);
+          console.error('Gagal ambil data profil:', result.message);
         }
       } catch (err) {
         console.error('Gagal fetch profile:', err);
@@ -128,17 +206,38 @@ export default function Profile() {
             onSubmit={handleSubmit}
             className="bg-white rounded-lg shadow-sm border border-gray-200 p-8"
           >
+            {notification.message && (
+              <div
+                className={`p-4 mb-6 rounded-lg text-sm ${
+                  notification.type === 'success'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {notification.message}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                ['namaLengkap', 'Nama Lengkap', 'text'],
-                ['tglLahir', 'Tanggal Lahir', 'date', true],
-                ['nimNis', 'NIM / NIS', 'text'],
-                ['noTelepon', 'Nomor Telepon', 'tel'],
-                ['instansi', 'Asal Instansi', 'text'],
-                ['email', 'Email', 'email', true],
-                ['jurusan', 'Jurusan', 'text'],
-                ['nik', 'Nomor Induk Kependudukan', 'text', true],
-              ].map(([id, label, type, readOnly]) => (
+                { id: 'namaLengkap', label: 'Nama Lengkap', type: 'text' },
+                {
+                  id: 'tglLahir',
+                  label: 'Tanggal Lahir',
+                  type: 'date',
+                  readOnly: true,
+                },
+                { id: 'nimNis', label: 'NIM / NIS', type: 'text' },
+                { id: 'noTelepon', label: 'Nomor Telepon', type: 'tel' },
+                { id: 'instansi', label: 'Asal Instansi', type: 'text' },
+                { id: 'email', label: 'Email', type: 'email', readOnly: true },
+                { id: 'jurusan', label: 'Jurusan', type: 'text' },
+                {
+                  id: 'nik',
+                  label: 'Nomor Induk Kependudukan',
+                  type: 'text',
+                  readOnly: true,
+                },
+              ].map(({ id, label, type, readOnly }) => (
                 <div key={id}>
                   <label
                     htmlFor={id}

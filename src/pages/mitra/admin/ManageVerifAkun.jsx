@@ -8,6 +8,7 @@ const ITEMS_PER_PAGE_APPROVED = 5;
 
 export default function ManageVerifAkun() {
   // === State Utama ===
+  const [pesertaMagang, setPesertaMagang] = useState([]);
   const [pendingPeserta, setPendingPeserta] = useState([]);
   const [approvedPeserta, setApprovedPeserta] = useState([]);
 
@@ -18,6 +19,9 @@ export default function ManageVerifAkun() {
 
   const [selectedPeserta, setSelectedPeserta] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // === Fetch Data ===
   const fetchData = async () => {
@@ -60,14 +64,12 @@ export default function ManageVerifAkun() {
   const handleAccPeserta = async (id) => {
     try {
       const token = localStorage.getItem('token');
+      // REKOMENDASI: Gunakan PATCH untuk update parsial
       const res = await fetch(
         `http://localhost:3000/api/admin/peserta-magang/${id}/approve`,
         {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          method: 'PATCH', // Mengubah status adalah update parsial, jadi PATCH lebih tepat
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -75,30 +77,48 @@ export default function ManageVerifAkun() {
 
       if (res.ok) {
         alert(result.message);
-        setPesertaMagang((prev) =>
-          prev.map((p) =>
-            p.id === id
-              ? { ...p, status: 'Diterima', updatedAt: new Date() }
-              : p
-          )
-        );
+
+        // --- PERBAIKAN LOGIKA UI ---
+        // 1. Cari data peserta yang baru saja di-approve dari state pending
+        const approvedParticipant = pendingPeserta.find((p) => p.id === id);
+
+        if (approvedParticipant) {
+          // 2. Hapus peserta dari daftar pending
+          setPendingPeserta((prevPending) =>
+            prevPending.filter((p) => p.id !== id)
+          );
+
+          // 3. Tambahkan peserta ke daftar history (approvedPeserta) dengan status baru
+          //    Menambahkan di awal array agar muncul paling atas.
+          setApprovedPeserta((prevHistory) => [
+            { ...approvedParticipant, status: 'APPROVED' }, // Gunakan status yang konsisten dengan backend
+            ...prevHistory,
+          ]);
+        }
+        // -----------------------------
       } else {
         alert(result.message || 'Gagal approve peserta');
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error saat approve:', error);
       alert('Terjadi kesalahan koneksi');
     }
   };
 
   // Tolak Peserta
-  const handleTolakPeserta = async (id) => {
+  const handleTolakPeserta = async (id, alasan) => {
+    // Tambahkan parameter 'alasan'
+    // PENTING: Backend Anda memerlukan 'alasan' untuk menolak.
+    if (!window.confirm('Apakah Anda yakin ingin menolak peserta ini?')) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(
         `http://localhost:3000/api/admin/peserta-magang/${id}/reject`,
         {
-          method: 'PUT',
+          method: 'PATCH', // Gunakan PATCH
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -110,16 +130,28 @@ export default function ManageVerifAkun() {
 
       if (res.ok) {
         alert(result.message);
-        setPesertaMagang((prev) =>
-          prev.map((p) =>
-            p.id === id ? { ...p, status: 'Ditolak', updatedAt: new Date() } : p
-          )
-        );
+
+        // --- PERBAIKAN LOGIKA UI (Sama seperti approve) ---
+        const rejectedParticipant = pendingPeserta.find((p) => p.id === id);
+
+        if (rejectedParticipant) {
+          // Hapus dari pending
+          setPendingPeserta((prevPending) =>
+            prevPending.filter((p) => p.id !== id)
+          );
+
+          // Tambahkan ke history dengan status REJECTED
+          setApprovedPeserta((prevHistory) => [
+            { ...rejectedParticipant, status: 'REJECTED' },
+            ...prevHistory,
+          ]);
+        }
+        // ----------------------------------------------------
       } else {
         alert(result.message || 'Gagal menolak peserta');
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error saat menolak:', error);
       alert('Terjadi kesalahan koneksi');
     }
   };

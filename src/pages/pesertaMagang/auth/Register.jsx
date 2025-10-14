@@ -22,10 +22,10 @@ export default function Register() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChange = (e) => {
-    const { id, value, files } = e.target;
+    const { name, value, files } = e.target; // Ambil 'name' bukan 'id'
     setFormData({
       ...formData,
-      [id]: files ? files[0] : value,
+      [name]: files ? files[0] : value,
     });
   };
 
@@ -64,26 +64,40 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      const data = new FormData();
-      Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key]);
-      });
+      // --- PERBAIKAN KRITIS: Buat FormData secara manual ---
+      const dataToSend = new FormData();
+
+      // Loop semua data di state KECUALI yang tidak perlu
+      for (const key in formData) {
+        // Jangan kirim confirmPassword dan pastikan file ditangani secara terpisah
+        if (key !== 'confirmPassword' && key !== 'pasFoto') {
+          dataToSend.append(key, formData[key]);
+        }
+      }
+
+      // Tambahkan file dengan NAMA FIELD YANG BENAR ('pas_foto')
+      if (formData.pasFoto) {
+        dataToSend.append('pas_foto', formData.pasFoto);
+      }
 
       try {
         const res = await fetch('http://localhost:3000/api/auth/register', {
           method: 'POST',
-          body: data, // ❗ penting: jangan pakai JSON.stringify
+          body: dataToSend, // Kirim FormData yang sudah benar
         });
 
         const result = await res.json();
         if (res.ok) {
-          alert(result.message);
+          alert('Registrasi berhasil! ' + result.message);
+          // Lakukan redirect atau reset form di sini
         } else {
-          alert(result.message);
+          // Tampilkan pesan error dari server
+          alert('Registrasi Gagal: ' + result.message);
+          // Mungkin juga set error ke state, e.g., setErrors({ api: result.message })
         }
       } catch (error) {
-        console.error(error);
-        alert('Terjadi kesalahan koneksi');
+        console.error('Error saat submit:', error);
+        alert('Terjadi kesalahan koneksi ke server.');
       }
     }
   };
@@ -115,6 +129,7 @@ export default function Register() {
             <Input
               label="Nama Lengkap (Sesuai KTP)"
               id="namaLengkap"
+              name="namaLengkap"
               value={formData.namaLengkap}
               onChange={handleChange}
             />
@@ -129,6 +144,7 @@ export default function Register() {
               <input
                 type="date"
                 id="tglLahir"
+                name="tglLahir"
                 value={formData.tglLahir}
                 onChange={handleChange}
                 max={today} // ❗ Membatasi hanya hingga hari ini
@@ -144,6 +160,7 @@ export default function Register() {
             <Input
               label="No Telepon"
               id="noTelepon"
+              name="noTelepon"
               value={formData.noTelepon}
               onChange={handleChange}
               error={errors.noTelepon}
@@ -151,6 +168,7 @@ export default function Register() {
             <Input
               label="Email"
               id="email"
+              name="email"
               type="email"
               value={formData.email}
               onChange={handleChange}
@@ -159,6 +177,7 @@ export default function Register() {
             <Input
               label="NIK"
               id="nik"
+              name="nik"
               value={formData.nik}
               onChange={handleChange}
               error={errors.nik}
@@ -166,24 +185,28 @@ export default function Register() {
             <Input
               label="NIM / NIS"
               id="nimNis"
+              name="nimNis"
               value={formData.nimNis}
               onChange={handleChange}
             />
             <Input
               label="Asal Instansi"
               id="instansi"
+              name="instansi"
               value={formData.instansi}
               onChange={handleChange}
             />
             <Input
               label="Jurusan"
               id="jurusan"
+              name="jurusan"
               value={formData.jurusan}
               onChange={handleChange}
             />
             <Input
               label="Alamat / Domisili"
               id="alamat"
+              name="alamat"
               value={formData.alamat}
               onChange={handleChange}
             />
@@ -200,6 +223,7 @@ export default function Register() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
+                  name="password"
                   value={formData.password}
                   onChange={handleChange}
                   className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#006DA6] focus:outline-none"
@@ -227,6 +251,7 @@ export default function Register() {
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   id="confirmPassword"
+                  name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className={`mt-1 w-full px-4 py-2 border ${
@@ -262,6 +287,7 @@ export default function Register() {
               <input
                 type="file"
                 id="pasFoto"
+                name="pasFoto"
                 accept=".jpg,.jpeg,.png"
                 onChange={handleChange}
                 className="mt-1 block w-full text-sm border border-gray-300 rounded-md px-4 py-2 bg-white"
@@ -316,7 +342,7 @@ export default function Register() {
   );
 }
 
-function Input({ label, id, type = 'text', value, onChange, error }) {
+function Input({ label, id, name, type = 'text', value, onChange, error }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-gray-700">
@@ -325,6 +351,7 @@ function Input({ label, id, type = 'text', value, onChange, error }) {
       <input
         type={type}
         id={id}
+        name={name} // TERIMA DAN GUNAKAN PROP 'name' DI SINI
         value={value}
         onChange={onChange}
         placeholder={`Masukkan ${label.toLowerCase()}`}
