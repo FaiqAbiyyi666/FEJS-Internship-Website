@@ -150,11 +150,7 @@ export default function Profile() {
             nik: profileData.nik || '',
             alamat: profileData.alamat || '',
           });
-          setProfileImage(
-            profileData.pasFoto
-              ? `http://localhost:3000${profileData.pasFoto}`
-              : '/default-profile.png'
-          );
+          setProfileImage(profileData.pasFoto || '/default-profile.png');
         } else {
           console.error('Gagal ambil data profil:', result.message);
         }

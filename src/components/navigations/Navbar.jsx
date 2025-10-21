@@ -294,7 +294,7 @@ export default function Navbar() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
               >
                 <img
-                  src={user?.pasFoto || '/default-profile.png'}
+                  src={user?.foto || '/default-profile.png'}
                   alt="Foto Profil"
                   className="w-10 h-10 rounded-full object-cover border-2 border-white"
                 />
