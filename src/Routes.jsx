@@ -8,10 +8,12 @@ import {
 } from 'react-router-dom';
 
 import Home from './pages/Home';
-import LupaPassword from './pages/pesertaMagang/auth/LupaPassword';
 import Login from './pages/pesertaMagang/auth/Login';
 import LoginMitra from './pages/mitra/LoginMitra';
 import Register from './pages/pesertaMagang/auth/Register';
+import LupaPasswordPage from './pages/pesertaMagang/auth/LupaPassword';
+import ResetPasswordPage from './pages/pesertaMagang/auth/ResetPassword';
+
 import Lowongan from './components/KuotaMagang';
 import Profile from './pages/pesertaMagang/Profile';
 
@@ -41,9 +43,11 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login-peserta" element={<Login />} />
-        <Route path="/lupa-password" element={<LupaPassword />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login-admin" element={<LoginMitra />} />
+        <Route path="/forgot-password" element={<LupaPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
         <Route path="/informasi-lowongan" element={<Lowongan />} />
         <Route path="/profile" element={<Profile />} />
 

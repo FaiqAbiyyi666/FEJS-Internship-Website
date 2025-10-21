@@ -4,14 +4,47 @@ import { useNavigate } from 'react-router-dom';
 export default function LupaPasswordPage() {
   const [email, setEmail] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // State tambahan untuk user experience yang lebih baik
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulasikan permintaan reset password
-    setTimeout(() => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      // Ganti simulasi dengan API call sungguhan
+      const res = await fetch(
+        'http://localhost:3000/api/auth/forgot-password',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || 'Gagal mengirim email.');
+      }
+
+      // Jika sukses, tampilkan pesan sukses
       setSuccess(true);
-    }, 1000);
+    } catch (err) {
+      // Tangkap dan tampilkan error
+      setError(err.message);
+    } finally {
+      // Hentikan loading
+      setLoading(false);
+    }
   };
 
   return (
@@ -27,7 +60,8 @@ export default function LupaPasswordPage() {
         {success ? (
           <div className="text-center space-y-4">
             <div className="text-green-600 text-sm font-medium">
-              Tautan reset password telah dikirim ke email Anda.
+              Tautan reset password telah berhasil dikirim ke email Anda.
+              Silakan periksa kotak masuk (atau folder spam) Anda.
             </div>
             <button
               onClick={() => navigate('/login-peserta')}
@@ -52,11 +86,17 @@ export default function LupaPasswordPage() {
               />
             </div>
 
+            {/* Tampilkan pesan error jika ada */}
+            {error && (
+              <p className="text-sm text-red-600 text-center mb-4">{error}</p>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-[#002942] to-[#006DA6] text-white py-2 rounded-md hover:opacity-90 transition"
+              disabled={loading} // Nonaktifkan tombol saat loading
+              className="w-full bg-gradient-to-r from-[#002942] to-[#006DA6] text-white py-2 rounded-md hover:opacity-90 transition disabled:opacity-50"
             >
-              Kirim Tautan Reset
+              {loading ? 'Mengirim...' : 'Kirim Tautan Reset'}
             </button>
           </form>
         )}

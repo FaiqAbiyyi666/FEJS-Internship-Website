@@ -128,7 +128,7 @@ export default function Login() {
                 Ingat saya
               </label>
               <a
-                href="/lupa-password"
+                href="/forgot-password"
                 className="text-[#004A72] hover:underline font-semibold"
               >
                 Lupa Password?
