@@ -1,191 +1,296 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Users, Search, MoreHorizontal, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Search, X } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { FaTrash } from 'react-icons/fa';
 
 const ITEMS_PER_PAGE = 5;
 
-const ManagementBidang = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [errorNama, setErrorNama] = useState('');
-  const [errorKuota, setErrorKuota] = useState('');
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editId, setEditId] = useState(null);
+// Komponen Modal yang Disederhanakan
+const BidangModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  isEditMode,
+  formData,
+  setFormData,
+  errors,
+  setErrors,
+  loading,
+}) => {
+  const { nama, kuota } = formData;
 
-  const [bidangList, setBidangList] = useState([
-    {
-      id: 1,
-      nama: 'Tata Kelola Informatika',
-      kuota: 10,
-      pesertaAktif: 5,
-    },
-    {
-      id: 2,
-      nama: 'Pengelolaan Informasi dan Komunikasi Publik',
-      kuota: 10,
-      pesertaAktif: 7,
-    },
-    {
-      id: 3,
-      nama: 'Sekretariat',
-      kuota: 10,
-      pesertaAktif: 4,
-    },
-    {
-      id: 4,
-      nama: 'Statistik',
-      kuota: 10,
-      pesertaAktif: 3,
-    },
-    {
-      id: 5,
-      nama: 'Infrastruktur & Keamanan TIK',
-      kuota: 10,
-      pesertaAktif: 8,
-    },
-  ]);
-
-  const [formBidang, setFormBidang] = useState({
-    nama: '',
-    kuota: 0,
-    pesertaAktif: 0,
-  });
-
-  // === Tambah bidang baru ===
-  const handleAddBidang = () => {
-    setErrorKuota('');
-    // cek duplikat nama
-    const isDuplicate = bidangList.some(
-      (bidang) => bidang.nama.toLowerCase() === formBidang.nama.toLowerCase()
-    );
-
-    if (isDuplicate) {
-      setErrorNama('Nama bidang sudah ada, gunakan nama lain.');
-      return;
-    }
-
-    if (!formBidang.nama.trim()) {
-      setErrorNama('Nama bidang wajib diisi.');
-      return;
-    }
-
-    // parsing kuota ke number & minimal 1
-    const kuota = parseInt(formBidang.kuota, 10);
-
-    if (!kuota || kuota < 1) {
-      setErrorKuota('Kuota minimal 1 orang.');
-      return;
-    }
-
-    setBidangList([
-      ...bidangList,
-      {
-        id: bidangList.length + 1,
-        nama: formBidang.nama,
-        kuota: kuota,
-        pesertaAktif: 0,
-      },
-    ]);
-    setIsModalOpen(false);
-    setFormBidang({
-      nama: '',
-      kuota: 0,
-      pesertaAktif: 0,
-    });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      // Ubah kuota menjadi angka, biarkan nama sebagai string
+      [name]: name === 'kuota' ? (value ? Number(value) : '') : value,
+    }));
+    // Hapus error saat user mulai mengetik
+    if (name === 'nama' && errors.nama)
+      setErrors((prev) => ({ ...prev, nama: '' }));
+    if (name === 'kuota' && errors.kuota)
+      setErrors((prev) => ({ ...prev, kuota: '' }));
   };
 
-  // Edit Bidang
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="w-full max-w-md bg-white rounded-lg p-6 shadow-lg space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <Dialog.Title className="text-lg font-semibold text-gray-800">
+              {isEditMode ? 'Edit Bidang' : 'Tambah Bidang'}
+            </Dialog.Title>
+            <button onClick={onClose} disabled={loading}>
+              <X size={20} className="text-gray-500 hover:text-gray-700" />
+            </button>
+          </div>
+
+          {/* Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSubmit();
+            }}
+          >
+            <div className="space-y-4">
+              {/* Nama Bidang */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Bidang
+                </label>
+                <input
+                  type="text"
+                  name="nama"
+                  placeholder="Nama Bidang"
+                  value={nama}
+                  onChange={handleChange}
+                  className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
+                    errors.nama ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.nama && (
+                  <p className="text-red-500 text-xs mt-1">{errors.nama}</p>
+                )}
+              </div>
+
+              {/* Kuota */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kuota Bidang Magang
+                </label>
+                <input
+                  type="number"
+                  name="kuota"
+                  placeholder="Masukkan jumlah kuota"
+                  value={kuota}
+                  min="0"
+                  onChange={handleChange}
+                  className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
+                    errors.kuota ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.kuota && (
+                  <p className="text-red-500 text-xs mt-1">{errors.kuota}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Tombol Simpan */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-[#006DA6] w-full text-white px-4 py-2 rounded-lg hover:bg-[#00476d] transition mt-6 disabled:opacity-50"
+            >
+              {loading ? 'Menyimpan...' : isEditMode ? 'Update' : 'Simpan'}
+            </button>
+          </form>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  );
+};
+
+const ManagementBidang = () => {
+  // === State Data ===
+  const [bidangList, setBidangList] = useState([]); // Data dari API
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(null);
+
+  // === State UI ===
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // === State Modal ===
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formBidang, setFormBidang] = useState({ nama: '', kuota: 0 });
+  const [formErrors, setFormErrors] = useState({ nama: '', kuota: '' });
+  const [modalLoading, setModalLoading] = useState(false);
+
+  // === Fungsi untuk Ambil Data dari API ===
+  const fetchData = async () => {
+    setLoading(true);
+    setApiError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token)
+        throw new Error('Token tidak ditemukan, silakan login ulang.');
+
+      const res = await fetch('http://localhost:3000/api/admin/bidang', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const result = await res.json();
+      if (!res.ok)
+        throw new Error(result.message || 'Gagal mengambil data bidang');
+
+      setBidangList(result.data || []);
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Ambil data saat komponen pertama kali dimuat
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // === Validasi Form ===
+  const validateForm = () => {
+    const errors = { nama: '', kuota: '' };
+    let isValid = true;
+
+    const kuotaNum = Number(formBidang.kuota);
+
+    if (!formBidang.nama.trim()) {
+      errors.nama = 'Nama bidang wajib diisi.';
+      isValid = false;
+    }
+
+    if (isNaN(kuotaNum) || kuotaNum < 1) {
+      errors.kuota = 'Kuota minimal 1 orang.';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  // === Fungsi Modal ===
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditId(null);
+    setFormBidang({ nama: '', kuota: 0 });
+    setFormErrors({ nama: '', kuota: '' });
+    setModalLoading(false);
+  };
+
+  const handleOpenTambah = () => {
+    setIsEditMode(false);
+    setFormBidang({ nama: '', kuota: 0 });
+    setFormErrors({ nama: '', kuota: '' });
+    setIsModalOpen(true);
+  };
+
   const handleOpenEdit = (bidang) => {
     setIsEditMode(true);
     setEditId(bidang.id);
     setFormBidang({
       nama: bidang.nama,
       kuota: bidang.kuota,
-      pesertaAktif: bidang.pesertaAktif,
     });
-    setErrorNama('');
-    setErrorKuota('');
+    setFormErrors({ nama: '', kuota: '' });
     setIsModalOpen(true);
   };
 
-  // Save Edit Bidang
-  const handleSaveBidang = () => {
-    setErrorNama('');
-    setErrorKuota('');
+  // === Handler Submit Form (Create & Update) ===
+  const handleSubmitForm = async () => {
+    if (!validateForm()) return; // Hentikan jika validasi gagal
 
-    // validasi nama
-    const isDuplicate = bidangList.some(
-      (bidang) =>
-        bidang.nama.toLowerCase() === formBidang.nama.toLowerCase() &&
-        bidang.id !== editId
-    );
+    setModalLoading(true);
+    setApiError(null);
+    const token = localStorage.getItem('token');
 
-    if (isDuplicate) {
-      setErrorNama('Nama bidang sudah ada, gunakan nama lain.');
-      return;
-    }
+    const url = isEditMode
+      ? `http://localhost:3000/api/admin/bidang/${editId}`
+      : 'http://localhost:3000/api/admin/bidang';
 
-    if (!formBidang.nama.trim()) {
-      setErrorNama('Nama bidang wajib diisi.');
-      return;
-    }
+    const method = isEditMode ? 'PATCH' : 'POST';
 
-    if (!formBidang.kuota || formBidang.kuota < 1) {
-      setErrorKuota('Kuota minimal 1 orang.');
-      return;
-    }
-
-    if (isEditMode) {
-      // update bidang
-      setBidangList(
-        bidangList.map((bidang) =>
-          bidang.id === editId
-            ? { ...bidang, nama: formBidang.nama, kuota: formBidang.kuota }
-            : bidang
-        )
-      );
-    } else {
-      // tambah bidang
-      setBidangList([
-        ...bidangList,
-        {
-          id: bidangList.length + 1,
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
           nama: formBidang.nama,
           kuota: formBidang.kuota,
-          pesertaAktif: 0,
-        },
-      ]);
-    }
+        }),
+      });
 
-    setIsModalOpen(false);
+      const result = await res.json();
+      if (!res.ok)
+        throw new Error(result.message || 'Terjadi kesalahan server');
+
+      alert(result.message);
+      handleCloseModal();
+      fetchData(); // Ambil ulang data terbaru dari server
+    } catch (err) {
+      // Tangani error duplikat atau validasi dari server
+      if (err.message.toLowerCase().includes('sudah ada')) {
+        setFormErrors((prev) => ({ ...prev, nama: err.message }));
+      } else {
+        setApiError(err.message); // Tampilkan error umum
+        alert(`Error: ${err.message}`);
+      }
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   // === Delete bidang ===
-  const handleDeleteBidang = (id) => {
-    const confirmDelete = window.confirm(
-      'Apakah Anda yakin ingin menghapus bidang ini?'
-    );
-    if (confirmDelete) {
-      setBidangList(bidangList.filter((item) => item.id !== id));
+  const handleDeleteBidang = async (id) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus bidang ini?'))
+      return;
+
+    setLoading(true); // Tampilkan loading di seluruh halaman saat menghapus
+    setApiError(null);
+    const token = localStorage.getItem('token');
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/admin/bidang/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || 'Gagal menghapus');
+
+      alert(result.message);
+      // Update UI secara lokal (lebih cepat)
+      setBidangList((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      setApiError(err.message);
+      alert(`Error: ${err.message}`); // Tampilkan error (misal: "Bidang masih digunakan")
+    } finally {
+      setLoading(false);
     }
   };
 
-  // filter berdasarkan input pencarian
+  // === Logika Filter dan Paginasi (Sudah benar) ===
   const filteredBidang = bidangList.filter((bidang) =>
     bidang.nama.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // pagination setelah filter
   const totalPages = Math.ceil(filteredBidang.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginated = filteredBidang.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
-
-  const totalPagesBidang = Math.ceil(filteredBidang.length / ITEMS_PER_PAGE);
   const paginatedBidang = filteredBidang.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -206,13 +311,13 @@ const ManagementBidang = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // reset ke halaman 1 kalau melakukan pencarian
+              setCurrentPage(1); // reset ke halaman 1
             }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
           />
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenTambah} // Panggil fungsi pembuka modal
           className="bg-[#006DA6] text-white px-4 py-2 rounded-lg hover:bg-[#002942] transition-colors flex items-center space-x-2"
         >
           <Plus size={20} />
@@ -220,9 +325,24 @@ const ManagementBidang = () => {
         </button>
       </div>
 
+      {/* Tampilkan error global jika ada */}
+      {apiError && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+          role="alert"
+        >
+          <strong className="font-bold">Error!</strong>
+          <span className="block sm:inline"> {apiError}</span>
+        </div>
+      )}
+
       {/* Tabel Bidang */}
       <div className="overflow-x-auto bg-white shadow rounded-lg">
-        <div className="overflow-x-auto rounded-lg shadow mt-4">
+        {loading ? (
+          <div className="p-6 text-center text-gray-500">
+            Memuat data bidang...
+          </div>
+        ) : (
           <table className="min-w-full text-sm text-left">
             <thead className="bg-[#006DA6] text-white">
               <tr>
@@ -236,10 +356,10 @@ const ManagementBidang = () => {
             <tbody>
               {paginatedBidang.map((item) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-3">{item.nama}</td>
+                  <td className="px-4 py-3 font-medium">{item.nama}</td>
                   <td className="px-4 py-3">{item.kuota}</td>
                   <td className="px-4 py-3">{item.pesertaAktif}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 font-semibold">
                     {item.kuota - item.pesertaAktif}
                   </td>
                   <td className="px-4 py-3 flex gap-6">
@@ -263,14 +383,18 @@ const ManagementBidang = () => {
               {paginatedBidang.length === 0 && (
                 <tr>
                   <td colSpan="5" className="text-center py-4 text-gray-500">
-                    Tidak ada data ditemukan.
+                    {searchTerm
+                      ? 'Tidak ada bidang yang cocok.'
+                      : 'Belum ada data bidang.'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        )}
 
-          {/* Pagination */}
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
           <div className="flex flex-col md:flex-row items-center justify-between px-4 py-3 bg-white border-t">
             <p className="text-sm text-gray-700 mb-2 md:mb-0">
               Menampilkan{' '}
@@ -292,7 +416,7 @@ const ManagementBidang = () => {
               >
                 Previous
               </button>
-              {[...Array(totalPagesBidang)].map((_, i) => (
+              {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentPage(i + 1)}
@@ -307,167 +431,30 @@ const ManagementBidang = () => {
               ))}
               <button
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPagesBidang))
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
                 className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
-                disabled={currentPage === totalPagesBidang}
+                disabled={currentPage === totalPages}
               >
                 Next
               </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Modal Tambah */}
-      <Dialog
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        className="relative z-50"
-      >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md bg-white rounded-lg p-6 shadow-lg space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <Dialog.Title className="text-lg font-semibold text-gray-800">
-                Tambah Bidang
-              </Dialog.Title>
-              <button onClick={() => setIsModalOpen(false)}>
-                <X size={20} className="text-gray-500 hover:text-gray-700" />
-              </button>
-            </div>
-
-            {/* Nama Bidang */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Bidang
-              </label>
-              <input
-                type="text"
-                placeholder="Nama Bidang"
-                value={formBidang.nama}
-                onChange={(e) => {
-                  setFormBidang({ ...formBidang, nama: e.target.value });
-                  setErrorNama(''); // hapus error saat user mengetik ulang
-                }}
-                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
-                  errorNama ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errorNama && (
-                <p className="text-red-500 text-xs mt-1">{errorNama}</p>
-              )}
-            </div>
-
-            {/* Kuota */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kuota Bidang Magang
-              </label>
-              <input
-                type="number"
-                placeholder="Masukkan jumlah kuota"
-                value={formBidang.kuota}
-                onChange={(e) =>
-                  setFormBidang({
-                    ...formBidang,
-                    kuota: Number(e.target.value),
-                  })
-                }
-                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
-                  errorKuota ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errorKuota && (
-                <p className="text-red-500 text-xs mt-1">{errorKuota}</p>
-              )}
-            </div>
-
-            {/* Tombol Simpan */}
-            <button
-              onClick={handleAddBidang}
-              className="bg-[#006DA6] w-full text-white px-4 py-2 rounded-lg hover:bg-[#00476d] transition"
-            >
-              Simpan
-            </button>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
-
-      {/* Modal Edit Bidang */}
-      <Dialog
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        className="relative z-50"
-      >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md bg-white rounded-lg p-6 shadow-lg space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <Dialog.Title className="text-lg font-semibold text-gray-800">
-                {isEditMode ? 'Edit Bidang' : 'Tambah Bidang'}
-              </Dialog.Title>
-              <button onClick={() => setIsModalOpen(false)}>
-                <X size={20} className="text-gray-500 hover:text-gray-700" />
-              </button>
-            </div>
-
-            {/* Nama Bidang */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Bidang
-              </label>
-              <input
-                type="text"
-                placeholder="Nama Bidang"
-                value={formBidang.nama}
-                onChange={(e) => {
-                  setFormBidang({ ...formBidang, nama: e.target.value });
-                  setErrorNama('');
-                }}
-                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
-                  errorNama ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errorNama && (
-                <p className="text-red-500 text-xs mt-1">{errorNama}</p>
-              )}
-            </div>
-
-            {/* Kuota */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kuota Bidang Magang
-              </label>
-              <input
-                type="number"
-                placeholder="Masukkan jumlah kuota"
-                value={formBidang.kuota}
-                onChange={(e) =>
-                  setFormBidang({
-                    ...formBidang,
-                    kuota: Number(e.target.value),
-                  })
-                }
-                className={`w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#006DA6] focus:outline-none ${
-                  errorKuota ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errorKuota && (
-                <p className="text-red-500 text-xs mt-1">{errorKuota}</p>
-              )}
-            </div>
-
-            {/* Tombol Simpan */}
-            <button
-              onClick={handleSaveBidang}
-              className="bg-[#006DA6] w-full text-white px-4 py-2 rounded-lg hover:bg-[#00476d] transition"
-            >
-              {isEditMode ? 'Update' : 'Simpan'}
-            </button>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
+      {/* Modal (Hanya satu) */}
+      <BidangModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmitForm}
+        isEditMode={isEditMode}
+        formData={formBidang}
+        setFormData={setFormBidang}
+        errors={formErrors}
+        setErrors={setFormErrors}
+        loading={modalLoading}
+      />
     </div>
   );
 };
