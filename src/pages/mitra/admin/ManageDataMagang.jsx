@@ -1,119 +1,55 @@
 // ManageDataMagang.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Eye, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { useLoading } from '../../../contexts/LoadingContext';
 
 const ITEMS_PER_PAGE = 6;
 
-const dummyData = [
-  {
-    id: 'p1',
-    foto: 'https://randomuser.me/api/portraits/women/68.jpg',
-    nama: 'Lala Trilili',
-    nim: '21082010118',
-    email: 'lala@example.com',
-    phone: '081234567890',
-    bidang: 'Tata Kelola Informatika',
-    instansi: 'Universitas Pembangunan Nasional "Veteran" Jawa Timur',
-    jurusan: 'Sistem Informasi',
-    alamat: 'Jl. Raya Veteran No.12, Surabaya',
-    periodeMulai: '2024-03-04',
-    periodeSelesai: '2024-05-03',
-    statusMagang: 'Selesai',
-    suratMagang: 'Sudah Dikirim',
-    sertifikat: 'Belum Dikirim',
-    fotoThumb: null,
-    // sample weekly logbook: array of weeks each with daily entries
-    logbook: [
-      {
-        week: 'Minggu 1',
-        range: '2024-03-04 - 2024-03-08',
-        harian: [
-          { tanggal: '2024-03-04', isi: 'Observasi sistem lama', done: true },
-          { tanggal: '2024-03-05', isi: 'Meeting tim', done: true },
-          { tanggal: '2024-03-06', isi: '', done: false },
-          { tanggal: '2024-03-07', isi: '', done: false },
-          { tanggal: '2024-03-08', isi: '', done: false },
-        ],
-      },
-      {
-        week: 'Minggu 2',
-        range: '2024-03-11 - 2024-03-15',
-        harian: [
-          { tanggal: '2024-03-11', isi: 'Membuat flowchart', done: true },
-          { tanggal: '2024-03-12', isi: '', done: false },
-          { tanggal: '2024-03-13', isi: '', done: false },
-          { tanggal: '2024-03-14', isi: '', done: false },
-          { tanggal: '2024-03-15', isi: '', done: false },
-        ],
-      },
-    ],
-    laporanAkhir: { status: 'Belum Dikirim', nilai: null },
-  },
-  {
-    id: 'p2',
-    foto: 'https://randomuser.me/api/portraits/men/45.jpg',
-    nama: 'Arif Haryanto',
-    nim: '21082010119',
-    email: 'arif@example.com',
-    phone: '081298765432',
-    bidang: 'Sekretariat',
-    instansi: 'Politeknik Negeri Malang',
-    jurusan: 'Ilmu Administrasi',
-    alamat: 'Jl. Merdeka No.5, Malang',
-    periodeMulai: '2024-04-01',
-    periodeSelesai: '2024-06-30',
-    statusMagang: 'Aktif',
-    suratMagang: 'Perlu Dikirim',
-    sertifikat: 'Belum Dikirim',
-    logbook: [
-      {
-        week: 'Minggu 1',
-        range: '2024-04-01 - 2024-04-05',
-        harian: [
-          { tanggal: '2024-04-01', isi: '', done: false },
-          { tanggal: '2024-04-02', isi: '', done: false },
-          { tanggal: '2024-04-03', isi: '', done: false },
-          { tanggal: '2024-04-04', isi: '', done: false },
-          { tanggal: '2024-04-05', isi: '', done: false },
-        ],
-      },
-    ],
-    laporanAkhir: { status: 'Belum Dikirim', nilai: null },
-  },
-  {
-    id: 'p3',
-    foto: 'https://randomuser.me/api/portraits/women/12.jpg',
-    nama: 'Nadia Putri',
-    nim: '21082010120',
-    email: 'nadia@example.com',
-    phone: '081377788899',
-    bidang: 'Infrastruktur & Keamanan TIK',
-    instansi: 'Universitas Diponegoro',
-    jurusan: 'Teknik Informatika',
-    alamat: 'Jl. Prof. Sudarto No.2, Semarang',
-    periodeMulai: '2024-02-15',
-    periodeSelesai: '2024-05-15',
-    statusMagang: 'Aktif',
-    suratMagang: 'Sudah Dikirim',
-    sertifikat: 'Perlu Dikirim',
-    logbook: [],
-    laporanAkhir: { status: 'Diterima', nilai: 85 },
-  },
-  // ... tambahkan lebih banyak dummy sesuai kebutuhan
-];
-
 export default function ManageDataMagang() {
-  const [data, setData] = useState(dummyData);
   const [search, setSearch] = useState('');
   const [bidangFilter, setBidangFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPeserta, setSelectedPeserta] = useState(null);
+  const [daftarPeserta, setDaftarPeserta] = useState([]);
+  const { showLoading, hideLoading } = useLoading();
+
+  useEffect(() => {
+    const fetchSemuaPeserta = async () => {
+      showLoading();
+      try {
+        const token = localStorage.getItem('token'); // Ambil token admin
+
+        // Panggil endpoint yang sudah kita siapkan
+        const res = await fetch('http://localhost:3000/api/admin/data-magang', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store', // Selalu ambil data baru
+        });
+
+        const result = await res.json();
+
+        if (result.status && Array.isArray(result.data)) {
+          // --- TIDAK PERLU PENYESUAIAN ---
+          // Data dari backend (result.data) langsung disimpan ke state
+          // karena formatnya sudah benar.
+          setDaftarPeserta(result.data);
+        } else {
+          console.error('Gagal mengambil data peserta:', result.message);
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      } finally {
+        hideLoading();
+      }
+    };
+
+    fetchSemuaPeserta();
+  }, [showLoading, hideLoading]);
 
   // filtered & pagination
-  const filtered = data.filter((d) => {
+  const filtered = daftarPeserta.filter((d) => {
     const q = search.trim().toLowerCase();
     const matchSearch =
       !q ||
@@ -145,7 +81,7 @@ export default function ManageDataMagang() {
       ['Nama', p.nama],
       ['NIM / NIS', p.nim || '-'],
       ['Email', p.email || '-'],
-      ['No. Telp', p.phone || '-'],
+      ['No. Telepon', p.noTelepon || '-'],
       ['Bidang', p.bidang],
       ['Instansi', p.instansi],
       ['Jurusan', p.jurusan || '-'],
@@ -169,7 +105,7 @@ export default function ManageDataMagang() {
 
   // export all to excel
   const exportAllExcel = () => {
-    const exportData = data.map((d) => ({
+    const exportData = daftarPeserta.map((d) => ({
       nama: d.nama,
       nim: d.nim,
       email: d.email,
@@ -391,7 +327,7 @@ export default function ManageDataMagang() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-[#006DA6] mb-1">
-                    Detail Laporan Harian
+                    Detail Akun Peserta Magang
                   </h2>
                   <h3 className="text-xl font-bold text-gray-900">
                     {selectedPeserta.nama}
@@ -435,9 +371,11 @@ export default function ManageDataMagang() {
                       </div>
                     </div>
                     <div>
-                      <div className="font-semibold text-black">No. Telp</div>
+                      <div className="font-semibold text-black">
+                        No. Telepon
+                      </div>
                       <div className="text-gray-600">
-                        {selectedPeserta.phone}
+                        {selectedPeserta.noTelepon}
                       </div>
                     </div>
                     <div>
