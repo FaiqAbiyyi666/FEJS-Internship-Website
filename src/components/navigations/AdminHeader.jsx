@@ -31,8 +31,14 @@ const AdminHeader = ({ title }) => {
   ];
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('isLoggedIn');
-    navigate('/login-admin'); // ✅ Navigasi ke halaman login
+
+    setUser(null);
+    setIsLoggedIn(false);
+
+    navigate('/login-admin');
   };
 
   useEffect(() => {

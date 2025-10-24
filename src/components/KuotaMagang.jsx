@@ -1,15 +1,51 @@
+import React, { useState, useEffect } from 'react';
+
 export default function KuotaMagang() {
-  const data = [
-    { bidang: 'Sekretariat', kuota: 5, tersedia: 3 },
-    {
-      bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
-      kuota: 6,
-      tersedia: 2,
-    },
-    { bidang: 'Tata Kelola Informatika', kuota: 4, tersedia: 0 },
-    { bidang: 'Infrastruktur & Keamanan TIK', kuota: 5, tersedia: 3 },
-    { bidang: 'Statistik', kuota: 3, tersedia: 0 },
-  ];
+  // State untuk menyimpan data dari API
+  const [data, setData] = useState([]);
+  // State untuk status loading
+  const [loading, setLoading] = useState(true);
+  // State untuk menangani error
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Fungsi untuk mengambil data
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Ganti '/api/admin/bidang' jika path API Anda berbeda
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/kuota-bidang'
+        );
+
+        if (!response.ok) {
+          throw new Error('Gagal mengambil data dari server');
+        }
+
+        const result = await response.json();
+
+        // Backend mengembalikan: { id, nama, kuota, pesertaAktif }
+        // Frontend membutuhkan: { bidang, kuota, tersedia }
+        // Kita perlu mentransformasi data di sini
+        const transformedData = result.data.map((item) => ({
+          id: item.id, // simpan id untuk key
+          bidang: item.nama, // 'nama' dari backend menjadi 'bidang'
+          kuota: item.kuota,
+          // Hitung 'tersedia' berdasarkan 'kuota' dan 'pesertaAktif'
+          tersedia: item.kuota - item.pesertaAktif,
+        }));
+
+        setData(transformedData);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData(); // Panggil fungsi saat komponen dimuat
+  }, []); // [] dependency array berarti useEffect hanya berjalan sekali saat mount
 
   return (
     <section className="bg-[#F7FAFC] py-12">
@@ -36,21 +72,61 @@ export default function KuotaMagang() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.map((row, idx) => (
-                <tr key={idx}>
-                  <td className="py-3 px-4">{row.bidang}</td>
-                  <td className="py-3 px-4 text-center">{row.kuota}</td>
-                  <td className="py-3 px-4 text-center">
-                    {row.tersedia > 0 ? (
-                      row.tersedia
-                    ) : (
-                      <span className="text-gray-600 italic">
-                        Tidak Tersedia
-                      </span>
-                    )}
+              {/* Tampilkan status Loading */}
+              {loading && (
+                <tr>
+                  <td
+                    colSpan="3"
+                    className="py-4 px-4 text-center text-gray-500"
+                  >
+                    Memuat data...
                   </td>
                 </tr>
-              ))}
+              )}
+
+              {/* Tampilkan status Error */}
+              {error && (
+                <tr>
+                  <td
+                    colSpan="3"
+                    className="py-4 px-4 text-center text-red-500"
+                  >
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {/* Tampilkan data jika berhasil diambil dan tidak loading */}
+              {!loading && !error && data.length === 0 && (
+                <tr>
+                  <td
+                    colSpan="3"
+                    className="py-4 px-4 text-center text-gray-500"
+                  >
+                    Belum ada data kuota yang tersedia.
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                !error &&
+                data.map((row) => (
+                  // Gunakan ID unik dari data sebagai key
+                  <tr key={row.id}>
+                    <td className="py-3 px-4">{row.bidang}</td>
+                    <td className="py-3 px-4 text-center">{row.kuota}</td>
+                    <td className="py-3 px-4 text-center">
+                      {row.tersedia > 0 ? (
+                        // Tampilkan kuota tersedia jika lebih dari 0
+                        row.tersedia
+                      ) : (
+                        <span className="text-gray-600 italic">
+                          Tidak Tersedia
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
