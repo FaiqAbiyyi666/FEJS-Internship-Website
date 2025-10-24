@@ -1,8 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Camera } from 'lucide-react';
 import Navbar from '../../../src/components/navigations/Navbar';
+import { useLoading } from '../../../src/contexts/LoadingContext';
 
 export default function Profile() {
+  const { showLoading, hideLoading } = useLoading();
   const [formData, setFormData] = useState({
     namaLengkap: '',
     nimNis: '',
@@ -65,11 +67,81 @@ export default function Profile() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const fetchProfile = useCallback(async () => {
+    showLoading();
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Token tidak ditemukan, mohon login ulang.');
+        setNotification({
+          message: 'Sesi Anda berakhir. Mohon login ulang.',
+          type: 'error',
+        });
+        return;
+      }
+
+      const res = await fetch('http://localhost:3000/api/peserta/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || 'Gagal mengambil data profil.');
+      }
+
+      if (result.status) {
+        const profileData = result.data;
+        setFormData({
+          namaLengkap: profileData.namaLengkap || '',
+          nimNis: profileData.nimNis || '',
+          instansi: profileData.instansi || '',
+          jurusan: profileData.jurusan || '',
+          tglLahir: profileData.tglLahir
+            ? new Date(profileData.tglLahir).toISOString().split('T')[0]
+            : '',
+          noTelepon: profileData.noTelepon || '',
+          email: profileData.email || '',
+          nik: profileData.nik || '',
+          alamat: profileData.alamat || '',
+          pasFoto: profileData.pas_foto || '',
+        });
+        const imageUrl = profileData.pasFoto;
+
+        // Cek apakah imageUrl adalah URL yang valid dari ImageKit
+        if (
+          imageUrl &&
+          (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))
+        ) {
+          // Jika ya, gunakan URL itu
+          setProfileImage(imageUrl);
+        } else {
+          // Jika tidak (misal: null, undefined, atau path "/images/...")
+          // Gunakan gambar default
+          setProfileImage('/default-profile.png');
+        }
+      } else {
+        console.error('Gagal ambil data profil:', result.message);
+        setNotification({ message: result.message, type: 'error' });
+      }
+    } catch (err) {
+      console.error('Gagal fetch profile:', err);
+      setNotification({ message: err.message, type: 'error' });
+    } finally {
+      hideLoading(); // <-- (4) Sembunyikan loader (di dalam 'finally')
+    }
+  }, [showLoading, hideLoading]); // Dependency array kosong, fungsi ini tidak akan dibuat ulang
+
+  // --- (2) PERBARUI useEffect ---
+  // Sekarang useEffect hanya memanggil fungsi fetchProfile
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setNotification({ message: '', type: '' });
 
-    // Langkah 1: Jalankan validasi frontend. Jika gagal, hentikan proses.
     if (!validateForm()) {
       setNotification({
         message:
@@ -79,88 +151,66 @@ export default function Profile() {
       return;
     }
 
-    // Langkah 2: Jika validasi lolos, siapkan data untuk dikirim
-    const dataToSend = new FormData();
-    dataToSend.append('namaLengkap', formData.namaLengkap);
-    dataToSend.append('noTelepon', formData.noTelepon);
-    dataToSend.append('nimNis', formData.nimNis);
-    dataToSend.append('instansi', formData.instansi);
-    dataToSend.append('jurusan', formData.jurusan);
-    dataToSend.append('alamat', formData.alamat);
+    const token = localStorage.getItem('token');
+    let requestBody;
+    const requestHeaders = {
+      Authorization: `Bearer ${token}`,
+    };
 
-    if (imageFile) {
-      dataToSend.append('pasFoto', imageFile);
-    }
+    showLoading();
 
     try {
-      // Langkah 3: Kirim data ke backend
-      const token = localStorage.getItem('token');
+      if (imageFile) {
+        // ... (logika FormData Anda tidak berubah)
+        const dataToSend = new FormData();
+        dataToSend.append('namaLengkap', formData.namaLengkap);
+        dataToSend.append('noTelepon', formData.noTelepon);
+        dataToSend.append('nimNis', formData.nimNis);
+        dataToSend.append('instansi', formData.instansi);
+        dataToSend.append('jurusan', formData.jurusan);
+        dataToSend.append('alamat', formData.alamat);
+        dataToSend.append('pasFoto', imageFile);
+        requestBody = dataToSend;
+      } else {
+        // ... (logika JSON Anda tidak berubah)
+        const dataToSend = {
+          namaLengkap: formData.namaLengkap,
+          noTelepon: formData.noTelepon,
+          nimNis: formData.nimNis,
+          instansi: formData.instansi,
+          jurusan: formData.jurusan,
+          alamat: formData.alamat,
+        };
+        requestBody = JSON.stringify(dataToSend);
+        requestHeaders['Content-Type'] = 'application/json';
+      }
+
       const res = await fetch('http://localhost:3000/api/peserta/profile', {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: dataToSend,
+        headers: requestHeaders,
+        body: requestBody,
       });
 
       const result = await res.json();
       if (!res.ok) {
-        // Jika backend menolak (status 400, 500, dll)
         throw new Error(result.message || 'Gagal memperbarui profil.');
       }
 
+      // --- INI PERUBAHAN UTAMANYA ---
       setNotification({ message: result.message, type: 'success' });
-      setImageFile(null); // Reset file setelah sukses
+      setImageFile(null); // Reset file preview
+
+      // Panggil 'fetchProfile' lagi untuk mengambil data terbaru dari server
+      // Ini akan otomatis memperbarui 'formData' DAN 'profileImage'
+      await fetchProfile();
+      // -------------------------------
     } catch (err) {
-      // Langkah 4: Tangkap dan tampilkan error dari backend
       console.error('Error submitting form:', err);
       setNotification({ message: err.message, type: 'error' });
+    } finally {
+      hideLoading();
     }
   };
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.error('Token tidak ditemukan, mohon login ulang.');
-          return;
-        }
-
-        const res = await fetch('http://localhost:3000/api/peserta/profile', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const result = await res.json();
-
-        if (!res.ok) {
-          throw new Error(result.message || 'Gagal mengambil data profil.');
-        }
-
-        if (result.status) {
-          const profileData = result.data;
-          setFormData({
-            namaLengkap: profileData.namaLengkap || '',
-            nimNis: profileData.nimNis || '',
-            instansi: profileData.instansi || '',
-            jurusan: profileData.jurusan || '',
-            tglLahir: profileData.tglLahir
-              ? new Date(profileData.tglLahir).toISOString().split('T')[0]
-              : '',
-            noTelepon: profileData.noTelepon || '',
-            email: profileData.email || '',
-            nik: profileData.nik || '',
-            alamat: profileData.alamat || '',
-          });
-          setProfileImage(profileData.pasFoto || '/default-profile.png');
-        } else {
-          console.error('Gagal ambil data profil:', result.message);
-        }
-      } catch (err) {
-        console.error('Gagal fetch profile:', err);
-      }
-    };
-
-    fetchProfile();
-  }, []);
 
   return (
     <>

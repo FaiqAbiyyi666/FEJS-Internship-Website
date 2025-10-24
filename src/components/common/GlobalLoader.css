@@ -1,0 +1,44 @@
+/* Overlay untuk menutupi seluruh layar */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  /* Gunakan warna biru opsional Anda dengan transparansi */
+  background-color: rgba(0, 41, 66, 0.7); /* #002942 + 70% opacity */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Pastikan di atas segalanya */
+  backdrop-filter: blur(4px); /* Efek blur modern */
+}
+
+/* Spinner-nya */
+.loader-spinner {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  
+  /* Buat "rel" spinner menggunakan warna putih transparan 
+  */
+  border: 6px solid rgba(255, 255, 255, 0.3); /* #FFFFFF + 30% opacity */
+
+  /* Buat bagian yang berputar menggunakan warna Kuning Anda (#DDD600)
+    Ini akan memberikan kontras yang tinggi dan menarik perhatian
+  */
+  border-top-color: #DDD600;
+  
+  /* Animasi berputar */
+  animation: spin 1s linear infinite;
+}
+
+/* Keyframes untuk animasi berputar */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
