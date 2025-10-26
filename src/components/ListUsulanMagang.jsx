@@ -192,7 +192,7 @@ export default function ListUsulanMagang() {
                 <th className="py-3 px-4 font-semibold">TANGGAL PENGAJUAN</th>
                 <th className="py-3 px-4 font-semibold">TEMA MAGANG</th>
                 <th className="py-3 px-4 font-semibold">PERIODE MAGANG</th>
-                <th className="py-3 px-4 font-semibold">bidang MAGANG</th>
+                <th className="py-3 px-4 font-semibold">BIDANG MAGANG</th>
                 <th className="py-3 px-4 font-semibold">STATUS</th>
               </tr>
             </thead>

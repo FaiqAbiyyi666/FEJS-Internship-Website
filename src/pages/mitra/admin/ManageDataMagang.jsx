@@ -1,5 +1,5 @@
 // ManageDataMagang.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Eye, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -15,38 +15,135 @@ export default function ManageDataMagang() {
   const [selectedPeserta, setSelectedPeserta] = useState(null);
   const [daftarPeserta, setDaftarPeserta] = useState([]);
   const { showLoading, hideLoading } = useLoading();
+  const [isEditing, setIsEditing] = useState(false);
+  const [allBidang, setAllBidang] = useState([]); // Untuk <select> dropdown
+  const [formData, setFormData] = useState({});
+  const [notification, setNotification] = useState({ message: '', type: '' });
+
+  const fetchSemuaPeserta = useCallback(async () => {
+    showLoading();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3000/api/admin/data-magang', {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+
+      const result = await res.json();
+
+      if (result.status && Array.isArray(result.data)) {
+        setDaftarPeserta(result.data);
+      } else {
+        console.error('Gagal mengambil data peserta:', result.message);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      hideLoading();
+    }
+  }, [showLoading, hideLoading]);
 
   useEffect(() => {
-    const fetchSemuaPeserta = async () => {
-      showLoading();
-      try {
-        const token = localStorage.getItem('token'); // Ambil token admin
-
-        // Panggil endpoint yang sudah kita siapkan
-        const res = await fetch('http://localhost:3000/api/admin/data-magang', {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: 'no-store', // Selalu ambil data baru
-        });
-
-        const result = await res.json();
-
-        if (result.status && Array.isArray(result.data)) {
-          // --- TIDAK PERLU PENYESUAIAN ---
-          // Data dari backend (result.data) langsung disimpan ke state
-          // karena formatnya sudah benar.
-          setDaftarPeserta(result.data);
-        } else {
-          console.error('Gagal mengambil data peserta:', result.message);
-        }
-      } catch (err) {
-        console.error('Error fetching data:', err);
-      } finally {
-        hideLoading();
-      }
-    };
-
     fetchSemuaPeserta();
-  }, [showLoading, hideLoading]);
+  }, [fetchSemuaPeserta]);
+
+  // Helper untuk memformat tanggal ISO ke YYYY-MM-DD
+  const formatDateForInput = (isoString) => {
+    if (!isoString) return '';
+    return isoString.split('T')[0];
+  };
+
+  // Fungsi untuk mengisi state form
+  const initializeFormData = (peserta) => {
+    setFormData({
+      namaLengkap: peserta.nama || '',
+      nimNis: peserta.nim || '',
+      email: peserta.email || '',
+      tglLahir: formatDateForInput(peserta.tglLahir),
+      noTelepon: peserta.noTelepon || '',
+      nik: peserta.nik || '',
+      alamat: peserta.alamat || '',
+      instansi: peserta.instansi || '',
+      jurusan: peserta.jurusan || '',
+      periodeMulai: formatDateForInput(peserta.periodeMulai),
+      periodeSelesai: formatDateForInput(peserta.periodeSelesai),
+      bidangId: peserta.bidangId || '', // PRASYARAT (Lihat Bagian 3)
+      ajuanId: peserta.ajuanId || '', // PRASYARAT (Lihat Bagian 3)
+    });
+  };
+
+  // Isi form saat data peserta berubah (misal user klik peserta lain)
+  useEffect(() => {
+    if (selectedPeserta) {
+      initializeFormData(selectedPeserta);
+      setIsEditing(false); // Selalu kembali ke mode view
+      setNotification({ message: '', type: '' }); // Hapus notifikasi lama
+    }
+  }, [selectedPeserta]);
+
+  // Handler untuk input form
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handler untuk tombol "Batal"
+  const handleCancelClick = () => {
+    setIsEditing(false);
+    setNotification({ message: '', type: '' });
+    // Reset form ke data asli
+    initializeFormData(selectedPeserta);
+  };
+
+  // Handler untuk tombol "Simpan Data"
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setNotification({ message: '', type: '' });
+
+    // Validasi Konfirmasi
+    if (
+      !window.confirm('Anda yakin ingin menyimpan perubahan data peserta ini?')
+    ) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      // Panggil API baru yang kita buat di Bagian 1
+      const res = await fetch(
+        `http://localhost:3000/api/admin/peserta-magang/${selectedPeserta.id}`,
+        {
+          // selectedPeserta.id adalah userId
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+
+      setNotification({ message: result.message, type: 'success' });
+      setIsEditing(false);
+
+      // Beri tahu komponen parent untuk refresh data (PENTING)
+      await fetchSemuaPeserta();
+    } catch (err) {
+      console.error('Error submit:', err);
+      setNotification({
+        message: err.message || 'Gagal menyimpan data.',
+        type: 'error',
+      });
+    }
+  };
+
+  const inputClass =
+    'w-full text-gray-600 border border-gray-300 rounded-md px-3 py-1.5 text-base focus:outline-none focus:ring-2 focus:ring-blue-500';
+  const readOnlyClass = 'text-gray-500 bg-gray-100 italic';
+  const labelClass = 'font-semibold text-black';
 
   // filtered & pagination
   const filtered = daftarPeserta.filter((d) => {
@@ -79,9 +176,11 @@ export default function ManageDataMagang() {
 
     const info = [
       ['Nama', p.nama],
+      ['Tanggal Lahir', p.tglLahir],
       ['NIM / NIS', p.nim || '-'],
       ['Email', p.email || '-'],
       ['No. Telepon', p.noTelepon || '-'],
+      ['NIK', p.nik || '-'],
       ['Bidang', p.bidang],
       ['Instansi', p.instansi],
       ['Jurusan', p.jurusan || '-'],
@@ -107,9 +206,11 @@ export default function ManageDataMagang() {
   const exportAllExcel = () => {
     const exportData = daftarPeserta.map((d) => ({
       nama: d.nama,
+      tglLahir: d.tglLahir,
       nim: d.nim,
       email: d.email,
       phone: d.phone,
+      nik: d.nik,
       bidang: d.bidang,
       instansi: d.instansi,
       jurusan: d.jurusan,
@@ -351,107 +452,321 @@ export default function ManageDataMagang() {
 
             <div className="p-6 space-y-6">
               {/* Info cards: Personal & Instansi */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white border rounded-lg p-4 shadow-sm">
-                  <div className="text-base space-y-3">
-                    <div>
-                      <div className="font-semibold text-black">Nama</div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.nama}
+              <form onSubmit={handleSubmit}>
+                {/* --- Notifikasi Sukses/Error --- */}
+                {notification.message && (
+                  <div
+                    className={`p-3 mb-4 rounded-lg text-sm ${
+                      notification.type === 'success'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {notification.message}
+                  </div>
+                )}
+
+                {/* --- Grid 2 Kartu --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* --- KARTU INFO PERSONAL --- */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <div className="text-base space-y-3">
+                      {/* Nama */}
+                      <div>
+                        <div className={labelClass}>Nama</div>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="namaLengkap"
+                            value={formData.namaLengkap}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.nama}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* NIM */}
+                      <div>
+                        <div className={labelClass}>NIM / NIS</div>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="nimNis"
+                            value={formData.nimNis}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.nim}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div>
+                        <div className={labelClass}>Email</div>
+                        {isEditing ? (
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.email}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tgl Lahir */}
+                      <div>
+                        <div className={labelClass}>Tanggal Lahir</div>
+                        {isEditing ? (
+                          <input
+                            type="date"
+                            name="tglLahir"
+                            value={formData.tglLahir}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.tglLahir
+                              ? selectedPeserta.tglLahir.split('T')[0]
+                              : 'N/A'}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* No Telepon */}
+                      <div>
+                        <div className={labelClass}>No. Telepon</div>
+                        {isEditing ? (
+                          <input
+                            type="tel"
+                            name="noTelepon"
+                            value={formData.noTelepon}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.noTelepon}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* NIK */}
+                      <div>
+                        <div className={labelClass}>
+                          Nomor Induk Kependudukan
+                        </div>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="nik"
+                            value={formData.nik}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.nik}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Alamat */}
+                      <div>
+                        <div className={labelClass}>Alamat</div>
+                        {isEditing ? (
+                          <textarea
+                            name="alamat"
+                            value={formData.alamat}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                            rows={2}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.alamat}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Instansi */}
+                      <div>
+                        <div className={labelClass}>Instansi</div>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="instansi"
+                            value={formData.instansi}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.instansi}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Jurusan */}
+                      <div>
+                        <div className={labelClass}>Jurusan</div>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="jurusan"
+                            value={formData.jurusan}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.jurusan}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div>
-                      <div className="font-semibold text-black">NIM / NIS</div>
-                      <div className="text-gray-600">{selectedPeserta.nim}</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">Email</div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.email}
+                  </div>
+
+                  {/* --- KARTU INFO MAGANG --- */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <div className="text-base space-y-3">
+                      {/* Periode */}
+                      <div>
+                        <div className={labelClass}>Periode</div>
+                        {isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="date"
+                              name="periodeMulai"
+                              value={formData.periodeMulai}
+                              onChange={handleInputChange}
+                              className={inputClass}
+                            />
+                            <span>s/d</span>
+                            <input
+                              type="date"
+                              name="periodeSelesai"
+                              value={formData.periodeSelesai}
+                              onChange={handleInputChange}
+                              className={inputClass}
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.periodeMulai
+                              ? selectedPeserta.periodeMulai.split('T')[0]
+                              : 'N/A'}{' '}
+                            s/d{' '}
+                            {selectedPeserta.periodeSelesai
+                              ? selectedPeserta.periodeSelesai.split('T')[0]
+                              : 'N/A'}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">
-                        No. Telepon
+
+                      {/* Bidang */}
+                      <div>
+                        <div className={labelClass}>Bidang</div>
+                        {isEditing ? (
+                          <select
+                            name="bidangId"
+                            value={formData.bidangId}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          >
+                            <option value="" disabled>
+                              -- Pilih Bidang --
+                            </option>
+                            {allBidang.map((bidang) => (
+                              <option key={bidang.id} value={bidang.id}>
+                                {bidang.nama}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.bidang}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.noTelepon}
+
+                      {/* --- Bagian Read-Only --- */}
+
+                      <div>
+                        <div className={labelClass}>Status Magang</div>
+                        <div className={readOnlyClass}>
+                          {selectedPeserta.statusMagang}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">Alamat</div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.alamat}
+
+                      <div>
+                        <div className={labelClass}>Laporan Akhir</div>
+                        <div className={readOnlyClass}>
+                          {selectedPeserta.laporanAkhir?.status || '-'}{' '}
+                          {selectedPeserta.laporanAkhir?.nilai
+                            ? ` • Nilai: ${selectedPeserta.laporanAkhir.nilai}`
+                            : ''}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">Instansi</div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.instansi}
+
+                      <div>
+                        <div className={labelClass}>Status Surat Magang</div>
+                        <div className={readOnlyClass}>
+                          {selectedPeserta.suratMagang}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">Jurusan</div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.jurusan}
+
+                      <div>
+                        <div className={labelClass}>Status Sertifikat</div>
+                        <div className={readOnlyClass}>
+                          {selectedPeserta.sertifikat}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white border rounded-lg p-4 shadow-sm">
-                  <div className="text-base space-y-3">
-                    <div>
-                      <div className="font-semibold text-black">
-                        Status Magang
-                      </div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.statusMagang}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">Periode</div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.periodeMulai} s/d{' '}
-                        {selectedPeserta.periodeSelesai}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">Bidang</div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.bidang}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">
-                        Laporan Akhir
-                      </div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.laporanAkhir?.status || '-'}{' '}
-                        {selectedPeserta.laporanAkhir?.nilai
-                          ? ` • Nilai: ${selectedPeserta.laporanAkhir.nilai}`
-                          : ''}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">
-                        Status Surat Magang
-                      </div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.suratMagang}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-black">
-                        Status Sertifikat
-                      </div>
-                      <div className="text-gray-600">
-                        {selectedPeserta.sertifikat}
-                      </div>
-                    </div>
-                  </div>
+                {/* --- Tombol Kontrol --- */}
+                <div className="flex justify-end gap-3 mt-6">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleCancelClick}
+                        className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2 rounded-lg bg-[#006DA6] text-white font-medium hover:bg-[#003c5d]"
+                      >
+                        Simpan Data
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="px-6 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700"
+                    >
+                      Ubah Data Peserta
+                    </button>
+                  )}
                 </div>
-              </div>
+              </form>
 
               {/* Weekly cards like reference */}
               <div>
