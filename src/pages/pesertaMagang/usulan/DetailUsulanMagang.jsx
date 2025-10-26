@@ -1,43 +1,159 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../../../src/components/navigations/Navbar';
+import { useEffect, useState } from 'react'; // <-- Import hooks
+
+/**
+ * Helper function untuk memformat tanggal
+ */
+const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  return new Date(dateString).toLocaleDateString('id-ID', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+/**
+ * Helper function untuk memformat periode
+ */
+const formatPeriode = (tglMulai, tglSelesai) => {
+  if (!tglMulai || !tglSelesai) return '-';
+  const mulai = new Date(tglMulai).toLocaleDateString('id-ID', {
+    month: 'long',
+    year: 'numeric',
+  });
+  const selesai = new Date(tglSelesai).toLocaleDateString('id-ID', {
+    month: 'long',
+    year: 'numeric',
+  });
+  if (mulai === selesai) return mulai;
+  return `${mulai} - ${selesai}`;
+};
 
 export default function DetailUsulanMagang() {
-  const { id } = useParams();
+  const { id } = useParams(); // Ambil ID ajuan dari URL
   const navigate = useNavigate();
 
-  // Dummy data sesuai ID
-  const detailData = {
-    id: id,
-    tanggal: '2025-07-01',
-    namaLengkap: 'Faiq Abiyyi',
-    nim: '123456789',
-    universitas: 'UPN Veteran Jawa Timur',
-    jurusan: 'Sistem Informasi',
-    kategori: 'Reguler',
-    statusPendidikan: 'Kuliah',
-    jenjangPendidikan: 'S1',
-    tema: 'Penerapan Sistem Informasi Manajemen',
-    periode: '12 Agustus - 12 November 2025',
-    bidang: 'Infrastruktur & Keamanan TIK',
-    status: 'Menunggu',
-    berkas: {
-      suratBakesbangProv: '/files/bakesbangprov-1.pdf',
-      suratBakesbangSDA: '/files/bakesbangsda-1.pdf',
-      suratPengantar: '/berkas/surat-pengantar.pdf',
-      proposalMagang: '/files/proposal-1.pdf',
-      cv: '/files/cv-1.pdf',
-      ktp: '/files/ktpdummy-1.pdf',
-    },
-  };
+  // State untuk data, loading, dan error
+  const [detail, setDetail] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // useEffect untuk fetch data saat komponen dimuat
+  useEffect(() => {
+    const fetchDetail = async () => {
+      if (!id) return; // Jangan fetch jika id tidak ada
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Autentikasi diperlukan. Silakan login kembali.');
+        }
+
+        // Sesuaikan endpoint ini agar sama dengan yang Anda buat di router
+        const response = await fetch(
+          `http://localhost:3000/api/peserta/ajuan-magang/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || 'Gagal mengambil detail data.');
+        }
+
+        if (result.status && result.data) {
+          setDetail(result.data); // Simpan data dari backend ke state
+        } else {
+          throw new Error('Format data dari server tidak valid.');
+        }
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching detail:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [id]); // Dependensi [id], agar fetch ulang jika id berubah
 
   const renderField = (label, value) => (
     <div>
       <label className="block text-gray-600 text-sm mb-1">{label}</label>
       <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-800">
-        {value}
+        {value || '-'}
       </div>
     </div>
   );
+
+  // Tampilkan state Loading
+  if (isLoading) {
+    return (
+      <>
+        <Navbar />
+        <div className="pt-[120px] min-h-screen bg-[#F5F7FA] px-6">
+          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow px-8 py-10 text-center">
+            Memuat detail usulan...
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Tampilkan state Error
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <div className="pt-[120px] min-h-screen bg-[#F5F7FA] px-6">
+          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow px-8 py-10 text-center text-red-600">
+            <h2 className="font-bold mb-2">Terjadi Kesalahan</h2>
+            <p>{error}</p>
+            <button
+              onClick={() => navigate(-1)}
+              className="mt-4 text-sm text-[#006DA6] hover:underline bg-white border-2 border-[#006DA6] px-4 py-2 rounded-lg font-semibold hover:bg-[#f0f9ff] transition-all"
+            >
+              ← Kembali
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Tampilkan data jika fetch sukses
+  // (detail.peserta.berkas[0] mungkin 'undefined' jika tidak ada berkas)
+  const berkas = detail.peserta.berkas?.[0] || {};
+  const detailData = {
+    tanggal: formatDate(detail.createdAt),
+    namaLengkap: detail.peserta.namaLengkap,
+    nim: detail.peserta.nimNis,
+    universitas: detail.peserta.instansi,
+    jurusan: detail.peserta.jurusan,
+    kategori: detail.kategoriMagang,
+    statusPendidikan: detail.statusPendidikan,
+    jenjangPendidikan: detail.jenjangPendidikan,
+    tema: detail.temaMagang,
+    periode: formatPeriode(detail.tglMulai, detail.tglSelesai),
+    bidang: detail.bidang?.nama || 'N/A',
+    status: detail.statusUsulan,
+    berkas: {
+      suratBakesbangProv: berkas.suratBakesbangpolSby, // Mapping Sby -> Prov
+      suratBakesbangSDA: berkas.suratBakesbangpolSda,
+      suratPengantar: berkas.suratPengantar,
+      proposalMagang: berkas.proposalMagang,
+      cv: berkas.cv,
+      ktp: berkas.pasFoto, // Mapping pasFoto -> ktp
+    },
+  };
 
   return (
     <>
@@ -54,7 +170,7 @@ export default function DetailUsulanMagang() {
             <h1 className="text-xl font-bold text-[#006DA6] text-center flex-1">
               Detail Usulan Magang
             </h1>
-            <div className="w-[60px]">{/* Spacer to balance flex */}</div>
+            <div className="w-[80px]"></div> {/* Spacer */}
           </div>
 
           <div className="space-y-4 text-sm">
@@ -83,7 +199,7 @@ export default function DetailUsulanMagang() {
               <ul className="list-disc pl-6 space-y-1 text-sm">
                 <li>
                   <a
-                    href={detailData.berkas.suratBakesbangProv}
+                    href={detailData.berkas.suratBakesbangProv || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
@@ -93,7 +209,7 @@ export default function DetailUsulanMagang() {
                 </li>
                 <li>
                   <a
-                    href={detailData.berkas.suratBakesbangSDA}
+                    href={detailData.berkas.suratBakesbangSDA || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
@@ -103,7 +219,7 @@ export default function DetailUsulanMagang() {
                 </li>
                 <li>
                   <a
-                    href={detailData.berkas.suratPengantar}
+                    href={detailData.berkas.suratPengantar || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
@@ -113,7 +229,7 @@ export default function DetailUsulanMagang() {
                 </li>
                 <li>
                   <a
-                    href={detailData.berkas.proposalMagang}
+                    href={detailData.berkas.proposalMagang || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
@@ -123,7 +239,7 @@ export default function DetailUsulanMagang() {
                 </li>
                 <li>
                   <a
-                    href={detailData.berkas.cv}
+                    href={detailData.berkas.cv || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
@@ -133,7 +249,7 @@ export default function DetailUsulanMagang() {
                 </li>
                 <li>
                   <a
-                    href={detailData.berkas.ktp}
+                    href={detailData.berkas.ktp || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
