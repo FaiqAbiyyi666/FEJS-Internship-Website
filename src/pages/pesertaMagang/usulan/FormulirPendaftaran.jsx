@@ -2,7 +2,6 @@ import { useContext } from 'react';
 import { FormDataContext } from './PengajuanMagangPage'; // Import context
 
 export default function FormulirPendaftaran() {
-  // Gunakan context untuk mendapatkan state dan setter
   const { formData, setFormData } = useContext(FormDataContext);
 
   // Buat handler untuk memudahkan update
@@ -10,6 +9,7 @@ export default function FormulirPendaftaran() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-bold text-center text-[#002942]">
@@ -217,32 +217,6 @@ export default function FormulirPendaftaran() {
           </div>
         </div>
       </div>
-
-      {/* Data Peserta */}
-      {/* <h2 className="text-lg font-bold text-center text-[#002942] mt-8">
-        Data Peserta Magang
-      </h2>
-
-      <div className="grid grid-cols-1 gap-6">
-        <div className="flex flex-col md:flex-row md:items-end md:gap-6 space-y-4 md:space-y-0">
-          <div className="w-full md:w-1/2">
-            <label className="block text-sm font-medium mb-1">
-              Nama Lengkap Peserta
-            </label>
-            <input
-              className="form-input w-full"
-              placeholder="Masukkan Nama Lengkap"
-            />
-          </div>
-          <div className="w-full md:w-1/2">
-            <label className="block text-sm font-medium mb-1">NIS / NIM</label>
-            <input
-              className="form-input w-full"
-              placeholder="Masukkan NIS / NIM"
-            />
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 }

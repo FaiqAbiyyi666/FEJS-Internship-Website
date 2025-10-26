@@ -77,7 +77,7 @@ export default function Register() {
 
       // Tambahkan file dengan NAMA FIELD YANG BENAR ('pas_foto')
       if (formData.pasFoto) {
-        dataToSend.append('pas_foto', formData.pasFoto);
+        dataToSend.append('pasFoto', formData.pasFoto);
       }
 
       try {

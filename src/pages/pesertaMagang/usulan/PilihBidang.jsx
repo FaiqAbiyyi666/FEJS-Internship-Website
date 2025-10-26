@@ -1,38 +1,52 @@
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { FormDataContext } from './PengajuanMagangPage'; // Pastikan path import ini benar
-
-// 1. Definisikan data di satu tempat (Single Source of Truth)
-const kuotaData = [
-  {
-    nama: 'Sekretariat',
-    total: 5,
-    tersedia: 2,
-  },
-  {
-    nama: 'Pengelolaan Informasi dan Komunikasi Publik',
-    total: 7,
-    tersedia: 3,
-  },
-  {
-    nama: 'Tata Kelola Informatika',
-    total: 6,
-    tersedia: 0, // Contoh kuota tidak tersedia
-  },
-  {
-    nama: 'Infrastruktur & Keamanan TIK',
-    total: 5,
-    tersedia: 2,
-  },
-  {
-    nama: 'Statistik',
-    total: 4,
-    tersedia: 0, // Contoh kuota tidak tersedia
-  },
-];
 
 export default function PilihBidang() {
   // 2. Hubungkan ke state terpusat via Context
   const { formData, setFormData } = useContext(FormDataContext);
+  const [kuota, setKuota] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchKuota = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Panggil endpoint API Anda.
+        // Sesuaikan '/api/kuota-bidang' jika base URL atau path-nya berbeda.
+        // Ini didasarkan pada router: router.get('/kuota-bidang', ...);
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/kuota-bidang'
+        );
+
+        if (!response.ok) {
+          throw new Error(`Gagal mengambil data: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status && Array.isArray(result.data)) {
+          const transformedData = result.data.map((bidang) => ({
+            id: bidang.id,
+            nama: bidang.nama,
+            total: bidang.kuota, // 'kuota' dari backend adalah 'total' di frontend
+            tersedia: Math.max(0, bidang.kuota - bidang.pesertaAktif), // Hitung sisa kuota
+          }));
+          setKuota(transformedData);
+        } else {
+          throw new Error(result.message || 'Format data dari server salah');
+        }
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching kuota:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchKuota();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,6 +55,27 @@ export default function PilihBidang() {
       [name]: value,
     }));
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-600">Memuat data kuota...</p>
+      </div>
+    );
+  }
+
+  // 8. Tampilkan pesan error jika terjadi kegagalan fetch
+  if (error) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-red-600 font-semibold">Terjadi Kesalahan</p>
+        <p className="text-gray-700">{error}</p>
+        <p className="text-sm text-gray-500 mt-2">
+          Silakan coba muat ulang halaman.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -61,8 +96,8 @@ export default function PilihBidang() {
             </tr>
           </thead>
           <tbody className="bg-white">
-            {kuotaData.map((bidang) => (
-              <tr key={bidang.nama}>
+            {kuota.map((bidang) => (
+              <tr key={bidang.id}>
                 <td className="py-3 px-4 border-t border-gray-300">
                   {bidang.nama}
                 </td>
@@ -89,7 +124,6 @@ export default function PilihBidang() {
             Bidang Yang Dipilih
           </label>
           <div className="w-2/3 relative">
-            {/* 3. Jadikan <select> sebagai controlled component */}
             <select
               name="bidangPilihan" // Sesuaikan dengan key di state formData
               value={formData.bidangPilihan} // Nilai diambil dari state terpusat
@@ -99,11 +133,10 @@ export default function PilihBidang() {
               <option value="" disabled>
                 Pilih bidang yang diinginkan
               </option>
-              {/* 4. Opsi dropdown difilter & dibuat secara dinamis */}
-              {kuotaData
-                .filter((bidang) => bidang.tersedia > 0) // Hanya tampilkan bidang dengan kuota > 0
+              {kuota
+                .filter((bidang) => bidang.tersedia > 0)
                 .map((bidang) => (
-                  <option key={bidang.nama} value={bidang.nama}>
+                  <option key={bidang.id} value={bidang.id}>
                     {bidang.nama}
                   </option>
                 ))}

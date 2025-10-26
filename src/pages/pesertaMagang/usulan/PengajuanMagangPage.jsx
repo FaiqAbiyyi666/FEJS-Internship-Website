@@ -2,26 +2,15 @@ import React, { useState, createContext } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { FaArrowLeft, FaArrowRight, FaSave } from 'react-icons/fa';
 import Navbar from '../../../../src/components/navigations/Navbar';
-// Kita tidak lagi perlu mengimpor komponen anak di sini
-// import FormulirPendaftaran from './FormulirPendaftaran';
-// import UnggahBerkas from './UnggahBerkas';
-// import PilihBidang from './PilihBidang';
-// import KonfirmasiSimpan from './KonfirmasiSimpan';
 
 export const FormDataContext = createContext(null);
 
 export default function PengajuanMagangPage() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // State untuk modal tetap diperlukan di sini
   const [showModal, setShowModal] = useState(false);
-
-  // HAPUS: State ini tidak lagi diperlukan, karena step ditentukan dari URL
-  // const [step, setStep] = useState(0);
-
-  // HAPUS: State ini juga tidak lagi diperlukan, karena sudah masuk ke dalam formData
-  // const [isAgreed, setIsAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
     // Step 1: Formulir
@@ -70,11 +59,74 @@ export default function PengajuanMagangPage() {
     }
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setShowModal(false);
-    console.log('Data yang akan dikirim:', formData);
-    alert('Data berhasil disimpan!');
-    navigate('/usulan');
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // 1. Ambil token (sesuaikan dengan cara Anda menyimpan token)
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Autentikasi gagal. Silakan login kembali.');
+      }
+
+      // 2. Buat objek FormData
+      const data = new FormData();
+
+      // 3. Pemetakan (Mapping) state React ke field backend
+      // A. Append data teks (sesuai req.body di controller)
+      data.append('namaLengkap', formData.namaLengkap);
+      data.append('nis_nim', formData.nis_nim);
+      data.append('kategori', formData.kategori);
+      data.append('statusPendidikan', formData.statusPendidikan);
+      data.append('jenjangPendidikan', formData.jenjangPendidikan);
+      data.append('instansi', formData.instansi);
+      data.append('jurusan', formData.jurusan);
+      data.append('durasiMulai', formData.durasiMulai);
+      data.append('durasiSelesai', formData.durasiSelesai);
+      data.append('tema', formData.tema);
+      data.append('bidangPilihan', formData.bidangPilihan);
+
+      // B. Append data file (sesuai field middleware 'uploadBerkasAjuan')
+      // Pastikan state (misal: formData.proposalMagang) berisi File object
+      data.append('proposal_magang', formData.proposalMagang);
+      data.append('cv', formData.cvPeserta); // state 'cvPeserta' -> field 'cv'
+      data.append('ktp', formData.ktp); // (Pastikan controller/schema Anda benar)
+      data.append('surat_pengantar', formData.suratPengantar);
+      data.append('surat_bakesbang_sda', formData.suratBakesbangSDA);
+      data.append('surat_bakesbang_prov', formData.suratBakesbangProv);
+
+      // 4. Kirim request ke backend (endpoint dari file route Anda)
+      const response = await fetch(
+        'http://localhost:3000/api/peserta/ajuan-magang',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: data,
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        // Tangkap pesan error dari backend
+        throw new Error(result.message || 'Gagal mengirim ajuan.');
+      }
+
+      // 5. Handle Sukses
+      setIsLoading(false);
+      console.log('Ajuan berhasil dikirim:', result.data);
+      alert('Data berhasil disimpan!');
+      navigate('/usulan'); // Arahkan ke halaman usulan
+    } catch (err) {
+      setIsLoading(false);
+      setError(err.message);
+      console.error('Error saat submit:', err);
+      alert(`Terjadi kesalahan: ${err.message}`);
+    }
   };
 
   return (
