@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import Navbar from '...'; // Sesuaikan path Navbar Anda
-// import ModalDetail from './ModalDetailAjuan'; // Impor Modal Detail Anda
-// import Pagination from './Pagination'; // Impor komponen Pagination Anda
-// import * as XLSX from 'xlsx'; // Pastikan Anda sudah install xlsx
+import * as XLSX from 'xlsx'; // Pastikan Anda sudah install xlsx
 
 // Helper untuk format tanggal (bisa ditaruh di file terpisah)
 const formatTgl = (dateStr) => {
@@ -236,13 +233,14 @@ export default function AdminAjuanMagangPage() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `http://localhost:3000/api/admin/ajuan-magang/${idAjuan}/status`,
+        `http://localhost:3000/api/admin/ajuan-magang/${idAjuan}/status`, // Pastikan endpoint benar
         {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
+          // Hanya kirim status
           body: JSON.stringify({ status: newStatus }),
         }
       );
