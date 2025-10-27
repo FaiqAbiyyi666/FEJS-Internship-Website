@@ -1,198 +1,290 @@
-import React, { useEffect, useState, Fragment } from 'react';
-import {
-  Eye,
-  CheckCircle,
-  XCircle,
-  Download,
-  MoreVertical,
-} from 'lucide-react';
-import { Dialog, Transition } from '@headlessui/react';
-import * as XLSX from 'xlsx';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+// import Navbar from '...'; // Sesuaikan path Navbar Anda
+// import ModalDetail from './ModalDetailAjuan'; // Impor Modal Detail Anda
+// import Pagination from './Pagination'; // Impor komponen Pagination Anda
+// import * as XLSX from 'xlsx'; // Pastikan Anda sudah install xlsx
 
-export default function ManageAjuanMagang() {
-  // === State Utama ===
-  const [pesertaMagang, setPesertaMagang] = useState([
-    {
-      id: 1,
-      nim: '0101234567',
-      nama: 'Ahmad Prabowo Subianto',
-      email: 'ahmad.prabowo@email.com',
-      instansi: 'Universitas Jimbaran',
-      jurusan: 'Sistem Informasi',
-      statusPendidikan: 'Kuliah',
-      jenjangPendidikan: 'S1',
-      temaMagang: 'Pengembangan Sistem Informasi Kepegawaian',
-      bidang: 'Sekretariat',
-      status: 'Pending',
-      tanggalMulai: '2024-02-01',
-      tanggalSelesai: '2024-04-30',
-      suratPengantar: 'surat-pengantar-ahmad.pdf',
-      proposalMagang: 'files/proposal-1.pdf',
-      cv: 'files/cv-1.pdf',
-      bakesbangprov: 'files/bakesbangprov-1.pdf',
-      bakesbangsda: 'files/bakesbangsda-1.pdf',
-      ktp: 'files/ktpdummy-1.pdf',
-      foto: 'https://randomuser.me/api/portraits/men/32.jpg',
-      pakta: 'true',
-      createdAt: '2024-01-12',
-    },
-    {
-      id: 2,
-      nim: '0202345678',
-      nama: 'Siti Aminah',
-      email: 'siti.aminah@email.com',
-      instansi: 'Universitas Gadjah Mada',
-      jurusan: 'Manajemen',
-      statusPendidikan: 'Kuliah',
-      jenjangPendidikan: 'S1',
-      temaMagang: 'Manajemen Proyek dan Analisis Bisnis',
-      bidang: 'Statistika',
-      status: 'Pending',
-      tanggalMulai: '2024-03-01',
-      tanggalSelesai: '2024-05-31',
-      suratPengantar: 'surat-pengantar-siti.pdf',
-      proposalMagang: 'files/proposal-1.pdf',
-      cv: 'files/cv-1.pdf',
-      bakesbangprov: 'files/bakesbangprov-1.pdf',
-      bakesbangsda: 'files/bakesbangsda-1.pdf',
-      ktp: 'files/ktpdummy-1.pdf',
-      foto: 'https://randomuser.me/api/portraits/women/44.jpg',
-      pakta: 'true',
-      createdAt: '2024-02-02',
-    },
-    {
-      id: 3,
-      nim: '0505678901',
-      nama: 'Andi Nugroho',
-      email: 'andi.nugroho@email.com',
-      instansi: 'Universitas Diponegoro',
-      jurusan: 'Hukum',
-      statusPendidikan: 'Lulus Kuliah',
-      jenjangPendidikan: 'S1',
-      temaMagang: 'Analisis Regulasi dan Perancangan Kebijakan',
-      bidang: 'Tata Kelola Informasi',
-      status: 'Pending',
-      tanggalMulai: '2024-02-15',
-      tanggalSelesai: '2024-05-15',
-      suratPengantar: 'surat-pengantar-andi.pdf',
-      proposalMagang: 'files/proposal-1.pdf',
-      cv: 'files/cv-1.pdf',
-      bakesbangprov: 'files/bakesbangprov-1.pdf',
-      bakesbangsda: 'files/bakesbangsda-1.pdf',
-      ktp: 'files/ktpdummy-1.pdf',
-      foto: 'https://randomuser.me/api/portraits/men/51.jpg',
-      pakta: 'true',
-      createdAt: '2024-01-25',
-    },
-  ]);
+// Helper untuk format tanggal (bisa ditaruh di file terpisah)
+const formatTgl = (dateStr) => {
+  if (!dateStr) return '-';
+  return new Date(dateStr).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
 
-  // === State Filter & Modal ===
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchDate, setSearchDate] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+const formatPeriode = (mulai, selesai) => {
+  if (!mulai || !selesai) return '-';
+  return `${formatTgl(mulai)} - ${formatTgl(selesai)}`;
+};
 
+// Helper untuk badge status
+const getStatusBadge = (status) => {
+  switch (status) {
+    case 'DITERIMA':
+      return 'bg-green-100 text-green-800';
+    case 'DITOLAK':
+      return 'bg-red-100 text-red-800';
+    case 'PENDING':
+    default:
+      return 'bg-yellow-100 text-yellow-800';
+  }
+};
+
+// Placeholder icons (ganti dengan import asli Anda jika ada)
+const DownloadIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-4 w-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+    />
+  </svg>
+);
+const EyeIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-.274 1.008-.67 1.944-1.164 2.793M2.458 12c1.274 4.057 5.064 7 9.542 7 1.77 0 3.44-.388 4.935-1.07M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+    />
+  </svg>
+);
+
+export default function AdminAjuanMagangPage() {
+  const navigate = useNavigate();
+
+  // === State Data (Sudah dipisah) ===
+  const [pendingPeserta, setPendingPeserta] = useState([]);
+  const [historyPeserta, setHistoryPeserta] = useState([]);
+
+  // === State Loading & Error ===
+  const [isPendingLoading, setIsPendingLoading] = useState(true);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  const [error, setError] = useState(null); // Satu state error cukup
+
+  // === State Filter & Pagination (Server-side) ===
+  const [searchTerm, setSearchTerm] = useState(''); // Untuk tab History
+  const [statusFilter, setStatusFilter] = useState('all'); // Untuk tab History ('all', 'DITERIMA', 'DITOLAK')
+  const [currentPendingPage, setCurrentPendingPage] = useState(1);
+  const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
+  const [totalPendingPages, setTotalPendingPages] = useState(1);
+  const [totalHistoryPages, setTotalHistoryPages] = useState(1);
+  const [totalHistoryItems, setTotalHistoryItems] = useState(0); // State baru untuk total item history
+
+  // === State Modal ===
   const [selectedPeserta, setSelectedPeserta] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // === Pagination Setup ===
-  const ITEMS_PER_PAGE_PENDING = 5;
-  const ITEMS_PER_PAGE_APPROVED = 5;
+  const ITEMS_PER_PAGE = 5; // Konsisten untuk kedua tabel
 
-  const [currentPendingPage, setCurrentPendingPage] = useState(1);
-  const [currentApprovedPage, setCurrentApprovedPage] = useState(1);
+  /**
+   * Mengubah data dari Backend (Prisma) ke format Frontend (State)
+   * (Tidak berubah)
+   */
+  const transformBackendData = useCallback((ajuan) => {
+    const berkas = ajuan.peserta.berkas?.[0] || {};
+    return {
+      id: ajuan.id,
+      pesertaId: ajuan.peserta.id,
+      nim: ajuan.peserta.nimNis,
+      nama: ajuan.peserta.namaLengkap,
+      email: ajuan.peserta.user.email,
+      instansi: ajuan.instansi,
+      jurusan: ajuan.jurusan,
+      statusPendidikan: ajuan.statusPendidikan,
+      jenjangPendidikan: ajuan.jenjangPendidikan,
+      temaMagang: ajuan.temaMagang,
+      bidang: ajuan.bidang.nama,
+      status: ajuan.statusUsulan,
+      tanggalMulai: ajuan.tglMulai,
+      tanggalSelesai: ajuan.tglSelesai,
+      createdAt: ajuan.createdAt,
+      updatedAt: ajuan.updatedAt,
+      suratPengantar: berkas.suratPengantar,
+      proposalMagang: berkas.proposalMagang,
+      cv: berkas.cv,
+      ktp: berkas.pasFoto,
+      bakesbangsda: berkas.suratBakesbangpolSda,
+      bakesbangprov: berkas.suratBakesbangpolSby,
+      // Tambahkan foto jika ada di data backend (misal dari PesertaMagang)
+      foto: ajuan.peserta.pasFoto, // Asumsi nama field 'pasFoto' di PesertaMagang
+    };
+  }, []);
 
-  // === Data Turunan ===
-  const pendingPeserta = pesertaMagang.filter((p) => p.status === 'Pending');
-  const approvedPeserta = pesertaMagang.filter(
-    (p) => p.status === 'Diterima' || p.status === 'Ditolak'
+  /**
+   * Fungsi utama untuk mengambil data dari Backend
+   */
+  const fetchAjuan = useCallback(
+    async (statusQuery, page, search = '', limit = ITEMS_PER_PAGE) => {
+      const setLoading =
+        statusQuery === 'PENDING' ? setIsPendingLoading : setIsHistoryLoading;
+      setLoading(true);
+      setError(null);
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('Otorisasi Gagal. Silakan login kembali.');
+
+        const params = new URLSearchParams({
+          status: statusQuery === 'PENDING' ? 'PENDING' : statusQuery,
+          page: page,
+          limit: limit,
+        });
+        // Search hanya ditambahkan jika request BUKAN untuk PENDING
+        if (search && statusQuery !== 'PENDING') {
+          params.append('search', search);
+        }
+
+        const response = await fetch(
+          `http://localhost:3000/api/admin/ajuan-magang?${params.toString()}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const result = await response.json();
+        if (!response.ok)
+          throw new Error(result.message || 'Gagal memuat data');
+
+        const transformedData = result.data.map(transformBackendData);
+        let finalData = transformedData;
+        const finalPagination = result.pagination; // Pagination dari backend
+
+        if (statusQuery !== 'PENDING' && statusQuery === 'all') {
+          finalData = transformedData.filter(
+            (item) => item.status !== 'PENDING'
+          );
+        }
+
+        if (statusQuery === 'PENDING') {
+          setPendingPeserta(finalData); // Data pending
+          setTotalPendingPages(finalPagination.totalPages);
+        } else {
+          // Data history ('all' yang sudah difilter, 'DITERIMA', atau 'DITOLAK')
+          setHistoryPeserta(finalData);
+          setTotalHistoryPages(finalPagination.totalPages);
+          setTotalHistoryItems(finalPagination.totalItems); // Mungkin tidak akurat jika status='all'
+        }
+      } catch (err) {
+        setError(
+          `Gagal memuat data ${
+            statusQuery === 'PENDING' ? 'pending' : 'riwayat'
+          }: ${err.message}`
+        );
+        if (statusQuery === 'PENDING') setPendingPeserta([]);
+        else setHistoryPeserta([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [transformBackendData]
   );
 
-  // === Filter Approved ===
-  const filteredApprovedPeserta = approvedPeserta.filter((p) => {
-    const term = searchTerm.toLowerCase();
+  // Fetch data "Pending"
+  useEffect(() => {
+    fetchAjuan('PENDING', currentPendingPage);
+  }, [currentPendingPage, fetchAjuan]);
 
-    const matchUmum =
-      p.nama.toLowerCase().includes(term) ||
-      p.email.toLowerCase().includes(term) ||
-      p.nim.toLowerCase().includes(term) ||
-      p.instansi.toLowerCase().includes(term) ||
-      p.jurusan.toLowerCase().includes(term) ||
-      p.bidang.toLowerCase().includes(term) ||
-      p.status.toLowerCase().includes(term);
+  // Fetch data "History"
+  useEffect(() => {
+    // statusFilter akan menjadi 'all', 'DITERIMA', atau 'DITOLAK'
+    fetchAjuan(statusFilter, currentHistoryPage, searchTerm);
+  }, [currentHistoryPage, searchTerm, statusFilter, fetchAjuan]);
 
-    const matchTanggal = searchDate
-      ? [
-          p.createdAt,
-          p.tanggalMulai,
-          p.tanggalSelesai,
-          p.updatedAt || p.createdAt,
-        ]
-          .filter(Boolean) // buang null/undefined
-          .map((d) => new Date(d).toISOString().split('T')[0]) // ubah format ke yyyy-mm-dd
-          .includes(searchDate) // cocokkan dengan searchDate
-      : true;
-
-    const matchStatus =
-      statusFilter === 'all' ||
-      p.status.toLowerCase() === statusFilter.toLowerCase();
-
-    return matchUmum && matchTanggal && matchStatus;
-  });
-
-  // === Pagination Helper ===
-  const paginate = (data, page, itemsPerPage) =>
-    data.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-
-  // === Paginated Data ===
-  const paginatedPendingPeserta = paginate(
-    pendingPeserta,
+  /**
+   * Helper untuk me-refresh kedua list
+   */
+  const refreshLists = useCallback(() => {
+    fetchAjuan('PENDING', currentPendingPage);
+    fetchAjuan(statusFilter, currentHistoryPage, searchTerm);
+  }, [
+    fetchAjuan,
     currentPendingPage,
-    ITEMS_PER_PAGE_PENDING
-  );
-  const paginatedApprovedPeserta = paginate(
-    filteredApprovedPeserta,
-    currentApprovedPage,
-    ITEMS_PER_PAGE_APPROVED
-  );
+    statusFilter,
+    currentHistoryPage,
+    searchTerm,
+  ]);
 
-  const totalPendingPages = Math.ceil(
-    pendingPeserta.length / ITEMS_PER_PAGE_PENDING
-  );
-  const totalApprovedPages = Math.ceil(
-    filteredApprovedPeserta.length / ITEMS_PER_PAGE_APPROVED
-  );
+  /**
+   * Fungsi Aksi (ACC / Tolak) - Panggil API
+   */
+  const handleUpdateStatus = async (idAjuan, newStatus) => {
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `http://localhost:3000/api/admin/ajuan-magang/${idAjuan}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
 
-  // === Aksi ACC / Tolak ===
-  const handleAccPeserta = (id) => {
-    setPesertaMagang((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, status: 'Diterima', updatedAt: new Date() } : p
-      )
-    );
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.message || 'Gagal update status');
+      refreshLists(); // Refresh setelah sukses
+    } catch (err) {
+      setError(
+        `Gagal ${newStatus === 'DITERIMA' ? 'menerima' : 'menolak'} ajuan: ${
+          err.message
+        }`
+      );
+    }
   };
 
-  const handleTolakPeserta = (id) => {
-    setPesertaMagang((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, status: 'Ditolak', updatedAt: new Date() } : p
-      )
-    );
-  };
+  const handleAccPeserta = (id) => handleUpdateStatus(id, 'DITERIMA');
+  const handleTolakPeserta = (id) => handleUpdateStatus(id, 'DITOLAK');
 
   // === Modal Handler ===
   const handleOpenDetail = (peserta) => {
     setSelectedPeserta(peserta);
     setIsDetailModalOpen(true);
   };
-
   const handleCloseDetail = () => {
     setIsDetailModalOpen(false);
     setSelectedPeserta(null);
   };
 
   // === Export Excel ===
-  const handleExportExcelHistory = () => {
-    const exportData = filteredApprovedPeserta.map((p) => ({
+  const handleExportExcelHistory = async () => {
+    const dataToExport = historyPeserta.filter(
+      (p) => p.status === 'DITERIMA' || p.status === 'DITOLAK'
+    );
+
+    if (dataToExport.length === 0) {
+      alert('Tidak ada data riwayat (Diterima/Ditolak) untuk diexport.');
+      return;
+    }
+
+    const exportData = dataToExport.map((p) => ({
       Nama: p.nama,
       Email: p.email,
       Instansi: p.instansi,
@@ -201,602 +293,574 @@ export default function ManageAjuanMagang() {
       Status_Pendidikan: p.statusPendidikan,
       Jenjang_Pendidikan: p.jenjangPendidikan,
       Tema_Magang: p.temaMagang,
-      'Periode Usulan':
-        p.tanggalMulai && p.tanggalSelesai
-          ? `${new Date(p.tanggalMulai).toLocaleDateString('id-ID', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })} - ${new Date(p.tanggalSelesai).toLocaleDateString('id-ID', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })}`
-          : '-',
+      'Periode Usulan': formatPeriode(p.tanggalMulai, p.tanggalSelesai),
       Bidang: p.bidang,
-      'Tanggal Pengajuan': new Date(p.createdAt).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
+      'Tanggal Pengajuan': formatTgl(p.createdAt),
       Status: p.status,
-      'Tanggal Keputusan': new Date(
-        p.updatedAt || p.createdAt
-      ).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-      Surat_Pengantar: p.suratPengantar,
-      Proposal_Magang: p.proposalMagang,
-      cv: p.cv,
-      ktp: p.ktp,
-      BakesbangpolSDA: p.bakesbangsda,
-      BakesbangpolProv: p.bakesbangprov,
+      'Tanggal Keputusan': formatTgl(p.updatedAt),
+      Surat_Pengantar: p.suratPengantar || '-',
+      Proposal_Magang: p.proposalMagang || '-',
+      cv: p.cv || '-',
+      ktp: p.ktp || '-',
+      BakesbangpolSDA: p.bakesbangsda || '-',
+      BakesbangpolProv: p.bakesbangprov || '-',
     }));
 
-    // Buat worksheet dengan judul di baris pertama
-    const ws = XLSX.utils.aoa_to_sheet([['Riwayat Persetujuan Ajuan Magang']]);
-
-    // Tambahkan data peserta mulai baris ke-3 (baris ke-2 kosong untuk spasi)
-    XLSX.utils.sheet_add_json(ws, exportData, {
-      origin: 'A3',
-      skipHeader: false,
-    });
-
-    // Gabungkan sel untuk judul (misalnya dari A1 sampai kolom terakhir data)
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    ws['!merges'] = [
-      {
-        s: { r: 0, c: 0 }, // mulai dari A1
-        e: { r: 0, c: range.e.c }, // sampai kolom terakhir
-      },
-    ];
-
-    // Tebalkan judul
-    if (!ws['A1'].s) ws['A1'].s = {};
-    ws['A1'].s = { font: { bold: true, sz: 14 } };
-
-    // Buat tanggal export (YYYY-MM-DD)
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-
-    // Buat workbook dan masukkan worksheet dengan judul
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, ws, 'PesertaMagang');
-
-    // Simpan file
-    XLSX.writeFile(workbook, `RiwayatPersetujuanAkun_${formattedDate}.xlsx`);
+    try {
+      // Dinamis import xlsx
+      const XLSX = await import('xlsx');
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Riwayat Persetujuan Ajuan Magang'],
+      ]);
+      XLSX.utils.sheet_add_json(ws, exportData, { origin: 'A3' });
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: range.e.c } }];
+      if (!ws['A1']) ws['A1'] = {}; // Pastikan cell A1 ada
+      ws['A1'].s = { font: { bold: true, sz: 14 } }; // Set style
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, ws, 'RiwayatAjuan');
+      const today = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `RiwayatAjuanMagang_${today}.xlsx`);
+    } catch (exportError) {
+      console.error('Gagal export excel:', exportError);
+      setError(
+        "Gagal melakukan export data ke Excel. Pastikan library 'xlsx' terinstall."
+      );
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Tabel Akun Belum Di-ACC */}
-      <div className="overflow-x-auto bg-white shadow rounded-lg mb-6">
-        <h3 className="text-lg font-semibold text-gray-700 px-4 py-3 border-b rounded-t-lg">
-          Ajuan Magang Menunggu Persetujuan
-        </h3>
-        <table className="min-w-full text-sm text-left">
-          <thead className="bg-[#006DA6] text-white">
-            <tr>
-              <th className="px-4 py-3">Nama Peserta</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Instansi</th>
-              <th className="px-4 py-3">Jurusan</th>
-              <th className="px-4 py-3">Periode Usulan</th>
-              <th className="px-4 py-3">Bidang Usulan</th>
-              <th className="px-4 py-3 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedPendingPeserta.map((peserta) => (
-              <tr key={peserta.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3">{peserta.nama}</td>
-                <td className="px-4 py-3">{peserta.email}</td>
-                <td className="px-4 py-3">{peserta.instansi}</td>
-                <td className="px-4 py-3">{peserta.jurusan}</td>
-                <td className="px-4 py-3">
-                  {peserta.tanggalMulai && peserta.tanggalSelesai
-                    ? `${new Date(peserta.tanggalMulai).toLocaleDateString(
-                        'id-ID',
-                        {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        }
-                      )} - ${new Date(
-                        peserta.tanggalSelesai
-                      ).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}`
-                    : '-'}
-                </td>
-                <td className="px-4 py-3">{peserta.bidang}</td>
-                <td className="px-4 py-3 flex flex-wrap justify-center gap-2">
-                  <button
-                    onClick={() => handleOpenDetail(peserta)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
-                  >
-                    Detail
-                  </button>
-                  <button
-                    onClick={() => handleAccPeserta(peserta.id)}
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
-                  >
-                    Terima
-                  </button>
-                  <button
-                    onClick={() => handleTolakPeserta(peserta.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
-                  >
-                    Tolak
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {paginatedPendingPeserta.length === 0 && (
-              <tr>
-                <td colSpan="6" className="text-center py-4 text-gray-500">
-                  Tidak ada akun menunggu persetujuan.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        {/* Pagination Pending */}
-        {totalPendingPages > 1 && (
-          <div className="flex justify-between items-center p-4">
-            <p className="text-sm text-gray-600">
-              Menampilkan{' '}
-              <span className="font-medium">
-                {(currentPendingPage - 1) * ITEMS_PER_PAGE_PENDING + 1}
-              </span>{' '}
-              -{' '}
-              <span className="font-medium">
-                {Math.min(
-                  currentPendingPage * ITEMS_PER_PAGE_PENDING,
-                  filteredPendingPeserta.length
-                )}
-              </span>{' '}
-              dari{' '}
-              <span className="font-medium">
-                {filteredPendingPeserta.length}
-              </span>{' '}
-              hasil
-            </p>
-            <div className="flex space-x-1">
-              <button
-                onClick={() =>
-                  setCurrentPendingPage((prev) => Math.max(prev - 1, 1))
-                }
-                disabled={currentPendingPage === 1}
-                className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
-              >
-                Previous
-              </button>
-              {[...Array(totalPendingPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPendingPage(i + 1)}
-                  className={`px-3 py-1 border rounded text-sm ${
-                    currentPendingPage === i + 1
-                      ? 'bg-[#006DA6] text-white'
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                onClick={() =>
-                  setCurrentPendingPage((prev) =>
-                    Math.min(prev + 1, totalPendingPages)
-                  )
-                }
-                disabled={currentPendingPage === totalPendingPages}
-                className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* // === Modal Detail === */}
-      {isDetailModalOpen && selectedPeserta && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-          onClick={handleCloseDetail}
-        >
+    <>
+      {/* <Navbar /> */}
+      <div className="container mx-auto">
+        {/* Menampilkan Error Global */}
+        {error && (
           <div
-            className="bg-white w-full max-w-2xl rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+            role="alert"
           >
-            {/* Foto Peserta */}
-            <div className="flex justify-center mb-4">
-              <img
-                src={selectedPeserta.foto || '/default-user.png'}
-                alt="Foto Peserta"
-                className="w-28 h-28 rounded-full object-cover border-2 border-gray-300"
-              />
-            </div>
-
-            <h2 className="text-xl font-semibold mb-4 text-center text-[#006DA6]">
-              Detail Ajuan Magang
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              {/* Data Umum */}
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Nama Lengkap</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.nama}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Email</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.email}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">NIM/NIS</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.nim}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Instansi</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.instansi}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Jurusan</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.jurusan}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">
-                  Status Pendidikan
-                </label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.statusPendidikan}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">
-                  Jenjang Pendidikan
-                </label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.jenjangPendidikan}
-                </p>
-              </div>
-              <div className="border rounded p-2 sm:col-span-2">
-                <label className="text-gray-600 text-xs">Tema Magang</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.temaMagang}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Bidang</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.bidang}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Status Ajuan</label>
-                <p className="text-gray-800 font-medium">
-                  {selectedPeserta.status}
-                </p>
-              </div>
-
-              {/* Periode Magang */}
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Tanggal Mulai</label>
-                <p className="text-gray-800 font-medium">
-                  {new Date(selectedPeserta.tanggalMulai).toLocaleDateString(
-                    'id-ID'
-                  )}
-                </p>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">Tanggal Selesai</label>
-                <p className="text-gray-800 font-medium">
-                  {new Date(selectedPeserta.tanggalSelesai).toLocaleDateString(
-                    'id-ID'
-                  )}
-                </p>
-              </div>
-              <div className="border rounded p-2 sm:col-span-2">
-                <label className="text-gray-600 text-xs">
-                  Tanggal Pengajuan
-                </label>
-                <p className="text-gray-800 font-medium">
-                  {new Date(selectedPeserta.createdAt).toLocaleDateString(
-                    'id-ID'
-                  )}
-                </p>
-              </div>
-
-              {/* File Upload */}
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">
-                  Surat Pengantar{' '}
-                </label>
-                <a
-                  href={`/${selectedPeserta.suratPengantar}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm"
-                >
-                  Lihat File
-                </a>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">
-                  Proposal Magang{' '}
-                </label>
-                <a
-                  href={`/${selectedPeserta.proposalMagang}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm"
-                >
-                  Lihat File
-                </a>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">CV </label>
-                <a
-                  href={`/${selectedPeserta.cv}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm"
-                >
-                  Lihat File
-                </a>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">KTP </label>
-                <a
-                  href={`/${selectedPeserta.ktp}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm"
-                >
-                  Lihat File
-                </a>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">
-                  Surat Bakesbangpol Sidoarjo{' '}
-                </label>
-                <a
-                  href={`/${selectedPeserta.bakesbangsda}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm"
-                >
-                  Lihat File
-                </a>
-              </div>
-              <div className="border rounded p-2">
-                <label className="text-gray-600 text-xs">
-                  Surat Bakesbangpol Provinsi{' '}
-                </label>
-                <a
-                  href={`/${selectedPeserta.bakesbangprov}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm"
-                >
-                  Lihat File
-                </a>
-              </div>
-            </div>
-
-            {/* Tombol Tutup */}
-            <div className="mt-6 text-right">
-              <button
-                onClick={handleCloseDetail}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Tabel History Akun yang Sudah Disetujui */}
-      <div className="overflow-x-auto bg-white shadow rounded-lg">
-        <div className="flex justify-between items-center px-4 py-3">
-          <h3 className="text-lg font-semibold text-gray-700">
-            Riwayat Persetujuan Ajuan Magang
-          </h3>
-          <div className="flex gap-2">
+            <strong className="font-bold">Error!</strong>
+            <span className="block sm:inline"> {error}</span>
             <button
-              onClick={handleExportExcelHistory}
-              className="flex items-center gap-2 bg-[#006DA6] hover:bg-[#00456a] text-white px-3 py-1 text-sm rounded transition-colors"
+              onClick={() => setError(null)}
+              className="absolute top-0 bottom-0 right-0 px-4 py-3"
             >
-              <Download size={16} />
-              <span>Export Riwayat Ajuan</span>
+              <span className="text-xl">×</span>
             </button>
           </div>
+        )}
+
+        {/* Bagian Usulan Masuk (Pending) */}
+        <div className="space-y-6">
+          <div className="overflow-x-auto bg-white shadow rounded-lg mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 px-4 py-3 border-b rounded-t-lg">
+              Ajuan Magang Menunggu Persetujuan
+            </h3>
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-[#006DA6] text-white">
+                <tr>
+                  <th className="px-4 py-3">Nama Peserta</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Instansi</th>
+                  <th className="px-4 py-3">Jurusan</th>
+                  <th className="px-4 py-3">Periode Usulan</th>
+                  <th className="px-4 py-3">Bidang Usulan</th>
+                  <th className="px-4 py-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Loading State */}
+                {isPendingLoading && (
+                  <tr>
+                    <td colSpan="7" className="text-center py-6 text-gray-500">
+                      Memuat data...
+                    </td>
+                  </tr>
+                )}
+                {/* Empty State */}
+                {!isPendingLoading && pendingPeserta.length === 0 && (
+                  <tr>
+                    <td colSpan="7" className="text-center py-6 text-gray-500">
+                      Tidak ada usulan menunggu persetujuan.
+                    </td>
+                  </tr>
+                )}
+                {/* Data State */}
+                {!isPendingLoading &&
+                  pendingPeserta.map((peserta) => (
+                    <tr key={peserta.id} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-3">{peserta.nama}</td>
+                      <td className="px-4 py-3">{peserta.email}</td>
+                      <td className="px-4 py-3">{peserta.instansi}</td>
+                      <td className="px-4 py-3">{peserta.jurusan}</td>
+                      <td className="px-4 py-3">
+                        {formatPeriode(
+                          peserta.tanggalMulai,
+                          peserta.tanggalSelesai
+                        )}
+                      </td>
+                      <td className="px-4 py-3">{peserta.bidang}</td>
+                      <td className="px-4 py-3 flex flex-wrap justify-center gap-2">
+                        <button
+                          onClick={() => handleOpenDetail(peserta)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                        >
+                          Detail
+                        </button>
+                        <button
+                          onClick={() => handleAccPeserta(peserta.id)}
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
+                        >
+                          Terima
+                        </button>
+                        <button
+                          onClick={() => handleTolakPeserta(peserta.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                        >
+                          Tolak
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+
+            {/* Pagination Pending */}
+            {totalPendingPages > 1 && (
+              <div className="flex justify-between items-center p-4">
+                {/* Menampilkan jumlah item (optional) */}
+                <p className="text-sm text-gray-600">
+                  Halaman {currentPendingPage} dari {totalPendingPages}
+                </p>
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() =>
+                      setCurrentPendingPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPendingPage === 1}
+                    className="px-3 py-1 border rounded hover:bg-gray-100 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  {/* Tombol halaman bisa ditambahkan di sini jika mau */}
+                  {/* Contoh sederhana, biasanya butuh logika lebih kompleks */}
+                  {[...Array(totalPendingPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPendingPage(i + 1)}
+                      className={`px-3 py-1 border rounded text-sm ${
+                        currentPendingPage === i + 1
+                          ? 'bg-[#006DA6] text-white'
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() =>
+                      setCurrentPendingPage((prev) =>
+                        Math.min(prev + 1, totalPendingPages)
+                      )
+                    }
+                    disabled={currentPendingPage === totalPendingPages}
+                    className="px-3 py-1 border rounded hover:bg-gray-100 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tabel History */}
+          <div className="overflow-x-auto bg-white shadow rounded-lg">
+            <div className="flex justify-between items-center px-4 py-3 border-b">
+              <h3 className="text-lg font-semibold text-gray-700">
+                Riwayat Persetujuan Ajuan Magang
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportExcelHistory}
+                  className="flex items-center gap-2 bg-[#006DA6] hover:bg-[#00456a] text-white px-3 py-1 text-sm rounded transition-colors"
+                >
+                  <DownloadIcon />
+                  <span>Export Riwayat Ajuan</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="flex flex-col sm:flex-row gap-3 px-4 py-3 border-b">
+              <input
+                type="text"
+                placeholder="Cari berdasarkan nama, email, instansi..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentHistoryPage(1); // Reset halaman ke 1 saat search
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/2"
+              />
+              {/* Input tanggal dihapus */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentHistoryPage(1); // Reset halaman ke 1 saat filter
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/4"
+              >
+                <option value="all">Semua Status (Diterima/Ditolak)</option>{' '}
+                {/* Label diperjelas */}
+                <option value="DITERIMA">Diterima</option>
+                <option value="DITOLAK">Ditolak</option>
+              </select>
+            </div>
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-200 text-gray-700">
+                <tr>
+                  <th className="px-4 py-3">Nama Peserta</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Instansi</th>
+                  <th className="px-4 py-3">Jurusan</th>
+                  <th className="px-4 py-3">Periode Usulan</th>
+                  <th className="px-4 py-3">Bidang Usulan</th>
+                  <th className="px-4 py-3">Tanggal Pengajuan</th>
+                  <th className="px-4 py-3 text-center">Status</th>
+                  <th className="px-4 py-3">Tanggal Keputusan</th>
+                  <th className="px-4 py-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Loading State */}
+                {isHistoryLoading && (
+                  <tr>
+                    <td colSpan="10" className="text-center py-6 text-gray-500">
+                      Memuat data riwayat...
+                    </td>
+                  </tr>
+                )}
+                {/* Empty State */}
+                {!isHistoryLoading && historyPeserta.length === 0 && (
+                  <tr>
+                    <td colSpan="10" className="text-center py-6 text-gray-500">
+                      Tidak ada riwayat ajuan yang cocok.
+                    </td>
+                  </tr>
+                )}
+                {/* Data State */}
+                {!isHistoryLoading &&
+                  historyPeserta.map(
+                    (
+                      peserta // Gunakan historyPeserta
+                    ) => (
+                      <tr
+                        key={peserta.id}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <td className="px-4 py-3">{peserta.nama}</td>
+                        <td className="px-4 py-3">{peserta.email}</td>
+                        <td className="px-4 py-3">{peserta.instansi}</td>
+                        <td className="px-4 py-3">{peserta.jurusan}</td>
+                        <td className="px-4 py-3">
+                          {formatPeriode(
+                            peserta.tanggalMulai,
+                            peserta.tanggalSelesai
+                          )}
+                        </td>
+                        <td className="px-4 py-3">{peserta.bidang}</td>
+                        <td className="px-4 py-3">
+                          {formatTgl(peserta.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
+                              peserta.status
+                            )}`}
+                          >
+                            {peserta.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {formatTgl(peserta.updatedAt)}
+                        </td>
+                        <td className="px-4 py-3 text-center relative">
+                          <button
+                            onClick={() => {
+                              handleOpenDetail(peserta);
+                            }}
+                            className="p-1 rounded hover:bg-gray-200 text-gray-600"
+                            title="Lihat Detail"
+                          >
+                            <EyeIcon />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  )}
+              </tbody>
+            </table>
+
+            {/* Pagination History */}
+            {totalHistoryPages > 1 && (
+              <div className="flex justify-between items-center p-4">
+                <p className="text-sm text-gray-600">
+                  Menampilkan{' '}
+                  <span className="font-medium">
+                    {(currentHistoryPage - 1) * ITEMS_PER_PAGE + 1}
+                  </span>{' '}
+                  -{' '}
+                  <span className="font-medium">
+                    {Math.min(
+                      currentHistoryPage * ITEMS_PER_PAGE,
+                      totalHistoryItems // Gunakan total item dari state
+                    )}
+                  </span>{' '}
+                  dari <span className="font-medium">{totalHistoryItems}</span>{' '}
+                  hasil
+                </p>
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() =>
+                      setCurrentHistoryPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentHistoryPage === 1}
+                    className="px-3 py-1 border rounded hover:bg-gray-100 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  {/* Tombol halaman */}
+                  {[...Array(totalHistoryPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentHistoryPage(i + 1)}
+                      className={`px-3 py-1 border rounded text-sm ${
+                        currentHistoryPage === i + 1
+                          ? 'bg-[#006DA6] text-white' // Style berbeda untuk history
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() =>
+                      setCurrentHistoryPage((prev) =>
+                        Math.min(prev + 1, totalHistoryPages)
+                      )
+                    }
+                    disabled={currentHistoryPage === totalHistoryPages}
+                    className="px-3 py-1 border rounded hover:bg-gray-100 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="flex flex-col sm:flex-row gap-3 px-4 pb-3">
-          <input
-            type="text"
-            placeholder="Cari berdasarkan nama, email, instansi, jurusan, dan bidang..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentApprovedPage(1);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/2"
-          />
-
-          <input
-            type="date"
-            value={searchDate}
-            onChange={(e) => {
-              setSearchDate(e.target.value);
-              setCurrentApprovedPage(1);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/3"
-          />
-
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentApprovedPage(1);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/4"
+        {/* Modal Detail */}
+        {isDetailModalOpen && selectedPeserta && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+            onClick={handleCloseDetail}
           >
-            <option value="all">Semua Status</option>
-            <option value="Diterima">Diterima</option>
-            <option value="Ditolak">Ditolak</option>
-          </select>
-        </div>
-        <table className="min-w-full text-sm text-left">
-          <thead className="bg-gray-200 text-gray-700">
-            <tr>
-              <th className="px-4 py-3">Nama Peserta</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Instansi</th>
-              <th className="px-4 py-3">Jurusan</th>
-              <th className="px-4 py-3">Periode Usulan</th>
-              <th className="px-4 py-3">Bidang Usulan</th>
-              <th className="px-4 py-3">Tanggal Pengajuan</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Tanggal Keputusan</th>
-              <th className="px-4 py-3 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedApprovedPeserta.map((peserta) => (
-              <tr key={peserta.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3">{peserta.nama}</td>
-                <td className="px-4 py-3">{peserta.email}</td>
-                <td className="px-4 py-3">{peserta.instansi}</td>
-                <td className="px-4 py-3">{peserta.jurusan}</td>
-                <td className="px-4 py-3">
-                  {peserta.tanggalMulai && peserta.tanggalSelesai
-                    ? `${new Date(peserta.tanggalMulai).toLocaleDateString(
-                        'id-ID',
-                        {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        }
-                      )} - ${new Date(
-                        peserta.tanggalSelesai
-                      ).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}`
-                    : '-'}
-                </td>
-                <td className="px-4 py-3">{peserta.bidang}</td>
-                <td className="px-4 py-3">{peserta.createdAt}</td>
-                <td className="px-4 py-3">{peserta.status}</td>
-                <td className="px-4 py-3">
-                  {new Date(
-                    peserta.updatedAt || peserta.createdAt
-                  ).toLocaleDateString()}
-                </td>
-                {/* Aksi */}
-                <td className="px-4 py-3 text-center relative">
+            <div
+              className="bg-white w-full max-w-2xl rounded-lg shadow-xl p-6 relative overflow-y-auto max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={handleCloseDetail}
+                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+                aria-label="Tutup modal"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+
+              {/* Foto Peserta */}
+              <div className="flex justify-center mb-4">
+                <img
+                  src={selectedPeserta.foto || '/default-user.png'} // Fallback ke default image
+                  alt={`Foto ${selectedPeserta.nama}`}
+                  className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/default-user.png';
+                  }} // Handle error load gambar
+                />
+              </div>
+
+              <h2 className="text-xl font-semibold mb-4 text-center text-[#006DA6]">
+                Detail Ajuan Magang - {selectedPeserta.nama}
+              </h2>
+
+              {/* Tampilan Detail yang Lebih Baik */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">Nama</label>
+                  <p>{selectedPeserta.nama}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">Email</label>
+                  <p>{selectedPeserta.email}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">NIM/NIS</label>
+                  <p>{selectedPeserta.nim || '-'}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">
+                    Instansi
+                  </label>
+                  <p>{selectedPeserta.instansi}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">Jurusan</label>
+                  <p>{selectedPeserta.jurusan}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">
+                    Status Pendidikan
+                  </label>
+                  <p>{selectedPeserta.statusPendidikan || '-'}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">Jenjang</label>
+                  <p>{selectedPeserta.jenjangPendidikan || '-'}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">Periode</label>
+                  <p>
+                    {formatPeriode(
+                      selectedPeserta.tanggalMulai,
+                      selectedPeserta.tanggalSelesai
+                    )}
+                  </p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">
+                    Bidang Usulan
+                  </label>
+                  <p>{selectedPeserta.bidang}</p>
+                </div>
+                <div className="sm:col-span-2 border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">Tema</label>
+                  <p>{selectedPeserta.temaMagang || '-'}</p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">
+                    Status Ajuan
+                  </label>
+                  <p>
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
+                        selectedPeserta.status
+                      )}`}
+                    >
+                      {selectedPeserta.status}
+                    </span>
+                  </p>
+                </div>
+                <div className="border rounded p-2 bg-gray-50">
+                  <label className="text-gray-500 text-xs block">
+                    Tgl Pengajuan
+                  </label>
+                  <p>{formatTgl(selectedPeserta.createdAt)}</p>
+                </div>
+              </div>
+
+              {/* Berkas */}
+              <h3 className="text-md font-semibold mb-2 text-gray-700">
+                Berkas Pendukung
+              </h3>
+              <ul className="list-disc pl-5 space-y-1 text-sm mb-6">
+                {/* Membuat link lebih dinamis */}
+                {Object.entries({
+                  'Surat Pengantar': selectedPeserta.suratPengantar,
+                  'Proposal Magang': selectedPeserta.proposalMagang,
+                  CV: selectedPeserta.cv,
+                  'KTP/Identitas': selectedPeserta.ktp,
+                  'Bakesbangpol Sidoarjo': selectedPeserta.bakesbangsda,
+                  'Bakesbangpol Provinsi': selectedPeserta.bakesbangprov,
+                }).map(([label, url]) =>
+                  url ? (
+                    <li key={label}>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ) : (
+                    <li key={label} className="text-gray-500 italic">
+                      {label} (Tidak ada)
+                    </li> // Tampilkan jika file tidak ada
+                  )
+                )}
+              </ul>
+
+              {/* Tombol Aksi di Modal (jika status PENDING) */}
+              {selectedPeserta.status === 'PENDING' && (
+                <div className="mt-6 flex justify-end space-x-3 border-t pt-4">
+                  <button
+                    onClick={handleCloseDetail}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                  >
+                    Batal
+                  </button>
                   <button
                     onClick={() => {
-                      handleOpenDetail(peserta);
-                      setOpenMenuId(null);
+                      handleTolakPeserta(selectedPeserta.id);
+                      handleCloseDetail();
                     }}
-                    className="p-1 rounded hover:bg-gray-200"
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
                   >
-                    <Eye size={18} />
+                    Tolak Ajuan
                   </button>
-                </td>
-              </tr>
-            ))}
-            {paginatedApprovedPeserta.length === 0 && (
-              <tr>
-                <td colSpan="11" className="text-center py-4 text-gray-500">
-                  Belum ada akun yang disetujui.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        {/* Pagination History Approved */}
-        {totalApprovedPages > 1 && (
-          <div className="flex justify-between items-center p-4">
-            <p className="text-sm text-gray-600">
-              Menampilkan{' '}
-              <span className="font-medium">
-                {(currentApprovedPage - 1) * ITEMS_PER_PAGE_APPROVED + 1}
-              </span>{' '}
-              -{' '}
-              <span className="font-medium">
-                {Math.min(
-                  currentApprovedPage * ITEMS_PER_PAGE_APPROVED,
-                  filteredApprovedPeserta.length
-                )}
-              </span>{' '}
-              dari{' '}
-              <span className="font-medium">
-                {filteredApprovedPeserta.length}
-              </span>{' '}
-              hasil
-            </p>
-            <div className="flex space-x-1">
-              <button
-                onClick={() =>
-                  setCurrentApprovedPage((prev) => Math.max(prev - 1, 1))
-                }
-                disabled={currentApprovedPage === 1}
-                className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
-              >
-                Previous
-              </button>
-              {[...Array(totalApprovedPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentApprovedPage(i + 1)}
-                  className={`px-3 py-1 border rounded text-sm ${
-                    currentApprovedPage === i + 1
-                      ? 'bg-green-600 text-white'
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                onClick={() =>
-                  setCurrentApprovedPage((prev) =>
-                    Math.min(prev + 1, totalApprovedPages)
-                  )
-                }
-                disabled={currentApprovedPage === totalApprovedPages}
-                className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
-              >
-                Next
-              </button>
+                  <button
+                    onClick={() => {
+                      handleAccPeserta(selectedPeserta.id);
+                      handleCloseDetail();
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                  >
+                    Terima Ajuan
+                  </button>
+                </div>
+              )}
+              {/* Tombol Tutup jika status BUKAN PENDING */}
+              {selectedPeserta.status !== 'PENDING' && (
+                <div className="mt-6 text-right border-t pt-4">
+                  <button
+                    onClick={handleCloseDetail}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-sm"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

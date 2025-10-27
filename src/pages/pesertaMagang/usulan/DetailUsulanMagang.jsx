@@ -19,16 +19,23 @@ const formatDate = (dateString) => {
  */
 const formatPeriode = (tglMulai, tglSelesai) => {
   if (!tglMulai || !tglSelesai) return '-';
-  const mulai = new Date(tglMulai).toLocaleDateString('id-ID', {
-    month: 'long',
+
+  const options = {
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
-  });
-  const selesai = new Date(tglSelesai).toLocaleDateString('id-ID', {
-    month: 'long',
-    year: 'numeric',
-  });
+  };
+
+  const mulai = new Date(tglMulai)
+    .toLocaleDateString('id-ID', options)
+    .replace(/\//g, '-');
+  const selesai = new Date(tglSelesai)
+    .toLocaleDateString('id-ID', options)
+    .replace(/\//g, '-');
+
   if (mulai === selesai) return mulai;
-  return `${mulai} - ${selesai}`;
+  // Menggunakan "sampai" sesuai permintaan Anda
+  return `${mulai} sampai ${selesai}`;
 };
 
 export default function DetailUsulanMagang() {
