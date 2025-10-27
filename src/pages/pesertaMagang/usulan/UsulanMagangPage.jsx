@@ -68,10 +68,8 @@ export default function UsulanMagangPage() {
         if (!token) {
           throw new Error('Anda harus login untuk melihat data ini.');
         }
-
-        // 2. Panggil endpoint backend (sesuai router: /api/ajuan/saya)
         const response = await fetch(
-          'http://localhost:3000/api/peserta/ajuan-magang',
+          `http://localhost:3000/api/peserta/ajuan-magang`,
           {
             method: 'GET',
             headers: {
@@ -88,6 +86,8 @@ export default function UsulanMagangPage() {
 
         const result = await response.json();
 
+        console.log('Raw data from backend:', result.data);
+
         if (result.status && Array.isArray(result.data)) {
           // 3. Transformasi data backend ke format frontend
           const transformedData = result.data.map((item) => ({
@@ -98,6 +98,7 @@ export default function UsulanMagangPage() {
             bidang: item.bidang?.nama || 'N/A', // 'bidang.nama' dari include
             status: item.statusUsulan, // PENDING, DITERIMA, DITOLAK
           }));
+          console.log('Transformed data being set to state:', transformedData);
           setUsulanMagang(transformedData);
         } else {
           throw new Error(result.message || 'Format data dari server salah.');
@@ -189,7 +190,12 @@ export default function UsulanMagangPage() {
                       </td>
                       <td className="px-6 py-4">
                         <button
-                          onClick={() => navigate(`/usulan/detail/${item.id}`)}
+                          onClick={() => {
+                            // --- TAMBAHKAN LOG INI ---
+                            console.log('Button clicked, item.id is:', item.id);
+                            // -------------------------
+                            navigate(`/usulan/detail/${item.id}`);
+                          }}
                           className="text-blue-600 hover:underline"
                         >
                           Detail

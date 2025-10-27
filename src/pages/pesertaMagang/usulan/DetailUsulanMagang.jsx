@@ -50,7 +50,13 @@ export default function DetailUsulanMagang() {
   // useEffect untuk fetch data saat komponen dimuat
   useEffect(() => {
     const fetchDetail = async () => {
-      if (!id) return; // Jangan fetch jika id tidak ada
+      console.log('ID inside useEffect:', id); // <-- Tambahkan log ini!
+      if (!id) {
+        console.error('Fetch aborted: ID is undefined!');
+        setError('Tidak dapat memuat detail: ID ajuan tidak ditemukan di URL.');
+        setIsLoading(false);
+        return; // Hentikan fetch jika id undefined
+      }
 
       setIsLoading(true);
       setError(null);
