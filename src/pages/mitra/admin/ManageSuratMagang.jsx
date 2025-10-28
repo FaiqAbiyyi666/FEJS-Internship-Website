@@ -1,11 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Eye } from 'lucide-react';
-
-const dummyPesertaDisetujui = [
-  { id: 'p1', nama: 'Ahmad Fadli', bidang: 'Tata Kelola Informatika' },
-  { id: 'p2', nama: 'Siti Aminah', bidang: 'Infrastruktur & Keamanan TIK' },
-  { id: 'p3', nama: 'Budi Santoso', bidang: 'Sekretariat' },
-];
 
 const daftarBidang = [
   'Semua',
@@ -18,12 +12,9 @@ const daftarBidang = [
 
 export default function ManageSuratMagang() {
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    pesertaId: '',
-    namaPeserta: '',
-    noSurat: '',
-    file: null,
-  });
+  const [pesertaDiterima, setPesertaDiterima] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [riwayat, setRiwayat] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewPdfUrl, setPreviewPdfUrl] = useState(null);
@@ -36,6 +27,54 @@ export default function ManageSuratMagang() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  // 2. State form diperbarui dengan email
+  const [form, setForm] = useState({
+    ajuanId: '', // <-- Ganti nama
+    namaPeserta: '',
+    email: '',
+    noSurat: '',
+    file: null,
+  });
+
+  useEffect(() => {
+    const fetchPeserta = async () => {
+      setIsLoading(true);
+      try {
+        // 1. Panggil fetch dan tambahkan token auth jika perlu
+        const response = await fetch(
+          'http://localhost:3000/api/admin/peserta-diterima',
+          {
+            headers: {
+              // Sesuaikan ini jika Anda butuh otentikasi
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        );
+
+        // 2. Cek jika respons tidak OK
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // 3. Ambil data JSON
+        const result = await response.json();
+
+        // 4. Cek status dari body JSON Anda
+        if (result.status) {
+          setPesertaDiterima(result.data);
+        } else {
+          throw new Error(result.message || 'Gagal mengambil data.');
+        }
+      } catch (error) {
+        console.error('Gagal mengambil data peserta:', error);
+        alert('Gagal mengambil data peserta diterima: ' + error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPeserta();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -45,45 +84,104 @@ export default function ManageSuratMagang() {
     setForm((prev) => ({ ...prev, file: e.target.files[0] }));
   };
 
+  // 3. handlePilihPeserta diperbarui untuk mengisi email
   const handlePilihPeserta = (e) => {
-    const value = e.target.value;
-    const peserta = dummyPesertaDisetujui.find((p) => p.nama === value);
+    const namaTerpilih = e.target.value;
+    // Cari di state 'pesertaDiterima'
+    const peserta = pesertaDiterima.find((p) => p.nama === namaTerpilih);
+
     if (peserta) {
       setForm((prev) => ({
         ...prev,
-        pesertaId: peserta.id,
+        ajuanId: peserta.ajuanId, // <-- Simpan ajuanId
         namaPeserta: peserta.nama,
         bidang: peserta.bidang,
+        email: peserta.email,
       }));
     } else {
-      setForm((prev) => ({ ...prev, pesertaId: '', namaPeserta: value }));
+      setForm((prev) => ({
+        ...prev,
+        ajuanId: '',
+        namaPeserta: namaTerpilih,
+        email: '',
+      }));
     }
   };
 
-  const handleSubmit = (e) => {
+  // 4. handleSubmit diperbarui untuk validasi & reset
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.pesertaId || !form.noSurat || !form.file) {
+
+    if (!form.ajuanId || !form.noSurat || !form.file || !form.email) {
       alert('Silakan lengkapi semua data');
       return;
     }
 
-    const fileLink = URL.createObjectURL(form.file);
-    const peserta = dummyPesertaDisetujui.find((p) => p.id === form.pesertaId);
+    const formData = new FormData();
+    formData.append('ajuanId', form.ajuanId);
+    formData.append('noSurat', form.noSurat);
+    formData.append('suratPenerimaan', form.file);
 
-    setRiwayat((prev) => [
-      ...prev,
-      {
-        ...form,
-        id: Date.now(),
-        fileUrl: fileLink,
-        tanggal: new Date().toISOString().split('T')[0],
-        bidang: peserta?.bidang || 'Tidak diketahui',
-      },
-    ]);
+    setIsLoading(true);
 
-    setForm({ pesertaId: '', namaPeserta: '', noSurat: '', file: null });
-    setShowModal(false);
-    setPreviewUrl(null);
+    try {
+      // ===== PERUBAHAN DIMULAI DI SINI =====
+
+      const response = await fetch(
+        'http://localhost:3000/api/admin/kirim-surat',
+        {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      alert(result.message); 
+
+      const fileLink = URL.createObjectURL(form.file);
+      setRiwayat((prev) => [
+        ...prev,
+        {
+          ...form,
+          id: Date.now(),
+          fileUrl: fileLink,
+          tanggal: new Date().toISOString().split('T')[0],
+        },
+      ]);
+
+      setForm({
+        ajuanId: '',
+        namaPeserta: '',
+        email: '',
+        noSurat: '',
+        file: null,
+      });
+      setShowModal(false);
+      setPreviewUrl(null);
+
+      setPesertaDiterima((prev) =>
+        prev.filter((p) => p.ajuanId !== form.ajuanId)
+      );
+    } catch (error) {
+      console.error('Gagal mengirim surat:', error);
+      alert(
+        'Gagal mengirim surat: ' +
+          // 'error.response?.data?.message' (dari Axios) diubah menjadi 'error.message'
+          (error.message || 'Terjadi kesalahan tidak diketahui')
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredRiwayat = useMemo(() => {
@@ -158,6 +256,8 @@ export default function ManageSuratMagang() {
           <thead className="bg-[#006DA6] text-white">
             <tr>
               <th className="px-4 py-3">Nama Peserta</th>
+              {/* 5. Kolom Email Ditambahkan di Tabel */}
+              <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Bidang</th>
               <th className="px-4 py-3">No Surat</th>
               <th className="px-4 py-3">Tanggal Kirim</th>
@@ -169,6 +269,8 @@ export default function ManageSuratMagang() {
               currentData.map((item) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3">{item.namaPeserta}</td>
+                  {/* 6. Data Email Ditampilkan di Tabel */}
+                  <td className="px-4 py-3">{item.email}</td>
                   <td className="px-4 py-3">{item.bidang}</td>
                   <td className="px-4 py-3">{item.noSurat}</td>
                   <td className="px-4 py-3">{item.tanggal}</td>
@@ -188,7 +290,8 @@ export default function ManageSuratMagang() {
             ) : (
               <tr>
                 <td
-                  colSpan="5"
+                  // 7. Colspan diubah menjadi 6
+                  colSpan="6"
                   className="text-center py-4 text-gray-500 italic"
                 >
                   Tidak ada data yang sesuai.
@@ -301,10 +404,25 @@ export default function ManageSuratMagang() {
                   className="w-full border px-3 py-2 rounded"
                 />
                 <datalist id="pesertaList">
-                  {dummyPesertaDisetujui.map((peserta) => (
-                    <option key={peserta.id} value={peserta.nama} />
+                  {pesertaDiterima.map((peserta) => (
+                    <option key={peserta.ajuanId} value={peserta.nama} />
                   ))}
                 </datalist>
+              </div>
+
+              {/* 8. Field Email Ditambahkan di Form Modal */}
+              <div>
+                <label className="block mb-1 text-gray-700">
+                  Email Peserta
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  readOnly // Dibuat readOnly agar tidak bisa diubah manual
+                  placeholder="Email akan terisi otomatis..."
+                  className="w-full border px-3 py-2 rounded bg-gray-100" // Diberi background abu-abu
+                />
               </div>
 
               <div>
