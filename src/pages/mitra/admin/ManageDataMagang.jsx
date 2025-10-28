@@ -167,58 +167,25 @@ export default function ManageDataMagang() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // export single peserta to PDF
-  const exportPesertaPDF = (p) => {
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    doc.setFontSize(16);
-    doc.text('Detail Peserta Magang', 40, 40);
-    doc.setFontSize(11);
-
-    const info = [
-      ['Nama', p.nama],
-      ['Tanggal Lahir', p.tglLahir],
-      ['NIM / NIS', p.nim || '-'],
-      ['Email', p.email || '-'],
-      ['No. Telepon', p.noTelepon || '-'],
-      ['NIK', p.nik || '-'],
-      ['Bidang', p.bidang],
-      ['Instansi', p.instansi],
-      ['Jurusan', p.jurusan || '-'],
-      ['Alamat', p.alamat || '-'],
-      ['Periode Magang', `${p.periodeMulai} - ${p.periodeSelesai}`],
-      ['Status Laporan Akhir', p.laporanAkhir.status || '-'],
-      ['Status Surat Magang', p.suratMagang || '-'],
-      ['Status Magang', p.statusMagang || '-'],
-      ['Status Sertifikat', p.sertifikat || '-'],
-    ];
-
-    autoTable(doc, {
-      startY: 70,
-      head: [['Field', 'Detail']],
-      body: info,
-      styles: { fontSize: 10 },
-    });
-
-    doc.save(`Peserta-${p.nama.replace(/\s+/g, '_')}.pdf`);
-  };
-
   // export all to excel
   const exportAllExcel = () => {
     const exportData = daftarPeserta.map((d) => ({
-      nama: d.nama,
-      tglLahir: d.tglLahir,
-      nim: d.nim,
-      email: d.email,
-      phone: d.phone,
-      nik: d.nik,
-      bidang: d.bidang,
-      instansi: d.instansi,
-      jurusan: d.jurusan,
-      alamat: d.alamat,
-      periode: `${d.periodeMulai} - ${d.periodeSelesai}`,
-      suratMagang: d.suratMagang,
-      sertifikat: d.sertifikat,
-      status: d.statusMagang,
+      NAMA: d.nama,
+      'TANGGAL LAHIR': d.tglLahir ? d.tglLahir.split('T')[0] : '', // Tambahan: Format juga tgl lahir
+      'NIM / NIS': d.nim,
+      EMAIL: d.email,
+      'NO TELEPON': d.noTelepon,
+      NIK: d.nik,
+      BIDANG: d.bidang,
+      INSTANSI: d.instansi,
+      JURUSAN: d.jurusan,
+      ALAMAT: d.alamat,
+      PERIODE: `${d.periodeMulai.split('T')[0]} - ${
+        d.periodeSelesai.split('T')[0]
+      }`,
+      'SURAT MAGANG': d.suratMagang,
+      SERTIFIKAT: d.sertifikat,
+      'STATUS MAGANG': d.statusMagang,
     }));
 
     // Buat tanggal export (YYYY-MM-DD)
@@ -226,9 +193,66 @@ export default function ManageDataMagang() {
     const formattedDate = today.toISOString().split('T')[0];
 
     const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // ---- MULAI MODIFIKASI STYLE ----
+
+    // 1. Definisikan style
+    const borderStyle = {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } },
+    };
+
+    const headerStyle = {
+      font: { bold: true },
+      fill: { fgColor: { rgb: 'DDEBF7' } }, // Warna Biru muda (Excel)
+      border: borderStyle,
+    };
+
+    const cellStyle = {
+      border: borderStyle,
+    };
+
+    // 2. Dapatkan range worksheet
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const numRows = range.e.r; // 0-indexed end row
+    const numCols = range.e.c; // 0-indexed end col
+
+    // 3. Loop semua sel untuk menerapkan border
+    for (let R = 0; R <= numRows; R++) {
+      for (let C = 0; C <= numCols; C++) {
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = ws[cellRef];
+
+        if (!cell) continue; // Lewati sel kosong
+
+        // Terapkan border ke semua sel
+        cell.s = cellStyle;
+
+        // Terapkan style header HANYA ke baris pertama (R === 0)
+        if (R === 0) {
+          cell.s = headerStyle;
+        }
+      }
+    }
+
+    // (Opsional) Atur lebar kolom agar sedikit lebih rapi
+    if (exportData.length > 0) {
+      const colWidths = Object.keys(exportData[0]).map((key) => ({
+        wch: Math.max(key.length, 15), // Lebar kolom min 15, atau selebar judul
+      }));
+      ws['!cols'] = colWidths;
+    }
+
+    // ---- SELESAI MODIFIKASI STYLE ----
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'PesertaMagang');
-    XLSX.writeFile(wb, `Arsip_Data_Magang_${formattedDate}.xlsx`);
+    XLSX.writeFile(wb, `Arsip_Data_Magang_${formattedDate}.xlsx`, {
+      bookType: 'xlsx',
+      cellStyles: true,
+    });
   };
 
   // pagination helpers
