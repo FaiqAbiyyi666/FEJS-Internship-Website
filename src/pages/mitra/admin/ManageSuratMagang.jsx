@@ -14,6 +14,7 @@ export default function ManageSuratMagang() {
   const [showModal, setShowModal] = useState(false);
   const [pesertaDiterima, setPesertaDiterima] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTabel, setIsLoadingTabel] = useState(false);
 
   const [riwayat, setRiwayat] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -75,6 +76,42 @@ export default function ManageSuratMagang() {
     fetchPeserta();
   }, []);
 
+  useEffect(() => {
+    const fetchRiwayat = async () => {
+      setIsLoadingTabel(true); // Gunakan loading terpisah untuk tabel
+      try {
+        // Buat query params berdasarkan state filter
+        const params = new URLSearchParams();
+        if (searchNama) params.append('search', searchNama);
+        if (filterBidang) params.append('bidang', filterBidang);
+        if (filterTanggal) params.append('date', filterTanggal);
+
+        const response = await fetch(
+          `http://localhost:3000/api/admin/riwayat-surat-penerimaan?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        );
+        if (!response.ok) throw new Error('Gagal mengambil riwayat surat.');
+        const result = await response.json();
+        if (result.status) {
+          setRiwayat(result.data); // Set data riwayat
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        console.error('Gagal mengambil riwayat surat:', error);
+        alert('Gagal mengambil riwayat surat: ' + error.message);
+      } finally {
+        setIsLoadingTabel(false);
+      }
+    };
+
+    fetchRiwayat();
+  }, [searchNama, filterBidang, filterTanggal]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -125,8 +162,6 @@ export default function ManageSuratMagang() {
     setIsLoading(true);
 
     try {
-      // ===== PERUBAHAN DIMULAI DI SINI =====
-
       const response = await fetch(
         'http://localhost:3000/api/admin/kirim-surat',
         {
@@ -146,17 +181,20 @@ export default function ManageSuratMagang() {
         );
       }
 
-      alert(result.message); 
+      alert(result.message);
 
       const fileLink = URL.createObjectURL(form.file);
       setRiwayat((prev) => [
-        ...prev,
         {
-          ...form,
-          id: Date.now(),
+          id: Date.now(), // ID sementara
+          namaPeserta: form.namaPeserta,
+          email: form.email,
+          bidang: form.bidang,
+          noSurat: form.noSurat,
+          tanggal: new Date().toISOString(),
           fileUrl: fileLink,
-          tanggal: new Date().toISOString().split('T')[0],
         },
+        ...prev,
       ]);
 
       setForm({
@@ -202,14 +240,6 @@ export default function ManageSuratMagang() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const changePage = (dir) => {
-    setCurrentPage((prev) => {
-      const next = prev + dir;
-      if (next < 1 || next > totalPages) return prev;
-      return next;
-    });
-  };
 
   return (
     <div className="space-y-6">

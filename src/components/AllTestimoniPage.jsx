@@ -1,41 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star } from 'react-feather';
 import { FaStar } from 'react-icons/fa';
-
-const testimonies = [
-  {
-    name: 'Lisa Blackpink',
-    bidang: 'Tata Kelola Informatika',
-    tanggal: '2025-03-15',
-    foto: '/images/lisa.jpg',
-    ulasan: 'Lorem Ipsum dummy text...',
-    rating: 4,
-  },
-  {
-    name: 'Jennie Blackpink',
-    bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
-    tanggal: '2025-03-14',
-    foto: '/images/jennie.jpg',
-    ulasan: 'Lorem Ipsum dummy text...',
-    rating: 5,
-  },
-  {
-    name: 'Rose Blackpink',
-    bidang: 'Sekretariat',
-    tanggal: '2025-03-13',
-    foto: '/images/rose.jpg',
-    ulasan: 'Lorem Ipsum dummy text...',
-    rating: 5,
-  },
-  {
-    name: 'Jisoo Blackpink',
-    bidang: 'Statistik',
-    tanggal: '2025-03-12',
-    foto: '/images/jisoo.jpg',
-    ulasan: 'Lorem Ipsum dummy text...',
-    rating: 4,
-  },
-];
 
 function TestimoniCard({ data }) {
   return (
@@ -78,10 +43,42 @@ export default function AllTestimoniPage() {
   const [filterRating, setFilterRating] = useState('');
   const [filterBidang, setFilterBidang] = useState('');
 
-  // Ambil bidang unik dari data
-  const bidangOptions = [...new Set(testimonies.map((t) => t.bidang))];
+  const [allTestimonies, setAllTestimonies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const sortedFiltered = [...testimonies]
+  useEffect(() => {
+    const fetchTestimoni = async () => {
+      try {
+        setIsLoading(true);
+        // Panggil endpoint BARU
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/ulasan-magang/all'
+        );
+        if (!response.ok) {
+          throw new Error('Gagal memuat testimoni');
+        }
+        const result = await response.json();
+        if (result.status && Array.isArray(result.data)) {
+          setAllTestimonies(result.data);
+        } else {
+          throw new Error('Format data tidak terduga');
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTestimoni();
+  }, []);
+
+  // Ambil bidang unik dari data
+  const bidangOptions = [...new Set(allTestimonies.map((t) => t.bidang))];
+
+  const sortedFiltered = [...allTestimonies]
     .filter((t) => (filterRating ? t.rating === parseInt(filterRating) : true))
     .filter((t) => (filterBidang ? t.bidang === filterBidang : true))
     .sort((a, b) => {
@@ -153,7 +150,13 @@ export default function AllTestimoniPage() {
 
         {/* Card Testimoni */}
         <div className="space-y-6">
-          {sortedFiltered.length > 0 ? (
+          {isLoading ? (
+            <p className="text-center text-gray-500">Memuat testimoni...</p>
+          ) : error ? (
+            <p className="text-center text-red-500">
+              Terjadi kesalahan: {error}
+            </p>
+          ) : sortedFiltered.length > 0 ? (
             sortedFiltered.map((item, index) => (
               <TestimoniCard key={index} data={item} />
             ))

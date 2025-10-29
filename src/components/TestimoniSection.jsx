@@ -1,43 +1,5 @@
+import React, { useState, useEffect } from 'react';
 import { Star } from 'react-feather';
-
-const testimonies = [
-  {
-    name: 'Lisa Blackpink',
-    bidang: 'Tata Kelola Informatika',
-    tanggal: '15 Maret 2025',
-    foto: '/images/lisa.jpg',
-    ulasan:
-      'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text since the 1500s.',
-    rating: 4,
-  },
-  {
-    name: 'Jennie Blackpink',
-    bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
-    tanggal: '15 Maret 2025',
-    foto: '/images/jennie.jpg',
-    ulasan:
-      'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text since the 1500s.',
-    rating: 5,
-  },
-  {
-    name: 'Rose Blackpink',
-    bidang: 'Sekretariat',
-    tanggal: '15 Maret 2025',
-    foto: '/images/rose.jpg',
-    ulasan:
-      'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text since the 1500s.',
-    rating: 5,
-  },
-  {
-    name: 'Jisoo Blackpink',
-    bidang: 'Statistik',
-    tanggal: '15 Maret 2025',
-    foto: '/images/jisoo.jpg',
-    ulasan:
-      'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text since the 1500s.',
-    rating: 4,
-  },
-];
 
 function TestimoniCard({ data }) {
   return (
@@ -70,6 +32,51 @@ function TestimoniCard({ data }) {
 }
 
 export default function TestimoniSection() {
+  const [testimonies, setTestimonies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Panggil API untuk data publik
+    const fetchTestimoni = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/ulasan-magang'
+        );
+
+        if (!response.ok) {
+          throw new Error('Gagal mengambil data testimoni');
+        }
+
+        // Ganti nama variabel agar tidak bingung
+        const result = await response.json();
+
+        // PERBAIKAN:
+        // Pastikan API mengembalikan status sukses dan 'data' adalah sebuah array
+        if (result.status && Array.isArray(result.data)) {
+          setTestimonies(result.data); // Ambil array dari properti 'data'
+        } else {
+          // Tangani jika 'result.status' false atau 'result.data' bukan array
+          console.error('Format data tidak terduga:', result);
+          setTestimonies([]); // Set ke array kosong agar tidak error
+        }
+      } catch (error) {
+        console.error(error);
+        setTestimonies([]); // Set ke array kosong jika terjadi error fetch
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTestimoni();
+  }, []); // [] berarti useEffect hanya jalan sekali saat komponen dimuat // [] berarti useEffect hanya jalan sekali saat komponen dimuat
+
+  // Jangan tampilkan section jika loading atau tidak ada testimoni
+  if (isLoading || testimonies.length === 0) {
+    // Anda bisa tampilkan skeleton loader di sini
+    return null; // atau <LoadingSpinner />
+  }
+
   return (
     <section className="py-12 bg-[#F9FBFD] text-[#006DA6] px-4">
       <div className="max-w-6xl mx-auto">

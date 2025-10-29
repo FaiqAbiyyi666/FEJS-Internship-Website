@@ -1,42 +1,71 @@
-import React, { useState } from 'react';
-
-// Data dummy
-const dataUlasan = [
-  {
-    id: '1',
-    nama: 'Fajar Ramadhan',
-    bidang: 'Pemrograman Web',
-    foto: 'https://randomuser.me/api/portraits/men/32.jpg',
-    tanggal: '2025-07-22T10:30:00',
-    ulasan:
-      'Pengalaman magang yang sangat bermanfaat, banyak belajar hal baru.',
-    rating: 5,
-  },
-  {
-    id: '2',
-    nama: 'Siti Aisyah',
-    bidang: 'Desain Grafis',
-    foto: 'https://randomuser.me/api/portraits/women/45.jpg',
-    tanggal: '2025-07-20T09:00:00',
-    ulasan: 'Tim sangat ramah dan lingkungan kerja menyenangkan.',
-    rating: 4,
-  },
-  {
-    id: '3',
-    nama: 'Andi Wijaya',
-    bidang: 'Jaringan',
-    foto: 'https://randomuser.me/api/portraits/men/18.jpg',
-    tanggal: '2025-07-21T13:15:00',
-    ulasan: 'Perlu peningkatan dalam bimbingan mentor.',
-    rating: 3,
-  },
-];
+import React, { useState, useEffect } from 'react';
 
 const ManageUlasanMagang = () => {
+  const [dataUlasan, setDataUlasan] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState(null);
+
   const [searchNama, setSearchNama] = useState('');
   const [filterBidang, setFilterBidang] = useState('');
   const [filterRating, setFilterRating] = useState('');
   const [filterTanggal, setFilterTanggal] = useState('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setErrorMessage(null); // Reset pesan error setiap kali fetch
+
+      try {
+        // 1. Ambil token dari localStorage (atau di mana pun Anda menyimpannya)
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+          // Jika tidak ada token, jangan lakukan fetch
+          throw new Error('Token tidak ditemukan. Silakan login kembali.');
+        }
+
+        // 2. Buat headers dengan token Authorization
+        const headers = {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        };
+
+        // 3. Buat URL dengan query params (jika Anda ingin filter di backend)
+        // Kode controller Anda sudah siap untuk ini.
+        const params = new URLSearchParams();
+        if (searchNama) params.append('searchNama', searchNama);
+        if (filterBidang) params.append('filterBidang', filterBidang);
+        if (filterRating) params.append('filterRating', filterRating);
+        if (filterTanggal) params.append('filterTanggal', filterTanggal);
+
+        const response = await fetch(
+          `http://localhost:3000/api/admin/ulasan-magang?${params.toString()}`,
+          {
+            method: 'GET',
+            headers: headers, // <-- PERBAIKAN UTAMA
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.status) {
+          // Tangani error dari server (termasuk 401 jika token salah/expired)
+          throw new Error(result.message || 'Gagal mengambil data ulasan');
+        }
+
+        // 4. Set data dari properti 'data' di respon JSON Anda
+        setDataUlasan(result.data);
+      } catch (error) {
+        console.error('Error di fetchData:', error.message);
+        setErrorMessage(error.message); // Tampilkan pesan error ke user
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+    // Tambahkan dependensi filter agar data di-fetch ulang saat filter berubah
+  }, [searchNama, filterBidang, filterRating, filterTanggal]);
 
   const filteredData = dataUlasan.filter((item) => {
     const matchNama = item.nama
@@ -125,9 +154,17 @@ const ManageUlasanMagang = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredData.length > 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan="6" className="text-center py-4 text-gray-500">
+                  Memuat data...
+                </td>
+              </tr>
+            ) : filteredData.length > 0 ? (
               filteredData.map((item) => (
                 <tr key={item.id}>
+                  {/* ... (TD Foto, Nama, Bidang, Tanggal, Ulasan, Rating) ... */}
+                  {/* Pastikan format tanggal sudah benar */}
                   <td className="px-4 py-3">
                     <img
                       src={item.foto}
