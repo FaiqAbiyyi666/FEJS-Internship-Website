@@ -1,72 +1,24 @@
-import React, { useState } from 'react';
-import { Eye, Plus } from 'react-feather';
+import React, { useState, useEffect } from 'react';
+import { Eye, Plus, AlertTriangle, Loader } from 'react-feather';
 
-const dummyPeserta = [
-  { id: '1', nama: 'Ahmad Fadli' },
-  { id: '2', nama: 'Siti Aminah' },
-  { id: '3', nama: 'Budi Santoso' },
-];
-
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 export default function ManageSertifikat() {
-  const [sertifikatData] = useState([
-    {
-      id: 1,
-      namaPeserta: 'Ahmad Fauzi',
-      noSurat: '123/SK/Diskominfo',
-      bidang: 'Tata Kelola Informatika',
-      fileUrl: '/dummy/surat1.pdf',
-    },
-    {
-      id: 2,
-      namaPeserta: 'Dina Maharani',
-      noSurat: '124/SK/Diskominfo',
-      bidang: 'Sekretariat',
-      fileUrl: '/dummy/surat2.pdf',
-    },
-    {
-      id: 3,
-      namaPeserta: 'Rizky Saputra',
-      noSurat: '125/SK/Diskominfo',
-      bidang: 'Statistik',
-      fileUrl: '/dummy/surat3.pdf',
-    },
-  ]);
+  const [history, setHistory] = useState([]);
+  const [pesertaList, setPesertaList] = useState([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBidang, setSelectedBidang] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [history, setHistory] = useState([]);
-  const [modalKirim, setModalKirim] = useState(false);
-  const [modalPreview, setModalPreview] = useState(null);
   const [filterTanggal, setFilterTanggal] = useState('');
 
-  const filteredData = history.filter((item) => {
-    const matchesSearch =
-      item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.noSertifikat.toLowerCase().includes(searchTerm.toLowerCase());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-    const bidangPeserta = sertifikatData.find(
-      (data) => data.namaPeserta === item.nama
-    )?.bidang;
-
-    const matchesBidang =
-      selectedBidang === '' || bidangPeserta === selectedBidang;
-
-    // Konversi tanggal sertifikat ke format YYYY-MM-DD untuk dibandingkan
-    const formattedTanggal = new Date(item.tanggal).toISOString().split('T')[0];
-    const matchTanggal =
-      filterTanggal === '' || formattedTanggal === filterTanggal;
-
-    return matchesSearch && matchesBidang && matchTanggal;
-  });
-
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const [modalKirim, setModalKirim] = useState(false);
+  const [modalPreview, setModalPreview] = useState(null);
 
   const [form, setForm] = useState({
     pesertaId: '',
@@ -76,6 +28,97 @@ export default function ManageSertifikat() {
     file: null,
     fileURL: '',
   });
+
+  const fetchHistory = async (page) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // 1. Ambil token (asumsi dari localStorage)
+      const token = localStorage.getItem('token'); // <-- SESUAIKAN DENGAN NAMA KEY ANDA
+      if (!token) {
+        throw new Error('Autentikasi tidak ditemukan. Silakan login kembali.');
+      }
+
+      const params = new URLSearchParams({
+        page: page,
+        search: searchTerm,
+        bidang: selectedBidang,
+        tanggal: filterTanggal,
+      });
+
+      // 2. Gunakan URL dari error log Anda
+      const res = await fetch(
+        `http://localhost:3000/api/admin/sertifikat/history?${params.toString()}`,
+        {
+          // 3. Tambahkan header Authorization
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json();
+        // Jika 401, token mungkin sudah kadaluarsa
+        if (res.status === 401)
+          throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
+        throw new Error(errData.message || 'Gagal mengambil riwayat');
+      }
+      const data = await res.json();
+
+      setHistory(data.data.history);
+      setTotalPages(data.data.totalPages);
+      setCurrentPage(data.data.currentPage);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchPeserta = async () => {
+    try {
+      // 1. Ambil token
+      const token = localStorage.getItem('token'); // <-- SESUAIKAN DENGAN NAMA KEY ANDA
+      if (!token) {
+        // Tidak perlu throw error utama, biarkan tabel history tetap ter-load
+        console.error(
+          'Autentikasi tidak ditemukan untuk mengambil daftar peserta.'
+        );
+        return;
+      }
+
+      const res = await fetch(
+        'http://localhost:3000/api/admin/sertifikat-list',
+        {
+          // 3. Tambahkan header Authorization
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Gagal mengambil daftar peserta');
+      }
+      const data = await res.json();
+      setPesertaList(data.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory(currentPage);
+    fetchPeserta();
+  }, [currentPage]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchHistory(1); // Reset ke halaman 1 saat filter
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm, selectedBidang, filterTanggal]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -93,44 +136,73 @@ export default function ManageSertifikat() {
 
   const handlePilihPeserta = (e) => {
     const value = e.target.value;
-    const peserta = dummyPeserta.find((p) => p.nama === value);
+    const peserta = pesertaList.find((p) => p.namaLengkap === value);
     if (peserta) {
       setForm((prev) => ({
         ...prev,
         pesertaId: peserta.id,
-        namaPeserta: peserta.nama,
+        namaPeserta: peserta.namaLengkap,
       }));
     } else {
       setForm((prev) => ({ ...prev, pesertaId: '', namaPeserta: value }));
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.pesertaId || !form.noSertifikat || !form.nilai || !form.file) {
       alert('Semua kolom wajib diisi');
       return;
     }
 
-    const newEntry = {
-      id: Date.now(),
-      nama: form.namaPeserta,
-      noSertifikat: form.noSertifikat,
-      nilai: form.nilai,
-      tanggal: new Date().toLocaleDateString(),
-      fileURL: form.fileURL,
-    };
+    // 1. Ambil token
+    const token = localStorage.getItem('token'); // <-- SESUAIKAN DENGAN NAMA KEY ANDA
+    if (!token) {
+      alert('Sesi Anda berakhir. Silakan login kembali.');
+      return;
+    }
 
-    setHistory((prev) => [newEntry, ...prev]);
-    setModalKirim(false);
-    setForm({
-      pesertaId: '',
-      namaPeserta: '',
-      noSertifikat: '',
-      nilai: '',
-      file: null,
-      fileURL: '',
-    });
+    const formData = new FormData();
+    formData.append('pesertaId', form.pesertaId);
+    formData.append('noSertifikat', form.noSertifikat);
+    formData.append('nilai', form.nilai);
+    formData.append('file', form.file);
+
+    try {
+      // 2. Kirim ke API dengan header
+      // Pastikan URL ini sesuai dengan router Anda (misal: /api/admin/kirim-sertifikat)
+      const res = await fetch(
+        'http://localhost:3000/api/admin/kirim-sertifikat',
+        {
+          // <-- SESUAIKAN URL API ANDA
+          method: 'POST',
+          body: formData,
+          // 3. Tambahkan header Authorization (tanpa Content-Type)
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Gagal mengirim sertifikat');
+      }
+
+      alert('Sertifikat berhasil dikirim!');
+      setModalKirim(false);
+      setForm({
+        pesertaId: '',
+        namaPeserta: '',
+        noSertifikat: '',
+        nilai: '',
+        file: null,
+        fileURL: '',
+      });
+      fetchHistory(1);
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
   };
 
   return (
@@ -163,8 +235,8 @@ export default function ManageSertifikat() {
             <option value="Pengelolaan Informasi dan Komunikasi Publik">
               Pengelolaan Informasi dan Komunikasi Publik
             </option>
-            <option value="Infrastruktur & Keamanan TIK">
-              Infrastruktur & Keamanan TIK
+            <option value="Infrastruktur dan Keamanan TIK">
+              Infrastruktur dan Keamanan TIK
             </option>
             <option value="Sekretariat">Sekretariat</option>
             <option value="Statistik">Statistik</option>
@@ -195,23 +267,42 @@ export default function ManageSertifikat() {
             <tr>
               <th className="px-4 py-3 text-left rounded-tl-lg">Nama</th>
               <th className="px-4 py-3 text-left">No Sertifikat</th>
+              <th className="px-4 py-3 text-left">Bidang</th>
               <th className="px-4 py-3 text-left">Nilai</th>
               <th className="px-4 py-3 text-left">Tanggal</th>
               <th className="px-4 py-3 text-left rounded-tr-lg">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData.length > 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan="6" className="text-center py-6 text-gray-500">
+                  <Loader className="animate-spin inline-block mr-2" />
+                  Memuat data...
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan="6" className="text-center py-6 text-red-500">
+                  <AlertTriangle className="inline-block mr-2" />
+                  Error: {error}
+                </td>
+              </tr>
+            ) : history.length > 0 ? (
               <>
-                {paginatedData.map((item) => (
+                {history.map((item) => (
                   <tr
                     key={item.id}
                     className="border-t hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-4 py-3">{item.nama}</td>
+                    {/* Sesuaikan Data dari API */}
+                    <td className="px-4 py-3">{item.peserta.namaLengkap}</td>
                     <td className="px-4 py-3">{item.noSertifikat}</td>
+                    <td className="px-4 py-3">{item.bidang}</td>
                     <td className="px-4 py-3">{item.nilai}</td>
-                    <td className="px-4 py-3">{item.tanggal}</td>
+                    <td className="px-4 py-3">
+                      {new Date(item.createdAt).toLocaleDateString('id-ID')}
+                    </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setModalPreview(item)}
@@ -223,55 +314,23 @@ export default function ManageSertifikat() {
                   </tr>
                 ))}
                 <tr>
-                  <td colSpan="5" className="px-4 py-3 border-t">
+                  <td colSpan="6" className="px-4 py-3 border-t">
+                    {/* ... Logika Paginasi ... */}
                     <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-sm">
                       <p className="text-gray-700">
-                        Menampilkan{' '}
-                        <span className="font-medium">
-                          {(currentPage - 1) * ITEMS_PER_PAGE + 1}
-                        </span>{' '}
-                        -{' '}
-                        <span className="font-medium">
-                          {Math.min(
-                            currentPage * ITEMS_PER_PAGE,
-                            filteredData.length
-                          )}
-                        </span>{' '}
-                        dari{' '}
-                        <span className="font-medium">
-                          {filteredData.length}
-                        </span>{' '}
-                        hasil
+                        Halaman {currentPage} dari {totalPages}
                       </p>
                       <div className="flex flex-wrap gap-1">
                         <button
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
+                          onClick={() => setCurrentPage((p) => p - 1)}
                           className="px-3 py-1 border rounded hover:bg-gray-100"
                           disabled={currentPage === 1}
                         >
                           Previous
                         </button>
-                        {[...Array(totalPages)].map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className={`px-3 py-1 border rounded ${
-                              currentPage === i + 1
-                                ? 'bg-[#006DA6] text-white'
-                                : 'hover:bg-gray-100'
-                            }`}
-                          >
-                            {i + 1}
-                          </button>
-                        ))}
+                        {/* Tombol halaman bisa ditambahkan jika perlu */}
                         <button
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(prev + 1, totalPages)
-                            )
-                          }
+                          onClick={() => setCurrentPage((p) => p + 1)}
                           className="px-3 py-1 border rounded hover:bg-gray-100"
                           disabled={currentPage === totalPages}
                         >
@@ -284,7 +343,7 @@ export default function ManageSertifikat() {
               </>
             ) : (
               <tr>
-                <td colSpan="5" className="text-center py-6 text-gray-500">
+                <td colSpan="6" className="text-center py-6 text-gray-500">
                   Belum ada data sertifikat.
                 </td>
               </tr>
@@ -318,8 +377,8 @@ export default function ManageSertifikat() {
                   className="w-full border px-3 py-2 rounded text-sm"
                 />
                 <datalist id="pesertaList">
-                  {dummyPeserta.map((peserta) => (
-                    <option key={peserta.id} value={peserta.nama} />
+                  {pesertaList.map((peserta) => (
+                    <option key={peserta.id} value={peserta.namaLengkap} />
                   ))}
                 </datalist>
               </div>
@@ -394,10 +453,10 @@ export default function ManageSertifikat() {
               &times;
             </button>
             <h3 className="text-lg font-semibold mb-4">
-              Sertifikat: {modalPreview.nama}
+              Sertifikat: {modalPreview.peserta.namaLengkap}
             </h3>
             <iframe
-              src={modalPreview.fileURL}
+              src={modalPreview.fileUrl}
               className="w-full h-[500px] border rounded"
               title="Preview Sertifikat"
             />
