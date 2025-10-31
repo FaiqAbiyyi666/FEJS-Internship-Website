@@ -1,35 +1,132 @@
 import { useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { LaporanContext } from './LaporanContext';
 
-// SIMULASI: Ubah isi array ini untuk melihat perubahan tampilan
-const mockUploadHistory = [
-  {
-    id: 1,
-    namaFile: 'Laporan_Final_Magang_JaneDoe_v2.pdf',
-    status: 'Pending', // Coba ganti: 'Diterima' atau 'Ditolak'
-  },
-];
+const toISODateString = (date) => {
+  return date.toISOString().split('T')[0];
+};
+
+const formatWeekRange = (startDate, endDate) => {
+  const options = { month: 'short', day: 'numeric' };
+  const start = startDate.toLocaleDateString('id-ID', options);
+  const end = endDate.toLocaleDateString('id-ID', {
+    ...options,
+    year: 'numeric',
+  });
+  return `${start} – ${end}`;
+};
+
+const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
+  const weeks = [];
+  let currentDate = new Date(tglMulaiISO);
+  const endDate = new Date(tglSelesaiISO);
+
+  // Buat Set dari tanggal logbook yang sudah diisi untuk pencarian cepat
+  const filledLogbookDates = new Set(
+    logbooks.map((log) => toISODateString(new Date(log.tanggal)))
+  );
+
+  while (currentDate <= endDate) {
+    // Cari hari Senin (hari ke-1)
+    while (currentDate.getDay() !== 1 && currentDate <= endDate) {
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    if (currentDate > endDate) break;
+
+    const weekStartDate = new Date(currentDate.getTime());
+    const weekDays = [];
+
+    // Loop 5 hari (Senin-Jumat)
+    for (let i = 0; i < 5; i++) {
+      const dayDate = new Date(currentDate.getTime());
+      dayDate.setDate(dayDate.getDate() + i); // Maju 1 hari
+
+      if (dayDate > endDate) break; // Berhenti jika sudah melewati tgl selesai
+
+      const isoDate = toISODateString(dayDate);
+      weekDays.push({
+        date: isoDate,
+        dayName: dayDate
+          .toLocaleDateString('id-ID', { weekday: 'short' })
+          .charAt(0)
+          .toUpperCase(), // S, S, R, K, J
+        isFilled: filledLogbookDates.has(isoDate),
+      });
+    }
+
+    if (weekDays.length > 0) {
+      // Ambil tanggal terakhir di array weekDays (Jumat atau hari terakhir magang)
+      const weekEndDate = new Date(weekDays[weekDays.length - 1].date);
+      weeks.push({
+        // Gunakan startDateISO sebagai ID unik untuk 'key' React
+        id: toISODateString(weekStartDate),
+        tanggal: formatWeekRange(weekStartDate, weekEndDate),
+        days: weekDays.map((d) => d.dayName),
+        isi: weekDays.map((d) => d.isFilled),
+      });
+    }
+
+    // Maju ke hari Senin berikutnya
+    currentDate.setDate(currentDate.getDate() + 7 - 4); // Maju ke Senin depan
+  }
+
+  return weeks;
+};
 
 export default function LaporanPage() {
   const navigate = useNavigate();
-
   const { uploadHistory } = useContext(LaporanContext);
   const latestSubmission = uploadHistory.length > 0 ? uploadHistory[0] : null;
 
-  // Data laporan harian (tidak diubah)
-  const minggu = [
-    {
-      tanggal: '30 Nov – 4 Des 2026',
-      days: ['S', 'S', 'R', 'K', 'J'],
-      isi: [true, false, false, false, false],
-    },
-    {
-      tanggal: '7 – 11 Des 2026',
-      days: ['S', 'S', 'R', 'K', 'J'],
-      isi: [true, false, false, false, false],
-    },
-  ];
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchLogbookData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('token'); // Ambil token
+        if (!token) {
+          throw new Error('Otentikasi dibutuhkan. Silakan login kembali.');
+        }
+
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/logbook',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.message || 'Gagal mengambil data logbook');
+        }
+
+        const res = await response.json();
+        const { periode, logbooks } = res.data;
+
+        // Buat struktur minggu dinamis
+        const weeks = generateWeeklyStructure(
+          periode.tglMulai,
+          periode.tglSelesai,
+          logbooks
+        );
+        setWeeklyData(weeks);
+      } catch (err) {
+        console.error('Error fetching logbook data:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLogbookData();
+  }, []);
 
   const handleNavigateUpload = () => {
     navigate('/dashboard/unggah-laporan-akhir');
@@ -128,44 +225,72 @@ export default function LaporanPage() {
       </div>
 
       <h3 className="text-lg font-bold mb-2">Laporan Harian</h3>
-      {minggu.map((mingguItem, idx) => (
-        <div key={idx} className="bg-white p-6 rounded shadow mb-6">
-          <div className="text-[#FF6B00] font-semibold mb-2 flex items-center gap-2">
-            ✏️ Belum Dibuat
-          </div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-lg font-bold">{mingguItem.tanggal}</div>
-            <div className="flex gap-6">
-              {mingguItem.days.map((day, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <span className="text-sm font-semibold text-gray-700 mb-1">
-                    {day}
-                  </span>
-                  <div
-                    className={`w-9 h-9 flex items-center justify-center rounded-full border text-sm ${
-                      mingguItem.isi[i]
-                        ? 'bg-blue-500 text-white border-black border-2'
-                        : 'border-2 bg-gray-200 border-gray-500'
-                    }`}
-                  >
-                    {mingguItem.isi[i] ? '✓' : ''}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <hr className="my-6 border-t border-gray-200" />
-          <div className="flex justify-center">
-            {/* Hardcode dayIndex ke 0, Anda mungkin perlu logika lebih lanjut di sini */}
-            <button
-              onClick={() => handleOpenForm(idx, 0)}
-              className="bg-[#006DA6] text-white px-6 py-2 rounded"
-            >
-              Lengkapi Laporan Harian
-            </button>
-          </div>
+      {isLoading && (
+        <div className="bg-white p-6 rounded shadow mb-6 text-center">
+          Memuat data laporan harian...
         </div>
-      ))}
+      )}
+      {error && (
+        <div className="bg-white p-6 rounded shadow mb-6 text-center text-red-600">
+          Error: {error}
+        </div>
+      )}
+
+      {!isLoading &&
+        !error &&
+        weeklyData.map((mingguItem, idx) => {
+          const isWeekDone = mingguItem.isi.every((terisi) => terisi);
+          return (
+            <div
+              key={mingguItem.id}
+              className="bg-white p-6 rounded shadow mb-6"
+            >
+              <div
+                className={`font-semibold mb-2 flex items-center gap-2 ${
+                  isWeekDone ? 'text-green-600' : 'text-[#FF6B00]'
+                }`}
+              >
+                {isWeekDone ? '✅ Selesai' : '✏️ Belum Dibuat'}
+              </div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-lg font-bold">{mingguItem.tanggal}</div>
+                <div className="flex gap-6">
+                  {mingguItem.days.map((day, i) => (
+                    <div key={i} className="flex flex-col items-center">
+                      <span className="text-sm font-semibold text-gray-700 mb-1">
+                        {day}
+                      </span>
+                      <div
+                        className={`w-9 h-9 flex items-center justify-center rounded-full border text-sm ${
+                          mingguItem.isi[i]
+                            ? 'bg-blue-500 text-white border-black border-2'
+                            : 'border-2 bg-gray-200 border-gray-500'
+                        }`}
+                      >
+                        {mingguItem.isi[i] ? '✓' : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <hr className="my-6 border-t border-gray-200" />
+              <div className="flex justify-center">
+                <button
+                  onClick={() => handleOpenForm(idx, 0)} // idx masih dipakai LaporanHarianForm
+                  className="bg-[#006DA6] text-white px-6 py-2 rounded"
+                >
+                  Lengkapi Laporan Harian
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+      {!isLoading && !error && weeklyData.length === 0 && (
+        <div className="bg-white p-6 rounded shadow mb-6 text-center text-gray-500">
+          Anda tidak memiliki periode magang yang aktif atau disetujui.
+        </div>
+      )}
     </div>
   );
 }

@@ -1,52 +1,224 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Modal from '../../../components/modals/Modal';
 
+const toISODateString = (date) => {
+  return date.toISOString().split('T')[0];
+};
+
+const formatWeekRange = (startDate, endDate) => {
+  const options = { month: 'short', day: 'numeric' };
+  const start = startDate.toLocaleDateString('id-ID', options);
+  const end = endDate.toLocaleDateString('id-ID', {
+    ...options,
+    year: 'numeric',
+  });
+  return `${start} – ${end}`;
+};
+
+const generateWeekAndDayData = (
+  tglMulaiISO,
+  tglSelesaiISO,
+  logbooks = [],
+  weekIndex
+) => {
+  const weeks = [];
+  let currentDate = new Date(tglMulaiISO);
+  const endDate = new Date(tglSelesaiISO);
+  const logbookMap = new Map(
+    logbooks.map((log) => [
+      toISODateString(new Date(log.tanggal)),
+      log.deskripsi,
+    ])
+  );
+
+  while (currentDate <= endDate) {
+    while (currentDate.getDay() !== 1 && currentDate <= endDate) {
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    if (currentDate > endDate) break;
+
+    const weekStartDate = new Date(currentDate.getTime());
+    const weekDays = [];
+    for (let i = 0; i < 5; i++) {
+      const dayDate = new Date(currentDate.getTime());
+      dayDate.setDate(dayDate.getDate() + i);
+      if (dayDate > endDate) break;
+      weekDays.push(dayDate);
+    }
+
+    if (weekDays.length > 0) {
+      const weekEndDate = new Date(weekDays[weekDays.length - 1].getTime());
+      weeks.push({
+        startDateISO: toISODateString(weekStartDate),
+        tanggalRange: formatWeekRange(weekStartDate, weekEndDate),
+      });
+    }
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+
+  const thisWeek = weeks[weekIndex];
+  if (!thisWeek) {
+    return { weekRange: 'Minggu Tidak Ditemukan', days: [] };
+  }
+
+  const dayDataForWeek = [];
+  const weekStartDate = new Date(thisWeek.startDateISO);
+
+  for (let i = 0; i < 5; i++) {
+    const dayDate = new Date(weekStartDate.getTime());
+    dayDate.setDate(dayDate.getDate() + i);
+
+    if (dayDate > endDate) break;
+
+    const dayISO = toISODateString(dayDate);
+    dayDataForWeek.push({
+      hari: dayDate.toLocaleDateString('id-ID', { weekday: 'long' }),
+      tanggal: dayDate.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+      tanggalISO: dayISO,
+      isi: logbookMap.get(dayISO) || '',
+    });
+  }
+
+  return { weekRange: thisWeek.tanggalRange, days: dayDataForWeek };
+};
+
 export default function LaporanHarianForm() {
   const navigate = useNavigate();
-  const { minggu, hari } = useParams(); // ambil param dari URL
-
+  const { minggu, hari } = useParams();
   const weekIndex = parseInt(minggu, 10);
-  const dayIndex = parseInt(hari, 10);
 
-  const [modalIndex, setModalIndex] = useState(null); // untuk input modal
-  const [showFullIndex, setShowFullIndex] = useState(null); // untuk detail modal
-  const [hariData, setHariData] = useState([
-    {
-      hari: 'Senin',
-      tanggal: '30 November 2026',
-      isi: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.',
-    },
-    {
-      hari: 'Selasa',
-      tanggal: '1 Desember 2026',
-      isi: '',
-    },
-    {
-      hari: 'Rabu',
-      tanggal: '2 Desember 2026',
-      isi: '',
-    },
-    {
-      hari: 'Kamis',
-      tanggal: '3 Desember 2026',
-      isi: '',
-    },
-    {
-      hari: 'Jumat',
-      tanggal: '4 Desember 2026',
-      isi: '',
-    },
-  ]);
+  const [hariData, setHariData] = useState([]);
+  const [weekRange, setWeekRange] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [modalIndex, setModalIndex] = useState(null);
+  const [modalContent, setModalContent] = useState('');
+  const [showFullIndex, setShowFullIndex] = useState(null);
+
+  useEffect(() => {
+    if (isNaN(weekIndex)) {
+      setError('Index minggu tidak valid');
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchLogbookAndSetDays = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Otentikasi dibutuhkan. Silakan login kembali.');
+        }
+
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/logbook',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Cache-Control': 'no-store',
+            },
+            cache: 'no-store',
+          }
+        );
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.message || 'Gagal mengambil data logbook');
+        }
+
+        const res = await response.json();
+        const { periode, logbooks } = res.data;
+
+        const { weekRange, days } = generateWeekAndDayData(
+          periode.tglMulai,
+          periode.tglSelesai,
+          logbooks,
+          weekIndex
+        );
+
+        setHariData(days);
+        setWeekRange(weekRange);
+      } catch (err) {
+        console.error('Error setting week data:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLogbookAndSetDays();
+  }, [weekIndex]);
 
   const handleBack = () => navigate('/dashboard/laporan');
 
-  const handleSubmitIsi = (index, text) => {
-    const updated = [...hariData];
-    updated[index].isi = text;
-    setHariData(updated);
-    setModalIndex(null);
+  const handleOpenModal = (index) => {
+    setModalIndex(index);
+    setModalContent(hariData[index].isi);
   };
+
+  const handleSubmitApi = async () => {
+    if (modalIndex === null) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    const token = localStorage.getItem('token'); // Pastikan key token sudah benar
+
+    const dataToSend = {
+      tanggal: hariData[modalIndex].tanggalISO,
+      deskripsi: modalContent,
+    };
+
+    try {
+      const response = await fetch(
+        'http://localhost:3000/api/peserta/logbook', // Pastikan URL ini benar
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(dataToSend),
+        }
+      );
+
+      const res = await response.json();
+      if (!response.ok) {
+        throw new Error(res.message || 'Gagal mengirim data');
+      }
+      setHariData((prevHariData) =>
+        prevHariData.map((hari, index) => {
+          if (index === modalIndex) {
+            return { ...hari, isi: modalContent };
+          }
+          return hari;
+        })
+      );
+
+      setModalIndex(null); // Tutup modal
+      setModalContent('');
+    } catch (err) {
+      console.error('Error submitting logbook:', err);
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-6">Memuat data harian...</div>;
+  }
+
+  if (error && !isSubmitting) {
+    return <div className="p-6 text-red-600">Error: {error}</div>;
+  }
 
   return (
     <>
@@ -58,25 +230,24 @@ export default function LaporanHarianForm() {
             {hariData[modalIndex].hari}, {hariData[modalIndex].tanggal}
           </p>
           <label className="block font-semibold text-gray-700 mb-2">
-            Bagaimana kegiatanmu hari ini?
+            Jelaskan kegiatanmu hari ini!
           </label>
           <textarea
             className="w-full h-40 border rounded p-3 text-sm mb-4"
             placeholder="Tips: Deskripsikan kegiatanmu hari ini"
-            defaultValue={hariData[modalIndex].isi}
-            onBlur={(e) => handleSubmitIsi(modalIndex, e.target.value)}
+            value={modalContent}
+            onChange={(e) => setModalContent(e.target.value)}
           />
+          {error && isSubmitting && (
+            <p className="text-red-500 text-center mb-2">{error}</p>
+          )}
           <div className="text-center">
             <button
-              onClick={() =>
-                handleSubmitIsi(
-                  modalIndex,
-                  document.querySelector('textarea').value
-                )
-              }
+              onClick={handleSubmitApi}
               className="bg-[#006DA6] text-white px-6 py-2 rounded"
+              disabled={isSubmitting}
             >
-              Kirim
+              {isSubmitting ? 'Mengirim...' : 'Kirim'}
             </button>
           </div>
         </Modal>
@@ -86,11 +257,11 @@ export default function LaporanHarianForm() {
       {showFullIndex !== null && (
         <Modal onClose={() => setShowFullIndex(null)}>
           <h2 className="text-xl font-bold mb-2">
-            {hari[showFullIndex].hari}, {hari[showFullIndex].tanggal}
+            {hariData[showFullIndex].hari}, {hariData[showFullIndex].tanggal}
           </h2>
           <hr className="my-6 border-t border-gray-200" />
           <p className="text-gray-800 whitespace-pre-line">
-            {hari[showFullIndex].isi}
+            {hariData[showFullIndex].isi}
           </p>
         </Modal>
       )}
@@ -104,8 +275,10 @@ export default function LaporanHarianForm() {
           >
             <span className="text-lg">←</span> Kembali
           </button>
-          <p className="text-[#FF6B00] font-semibold mb-1">✏️ Belum Dibuat</p>
-          <h2 className="text-lg font-bold">30 Nov – 4 Des 2026</h2>
+          <p className="text-[#FF6B00] font-semibold mb-1">
+            {hariData.every((h) => h.isi) ? '✅ Selesai' : '✏️ Belum Dibuat'}
+          </p>
+          <h2 className="text-lg font-bold">{weekRange}</h2>{' '}
           <hr className="my-4 border-t border-gray-300" />
           <div className="flex justify-between px-2">
             {hariData.map((item, i) => (
@@ -146,15 +319,16 @@ export default function LaporanHarianForm() {
               </div>
 
               {item.isi ? (
+                // --- Jika sudah terisi ---
                 <>
                   <div>
                     <p className="text-gray-700 mb-2 line-clamp-2">
                       {item.isi}
                     </p>
-                    {item.isi.split(' ').length > 20 && (
+                    {item.isi.length > 100 && (
                       <button
                         onClick={() => setShowFullIndex(i)}
-                        className="text-[#006DA6] font-semibold text-sm"
+                        className="text-[#006DA6] font-semibold text-sm mr-4"
                       >
                         selengkapnya
                       </button>
@@ -162,11 +336,12 @@ export default function LaporanHarianForm() {
                   </div>
                 </>
               ) : (
+                // --- Jika masih kosong ---
                 <>
                   <hr className="border-t border-gray-200 w-full my-6" />
                   <div className="flex justify-center">
                     <button
-                      onClick={() => setModalIndex(i)}
+                      onClick={() => handleOpenModal(i)}
                       className="bg-[#006DA6] text-white px-6 py-2 rounded"
                     >
                       Buat Laporan Harian

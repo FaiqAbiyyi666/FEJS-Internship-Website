@@ -1,80 +1,167 @@
-import React, { useState } from 'react';
-import { Search, Eye, Download, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Eye, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
+const formatTanggalLaporan = (isoDate) => {
+  if (!isoDate) return '-';
+  return new Date(isoDate).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const formatTanggalSubmit = (isoDateTime) => {
+  if (!isoDateTime) return '-';
+  return new Date(isoDateTime).toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+};
+
+const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+  if (totalPages <= 1) return null;
+
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pages.push(i);
+  }
+
+  return (
+    <div className="flex justify-center items-center space-x-2 mt-6">
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        &lt;
+      </button>
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => onPageChange(page)}
+          className={`px-3 py-1 rounded ${
+            currentPage === page ? 'bg-[#006DA6] text-white' : 'bg-gray-200'
+          }`}
+        >
+          {page}
+        </button>
+      ))}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        &gt;
+      </button>
+    </div>
+  );
+};
+
 const ManagementLaporan = () => {
+  const [logbooks, setLogbooks] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [bidangFilter, setBidangFilter] = useState('all');
   const [tanggalFilter, setTanggalFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLaporan, setSelectedLaporan] = useState(null);
 
-  const laporanData = [
-    {
-      id: 1,
-      peserta: 'Ahmad Rizki Pratama',
-      bidang: 'Tata Kelola Informatika',
-      instansi: 'UPN Veteran Jawa Timur',
-      avatar: 'AR',
-      tanggal: '2024-01-15',
-      kegiatan:
-        'Melakukan analisis requirement untuk sistem baru, merancang database schema, dan membuat dokumentasi teknis. ',
-      tanggalSubmit: '2024-01-15 18:30',
-    },
-    {
-      id: 2,
-      peserta: 'Siti Aminah',
-      bidang: 'Pengelolaan Informasi dan Komunikasi Publik',
-      instansi: 'SMK Negeri 1 Sidoarjo',
-      avatar: 'SA',
-      tanggal: '2024-01-16',
-      kegiatan:
-        'Melakukan screening CV kandidat, menyiapkan soal tes, dan mengatur jadwal wawancara.',
-      tanggalSubmit: '2024-01-16 19:00',
-    },
-    {
-      id: 3,
-      peserta: 'Dian Permata',
-      bidang: 'Sekretariat',
-      instansi: 'Universitas Muhammadiyah Sidoarjo',
-      avatar: 'DP',
-      tanggal: '2024-01-17',
-      kegiatan:
-        'Membuat konten social media, menganalisis engagement, dan menyiapkan laporan performa.',
-      tanggalSubmit: '2024-01-17 17:15',
-    },
-  ];
+  useEffect(() => {
+    const fetchLogbooks = async () => {
+      setIsLoading(true);
+      setError(null);
 
-  const filteredLaporan = laporanData.filter((laporan) => {
-    const matchesSearch =
-      laporan.peserta.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      laporan.instansi.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesBidang =
-      bidangFilter === 'all' ||
-      laporan.bidang.toLowerCase() === bidangFilter.toLowerCase();
-    const matchesTanggal =
-      tanggalFilter === '' || laporan.tanggal === tanggalFilter;
-    return matchesSearch && matchesBidang && matchesTanggal;
-  });
+      try {
+        // 1. Buat parameter query
+        const params = new URLSearchParams();
+        params.append('page', currentPage);
+        params.append('limit', 10); // Tentukan limit per halaman
 
-  // === HANDLE EXPORT TO EXCEL ===
+        if (searchTerm) {
+          params.append('search', searchTerm);
+        }
+        if (bidangFilter !== 'all') {
+          // Pastikan 'value' di <select> adalah ID Bidang
+          params.append('bidangId', bidangFilter);
+        }
+        if (tanggalFilter) {
+          params.append('tanggal', tanggalFilter);
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Anda harus login untuk melihat data ini.');
+        }
+
+        // 3. Panggil API
+        //    Pastikan URL ini benar sesuai setup rute Anda
+        const response = await fetch(
+          `http://localhost:3000/api/admin/logbook/all?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.message || 'Gagal mengambil data');
+        }
+
+        const data = await response.json();
+
+        // 4. Set state dengan data dari backend
+        setLogbooks(data.data); // data.data berisi array logbook
+        setPagination(data.pagination); // data.pagination berisi info paginasi
+      } catch (err) {
+        console.error('Error fetching logbooks:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLogbooks();
+  }, [searchTerm, bidangFilter, tanggalFilter, currentPage]);
+
   const handleExportExcel = () => {
-    // Hapus field avatar sebelum export
-    const exportData = filteredLaporan.map(({ avatar, ...rest }) => rest);
+    // Gunakan data 'logbooks' dari state, bukan mock data
+    const exportData = logbooks.map(
+      // Hapus avatar & format tanggal agar rapi di Excel
+      ({ avatar, ...rest }) => ({
+        ...rest,
+        tanggal: formatTanggalLaporan(rest.tanggal),
+        tanggalSubmit: formatTanggalSubmit(rest.tanggalSubmit),
+      })
+    );
 
-    // Buat worksheet
     const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-    // Buat workbook
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Harian');
-
-    // Buat tanggal export (YYYY-MM-DD)
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
-
-    // Simpan file dengan tanggal
     XLSX.writeFile(workbook, `laporan_harian_${formattedDate}.xlsx`);
+  };
+
+  // Handler untuk mengubah halaman
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -132,6 +219,7 @@ const ManagementLaporan = () => {
         {/* Export Button */}
         <button
           onClick={handleExportExcel}
+          disabled={logbooks.length === 0}
           className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] 
             transition-colors flex items-center space-x-2"
         >
@@ -142,76 +230,97 @@ const ManagementLaporan = () => {
 
       {/* Laporan Cards */}
       <div className="space-y-4">
-        {filteredLaporan.map((laporan) => (
-          <div
-            key={laporan.id}
-            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium">
-                    {laporan.avatar}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {laporan.peserta} <span>• </span>
-                    <span className="text-gray-900">{laporan.instansi}</span>
-                  </h3>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                    <span>
-                      <span className="font-semibold">Bidang:</span>{' '}
-                      {laporan.bidang}
-                    </span>
-                    <span>•</span>
-                    <span>
-                      <span className="font-semibold">Tanggal Laporan:</span>{' '}
-                      {new Date(laporan.tanggal).toLocaleDateString('id-ID', {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
+        {isLoading && (
+          <div className="text-center text-gray-500 py-10">
+            Memuat data laporan harian...
+          </div>
+        )}
+        {error && (
+          <div className="text-center text-red-600 bg-red-100 p-4 rounded-lg">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+        {!isLoading && !error && logbooks.length === 0 && (
+          <div className="text-center text-gray-500 py-10">
+            Tidak ada laporan harian yang ditemukan.
+          </div>
+        )}
+
+        {!isLoading &&
+          !error &&
+          logbooks.map((laporan) => (
+            <div
+              key={laporan.id}
+              className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center">
+                    <span className="text-white font-medium">
+                      {laporan.avatar}
                     </span>
                   </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {laporan.peserta} <span>• </span>
+                      <span className="text-gray-900">{laporan.instansi}</span>
+                    </h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-sm text-gray-500 mt-1">
+                      <span>
+                        <span className="font-semibold">Bidang:</span>{' '}
+                        {laporan.bidang}
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span>
+                        <span className="font-semibold">Tanggal Laporan:</span>{' '}
+                        {formatTanggalLaporan(laporan.tanggal)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tombol Eye */}
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => {
+                      setSelectedLaporan(laporan);
+                      setIsOpen(true);
+                    }}
+                    className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg"
+                  >
+                    <Eye size={20} />
+                  </button>
                 </div>
               </div>
 
-              {/* Tombol Eye */}
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => {
-                    setSelectedLaporan(laporan);
-                    setIsOpen(true);
-                  }}
-                  className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg"
-                >
-                  <Eye size={20} />
-                </button>
+              <p className="text-gray-700 mb-4 leading-relaxed line-clamp-3">
+                {laporan.kegiatan}
+              </p>
+
+              <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
+                <div>
+                  <span className="font-medium">Disubmit:</span>{' '}
+                  {formatTanggalSubmit(laporan.tanggalSubmit)}
+                </div>
               </div>
             </div>
-
-            <p className="text-gray-700 mb-4 leading-relaxed">
-              {laporan.kegiatan}
-            </p>
-
-            <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
-              <div>
-                <span className="font-medium">Disubmit:</span>{' '}
-                {laporan.tanggalSubmit}
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
       </div>
+
+      {!isLoading && !error && pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
 
       {/* Modal Detail Laporan */}
       {isOpen && selectedLaporan && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[90vh] flex flex-col">
             <div className="flex items-start space-x-4 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-medium">
                   {selectedLaporan.avatar}
                 </span>
@@ -233,20 +342,12 @@ const ManagementLaporan = () => {
                 {/* Tanggal laporan */}
                 <div className="text-sm text-gray-500 mt-1">
                   <span className="font-semibold">Tanggal Laporan:</span>{' '}
-                  {new Date(selectedLaporan.tanggal).toLocaleDateString(
-                    'id-ID',
-                    {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    }
-                  )}
+                  {formatTanggalLaporan(selectedLaporan.tanggal)}
                 </div>
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 flex-1 overflow-y-auto">
               <h4 className="text-md font-semibold text-gray-800 mb-2">
                 Detail Kegiatan:
               </h4>
@@ -255,10 +356,10 @@ const ManagementLaporan = () => {
               </p>
             </div>
 
-            <div className="mt-6 flex justify-between items-center">
+            <div className="mt-6 flex justify-between items-center flex-shrink-0">
               <span className="text-sm text-gray-600">
                 <span className="font-semibold">Submit:</span>{' '}
-                {selectedLaporan.tanggalSubmit}
+                {formatTanggalSubmit(selectedLaporan.tanggalSubmit)}
               </span>
               <button
                 onClick={() => setIsOpen(false)}
