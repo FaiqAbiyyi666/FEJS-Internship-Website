@@ -69,7 +69,7 @@ export default function UsulanMagangPage() {
           throw new Error('Anda harus login untuk melihat data ini.');
         }
         const response = await fetch(
-          `http://localhost:3000/api/peserta/ajuan-magang`,
+          `http://localhost:3000/api/peserta/ajuan-magang-saya`,
           {
             method: 'GET',
             headers: {

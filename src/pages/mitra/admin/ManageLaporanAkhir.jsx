@@ -1,93 +1,189 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Eye, Search, Download, X } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from 'react';
+import { Eye, Search, Download, X, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const ManageLaporanAkhir = () => {
-  const [laporanHasilMagang, setLaporanHasilMagang] = useState([
-    {
-      id: '1',
-      peserta: {
-        nama: 'Andi Saputra',
-        email: 'andi@example.com',
-        bidang: 'Pemrograman',
-      },
-      fileLaporan: 'public/files/laporan-akhir01.pdf',
-      createdAt: '2024-07-01',
-    },
-    {
-      id: '2',
-      peserta: {
-        nama: 'Rina Marlina',
-        email: 'rina@example.com',
-        bidang: 'Desain Grafis',
-      },
-      fileLaporan: 'public/files/laporan-akhir02.pdf',
-      createdAt: '2024-07-02',
-    },
-    {
-      id: '3',
-      peserta: {
-        nama: 'Budi Santoso',
-        email: 'budi@example.com',
-        bidang: 'Jaringan',
-      },
-      fileLaporan: 'public/files/laporan-akhir03.pdf',
-      createdAt: '2024-06-25',
-    },
-  ]);
+// Ganti URL ini dengan URL backend Anda
+const BASE_URL = 'http://localhost:3000/api/admin'; // Sesuaikan port jika perlu
 
+const ManageLaporanAkhir = () => {
+  // === State untuk data ===
+  const [laporanHasilMagang, setLaporanHasilMagang] = useState([]);
+  const [riwayat, setRiwayat] = useState([]);
+
+  // === State untuk UI & Filter ===
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submittingId, setSubmittingId] = useState(null); // Untuk disable tombol saat loading
   const [searchTerm, setSearchTerm] = useState('');
   const [previewFile, setPreviewFile] = useState(null);
   const [filterBidang, setFilterBidang] = useState('all');
   const [sortByDate, setSortByDate] = useState('newest');
   const modalRef = useRef();
 
-  const bidangList = [
-    ...new Set(laporanHasilMagang.map((laporan) => laporan.peserta.bidang)),
-  ];
+  // Helper untuk mendapatkan token dari localStorage
+  const getToken = () => localStorage.getItem('token'); // Sesuaikan nama key token Anda
 
-  const filteredData = laporanHasilMagang
-    .filter((laporan) =>
-      laporan.peserta.nama.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter((laporan) =>
-      filterBidang === 'all' ? true : laporan.peserta.bidang === filterBidang
-    )
-    .sort((a, b) =>
-      sortByDate === 'newest'
-        ? new Date(b.createdAt) - new Date(a.createdAt)
-        : new Date(a.createdAt) - new Date(b.createdAt)
-    );
+  // === Fungsi Fetching Data (diubah ke fetch) ===
+  const fetchLaporanMasuk = useCallback(async () => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${BASE_URL}/laporan-akhir/pending`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-  // ===== Export Excel untuk Riwayat =====
+      // fetch tidak melempar error pada 4xx/5xx, jadi kita cek manual
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.msg || 'Gagal memuat data laporan masuk.');
+      }
+
+      const data = await res.json();
+      setLaporanHasilMagang(data);
+    } catch (err) {
+      console.error('Gagal fetch laporan masuk:', err);
+      setError('Gagal memuat data laporan masuk.');
+    }
+  }, []);
+
+  const fetchLaporanRiwayat = useCallback(async () => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${BASE_URL}/laporan-akhir/history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.msg || 'Gagal memuat data riwayat.');
+      }
+
+      const data = await res.json();
+      setRiwayat(data);
+    } catch (err) {
+      console.error('Gagal fetch riwayat:', err);
+      setError('Gagal memuat data riwayat laporan.');
+    }
+  }, []);
+
+  // === Fetch data saat komponen pertama kali dimuat ===
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      await Promise.all([fetchLaporanMasuk(), fetchLaporanRiwayat()]);
+      setLoading(false);
+    };
+    loadData();
+  }, [fetchLaporanMasuk, fetchLaporanRiwayat]);
+
+  // === Logika Filter (di-memoize) ===
+  const bidangList = useMemo(() => {
+    const allLaporan = [...laporanHasilMagang, ...riwayat];
+    return [...new Set(allLaporan.map((laporan) => laporan.peserta.bidang))];
+  }, [laporanHasilMagang, riwayat]);
+
+  const filteredData = useMemo(() => {
+    return laporanHasilMagang
+      .filter((laporan) =>
+        laporan.peserta.nama.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .filter((laporan) =>
+        filterBidang === 'all' ? true : laporan.peserta.bidang === filterBidang
+      )
+      .sort((a, b) =>
+        sortByDate === 'newest'
+          ? new Date(b.createdAt) - new Date(a.createdAt)
+          : new Date(a.createdAt) - new Date(b.createdAt)
+      );
+  }, [laporanHasilMagang, searchTerm, filterBidang, sortByDate]);
+
+  // === Fungsi Respon (diubah ke fetch) ===
+  const handleResponse = async (laporan, frontendStatus) => {
+    const isRejecting = frontendStatus === 'Ditolak';
+    const backendStatus = isRejecting ? 'REJECTED' : 'APPROVED';
+    let catatan = null;
+
+    if (isRejecting) {
+      catatan = prompt('Mohon masukkan alasan penolakan (wajib):');
+      if (!catatan || catatan.trim() === '') {
+        alert('Penolakan dibatalkan. Catatan wajib diisi.');
+        return;
+      }
+    }
+
+    setSubmittingId(laporan.id);
+    try {
+      const token = getToken();
+      const res = await fetch(
+        `${BASE_URL}/laporan-akhir/respond/${laporan.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json', // Penting untuk mengirim body JSON
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: backendStatus,
+            catatan: catatan,
+          }),
+        }
+      );
+
+      const resData = await res.json(); // Ambil body respons (untuk sukses atau error)
+
+      if (!res.ok) {
+        // Gunakan pesan error dari backend
+        throw new Error(resData.msg || 'Gagal merespon laporan.');
+      }
+
+      // Gunakan pesan sukses dari backend
+      alert(resData.msg || `Laporan berhasil ${frontendStatus.toLowerCase()}.`);
+
+      // Refresh kedua tabel setelah berhasil
+      await Promise.all([fetchLaporanMasuk(), fetchLaporanRiwayat()]);
+    } catch (err) {
+      console.error('Gagal merespon laporan:', err);
+      // err.message sekarang akan berisi pesan dari backend (jika ada)
+      alert(`Gagal merespon: ${err.message}`);
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  // ===== Export Excel untuk Riwayat (Tidak perlu diubah) =====
   const exportRiwayatToExcel = () => {
     if (riwayat.length === 0) {
       alert('Belum ada data riwayat untuk diekspor.');
       return;
     }
-
-    // Buat tanggal export (YYYY-MM-DD)
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
-
     const worksheet = XLSX.utils.json_to_sheet(
       riwayat.map((l) => ({
         Nama: l.peserta.nama,
         Email: l.peserta.email,
         Bidang: l.peserta.bidang,
-        Status: l.status,
+        Status: l.status === 'APPROVED' ? 'Diterima' : 'Ditolak',
         'Tanggal Respon': new Date(l.respondedAt).toLocaleString(),
+        Catatan: l.catatan,
       }))
     );
-
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Riwayat Laporan');
     XLSX.writeFile(workbook, `riwayat_laporan_akhir_${formattedDate}.xlsx`);
   };
 
-  // Klik luar modal untuk tutup
+  // Klik luar modal untuk tutup (Tidak perlu diubah)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (modalRef.current && !modalRef.current.contains(e.target)) {
@@ -102,27 +198,26 @@ const ManageLaporanAkhir = () => {
     };
   }, [previewFile]);
 
-  // State riwayat keputusan
-  const [riwayat, setRiwayat] = useState([]);
-
-  // Fungsi ketika admin klik diterima / ditolak
-  const handleResponse = (laporan, status) => {
-    // Hapus dari tabel ajuan masuk
-    setLaporanHasilMagang((prev) =>
-      prev.filter((item) => item.id !== laporan.id)
+  // === Tampilan Loading dan Error ===
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-[#006DA6]" />
+        <span className="ml-2 text-gray-700">Memuat data...</span>
+      </div>
     );
+  }
 
-    // Tambah ke tabel riwayat
-    setRiwayat((prev) => [
-      ...prev,
-      {
-        ...laporan,
-        status,
-        respondedAt: new Date().toISOString(),
-      },
-    ]);
-  };
+  if (error) {
+    return (
+      <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center">
+        {error}
+      </div>
+    );
+  }
 
+  // === JSX (Return) ===
+  // (Tidak ada perubahan di bagian JSX, semua sama seperti sebelumnya)
   return (
     <div className="space-y-6">
       {/* Search & Filter */}
@@ -141,7 +236,6 @@ const ManageLaporanAkhir = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6]"
             />
           </div>
-
           <select
             value={filterBidang}
             onChange={(e) => setFilterBidang(e.target.value)}
@@ -154,7 +248,6 @@ const ManageLaporanAkhir = () => {
               </option>
             ))}
           </select>
-
           <select
             value={sortByDate}
             onChange={(e) => setSortByDate(e.target.value)}
@@ -166,7 +259,7 @@ const ManageLaporanAkhir = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table Laporan Masuk */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-[#006DA6] text-white">
@@ -218,15 +311,17 @@ const ManageLaporanAkhir = () => {
                 <td className="px-6 py-4 text-sm space-x-2">
                   <button
                     onClick={() => handleResponse(laporan, 'Diterima')}
-                    className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
+                    disabled={submittingId === laporan.id}
+                    className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 disabled:bg-gray-400"
                   >
-                    Diterima
+                    {submittingId === laporan.id ? '...' : 'Diterima'}
                   </button>
                   <button
                     onClick={() => handleResponse(laporan, 'Ditolak')}
-                    className="px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700"
+                    disabled={submittingId === laporan.id}
+                    className="px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 disabled:bg-gray-400"
                   >
-                    Ditolak
+                    {submittingId === laporan.id ? '...' : 'Ditolak'}
                   </button>
                 </td>
               </tr>
@@ -234,7 +329,7 @@ const ManageLaporanAkhir = () => {
             {filteredData.length === 0 && (
               <tr>
                 <td colSpan="6" className="text-center py-4 text-gray-500">
-                  Tidak ada data ditemukan.
+                  Tidak ada laporan masuk.
                 </td>
               </tr>
             )}
@@ -246,7 +341,7 @@ const ManageLaporanAkhir = () => {
       <div>
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="flex justify-between items-center px-4 py-3">
-            <h3 className="text-lg font-semibold text-gray-700  rounded-t-lg">
+            <h3 className="text-lg font-semibold text-gray-700 rounded-t-lg">
               Riwayat Laporan Akhir Peserta Magang
             </h3>
             <div className="flex gap-2">
@@ -259,7 +354,6 @@ const ManageLaporanAkhir = () => {
               </button>
             </div>
           </div>
-
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-200 text-gray-700">
               <tr>
@@ -281,6 +375,9 @@ const ManageLaporanAkhir = () => {
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Tanggal Respon
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                  Catatan
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -297,12 +394,12 @@ const ManageLaporanAkhir = () => {
                   </td>
                   <td
                     className={`px-6 py-4 text-sm font-semibold ${
-                      laporan.status === 'Diterima'
+                      laporan.status === 'APPROVED'
                         ? 'text-green-600'
                         : 'text-red-600'
                     }`}
                   >
-                    {laporan.status}
+                    {laporan.status === 'APPROVED' ? 'Diterima' : 'Ditolak'}
                   </td>
                   <td className="px-6 py-4 text-sm text-blue-600">
                     <button
@@ -316,11 +413,14 @@ const ManageLaporanAkhir = () => {
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(laporan.respondedAt).toLocaleString()}
                   </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                    {laporan.catatan || '-'}
+                  </td>
                 </tr>
               ))}
               {riwayat.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="text-center py-4 text-gray-500">
+                  <td colSpan="7" className="text-center py-4 text-gray-500">
                     Belum ada riwayat.
                   </td>
                 </tr>

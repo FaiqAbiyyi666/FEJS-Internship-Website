@@ -1,26 +1,15 @@
-import { useState, useRef, useContext } from 'react';
+import React, {
+  useState,
+  useRef,
+  useContext,
+  useEffect,
+  useCallback,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LaporanContext } from './LaporanContext';
+import { Loader2 } from 'lucide-react';
 
-// (Data dan Ikon tetap sama seperti sebelumnya)
-const mockHistoryData = [
-  {
-    id: 2,
-    namaFile: 'Laporan_Revisi_Magang_JohnDoe.pdf',
-    tanggalUpload: '2025-10-05',
-    status: 'Ditolak',
-    fileUrl: '/path/to/revisi.pdf',
-    catatan: 'Mohon perbaiki bagian Bab 3 dan lampiran.',
-  },
-  {
-    id: 1,
-    namaFile: 'Laporan_Magang_JohnDoe_v1.pdf',
-    tanggalUpload: '2025-09-28',
-    status: 'Diterima',
-    fileUrl: '/path/to/file.pdf',
-    catatan: null,
-  },
-];
+const BASE_URL = 'http://localhost:3000/api/peserta';
 
 const CloseIcon = () => (
   <svg
@@ -60,12 +49,47 @@ export default function UnggahLaporanPage() {
   const fileInputRef = useRef(null);
 
   const { uploadHistory, setUploadHistory } = useContext(LaporanContext);
+
   const [visibleNoteId, setVisibleNoteId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getToken = () => localStorage.getItem('token');
+
+  const fetchHistory = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = getToken();
+      const res = await fetch(`${BASE_URL}/laporan-akhir/history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.msg || 'Gagal memuat riwayat laporan.');
+      }
+
+      const data = await res.json();
+      setUploadHistory(data);
+    } catch (err) {
+      console.error('Fetch History Error:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setUploadHistory]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const latestStatus =
     uploadHistory.length > 0 ? uploadHistory[0].status : null;
-  const canUpload = !latestStatus || latestStatus === 'Ditolak';
+  const canUpload = !latestStatus || latestStatus === 'REJECTED';
 
+  // Handler file (Tidak berubah)
   const handleFileChange = (e) => {
     const uploadedFile = e.target.files[0];
     if (uploadedFile) {
@@ -87,7 +111,6 @@ export default function UnggahLaporanPage() {
     }
   };
 
-  // FUNGSI BARU: Untuk review file sebelum kirim
   const handleReview = () => {
     if (file) {
       const fileURL = URL.createObjectURL(file);
@@ -95,53 +118,74 @@ export default function UnggahLaporanPage() {
     }
   };
 
-  // FUNGSI LENGKAP: Logika untuk submit dan menambah ke riwayat
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!file) return;
 
-    const newSubmission = {
-      id: Date.now(),
-      namaFile: file.name,
-      tanggalUpload: new Date().toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      status: 'Pending',
-      fileUrl: URL.createObjectURL(file),
-      catatan: null,
-    };
+    setIsSubmitting(true);
+    setError('');
 
-    // Gunakan setUploadHistory dari Context!
-    setUploadHistory([newSubmission, ...uploadHistory]);
+    const formData = new FormData();
+    formData.append('fileLaporan', file);
 
-    handleRemoveFile();
-    alert('Laporan berhasil dikirim dan sedang menunggu review!');
-    // Opsional: Langsung kembali ke halaman laporan setelah submit
-    // navigate('/dashboard/laporan');
+    try {
+      const token = getToken();
+      const res = await fetch(`${BASE_URL}/laporan-akhir`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const resData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(resData.msg || 'Gagal mengunggah file.');
+      }
+
+      alert(
+        resData.msg || 'Laporan berhasil dikirim dan sedang menunggu review!'
+      );
+      handleRemoveFile();
+      fetchHistory();
+    } catch (err) {
+      console.error('Submit Error:', err);
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // FUNGSI LENGKAP: Logika untuk badge status
+  // === FUNGSI BADGE (Diperbarui) ===
+  // Menangani nilai dari backend (PENDING, APPROVED, REJECTED)
   const StatusBadge = ({ status }) => {
     const styles = {
-      Pending: 'bg-yellow-100 text-yellow-800',
-      Diterima: 'bg-green-100 text-green-800',
-      Ditolak: 'bg-red-100 text-red-800',
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      APPROVED: 'bg-green-100 text-green-800',
+      REJECTED: 'bg-red-100 text-red-800',
+    };
+    const statusText = {
+      PENDING: 'Pending',
+      APPROVED: 'Diterima',
+      REJECTED: 'Ditolak',
     };
     return (
       <span
-        className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${styles[status]}`}
+        className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+          styles[status] || 'bg-gray-100 text-gray-800'
+        }`}
       >
-        {status}
+        {statusText[status] || status}
       </span>
     );
   };
 
+  // Komponen Input File
   const CustomFileInput = () => (
-    // ... (Komponen CustomFileInput tidak berubah)
     <div className="space-y-1 mb-6">
       <label className="block text-sm font-medium">
-        {latestStatus === 'Ditolak'
+        {/* **PERBAIKAN**: Sesuaikan dengan nilai backend ('REJECTED') */}
+        {latestStatus === 'REJECTED'
           ? 'Pilih File Laporan Perbaikan'
           : 'Pilih File Laporan'}
       </label>
@@ -152,15 +196,20 @@ export default function UnggahLaporanPage() {
         accept=".pdf"
         onChange={handleFileChange}
         className="hidden"
+        disabled={isSubmitting} // Disable saat proses submit
       />
       <div
         className={`form-input w-full flex items-center p-0 ${
           error ? 'border-red-500' : ''
-        }`}
+        } ${isSubmitting ? 'bg-gray-100' : ''}`}
       >
         <label
           htmlFor="file-input-laporan"
-          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-l-md border-r border-gray-300 cursor-pointer transition-colors whitespace-nowrap"
+          className={`text-sm font-medium px-4 py-2 rounded-l-md border-r border-gray-300 transition-colors whitespace-nowrap ${
+            isSubmitting
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-700 cursor-pointer'
+          }`}
         >
           Choose File
         </label>
@@ -177,17 +226,30 @@ export default function UnggahLaporanPage() {
           <button
             type="button"
             onClick={handleRemoveFile}
-            className="text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full p-1 mr-2"
+            disabled={isSubmitting}
+            className="text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full p-1 mr-2 disabled:opacity-50"
             title="Hapus file"
           >
             <CloseIcon />
           </button>
         )}
       </div>
+      {/* Tampilkan error submit atau error validasi */}
       {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
     </div>
   );
 
+  // === Tampilan Loading Utama ===
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-[#006DA6]" />
+        <span className="ml-2 text-gray-700">Memuat riwayat...</span>
+      </div>
+    );
+  }
+
+  // === JSX Utama ===
   return (
     <>
       <div className="w-full bg-white p-6 rounded shadow ">
@@ -206,7 +268,7 @@ export default function UnggahLaporanPage() {
           hasil kegiatan magang.
         </p>
 
-        {/* Alert peringatan ini sekarang akan selalu terlihat di dalam card utama */}
+        {/* Alert Peringatan (Tidak berubah) */}
         <div
           className="bg-red-50 border-l-4 border-red-400 p-4 mb-6"
           role="alert"
@@ -227,17 +289,17 @@ export default function UnggahLaporanPage() {
           </div>
         </div>
 
+        {/* === Tampilan Form Upload atau Status === */}
         {canUpload ? (
           <>
             <CustomFileInput />
             <div className="flex justify-between items-center mt-6 pt-4 border-t">
-              {/* KEMBALI: Tombol Review File ditambahkan */}
               <button
                 onClick={handleReview}
-                disabled={!file}
+                disabled={!file || isSubmitting}
                 className={`px-6 py-2 rounded transition-colors text-sm font-medium ${
                   file
-                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               >
@@ -245,14 +307,18 @@ export default function UnggahLaporanPage() {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!file}
-                className={`px-6 py-2 rounded transition-colors text-sm font-medium ${
+                disabled={!file || isSubmitting}
+                className={`px-6 py-2 rounded transition-colors text-sm font-medium w-36 ${
                   file
-                    ? 'bg-[#006DA6] text-white hover:bg-[#00314b]'
+                    ? 'bg-[#006DA6] text-white hover:bg-[#00314b] disabled:bg-gray-300 disabled:text-gray-500'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                Kirim Laporan
+                {isSubmitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                ) : (
+                  'Kirim Laporan'
+                )}
               </button>
             </div>
           </>
@@ -274,6 +340,7 @@ export default function UnggahLaporanPage() {
         )}
       </div>
 
+      {/* === Tampilan Riwayat === */}
       {uploadHistory.length > 0 && (
         <div className="mt-8 max-w-7xl mx-auto px-4">
           <h3 className="text-xl font-bold text-[#002942] mb-4">
@@ -291,13 +358,20 @@ export default function UnggahLaporanPage() {
                       {item.namaFile}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Diunggah pada: {item.tanggalUpload}
+                      Diunggah pada:{' '}
+                      {new Date(item.tanggalUpload).toLocaleDateString(
+                        'id-ID',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        }
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 justify-start md:justify-self-end">
-                    {/* KEMBALI: Badge status ditampilkan di sini */}
                     <StatusBadge status={item.status} />
-                    {item.status === 'Ditolak' && item.catatan && (
+                    {item.status === 'REJECTED' && item.catatan && (
                       <button
                         onClick={() =>
                           setVisibleNoteId(
