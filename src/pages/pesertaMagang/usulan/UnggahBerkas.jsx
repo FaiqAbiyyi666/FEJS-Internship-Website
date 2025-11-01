@@ -1,7 +1,6 @@
 import { useState, useContext, useRef } from 'react';
 import { FormDataContext } from './PengajuanMagangPage';
 
-// Ikon untuk tombol hapus
 const CloseIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -88,7 +87,6 @@ export default function UnggahBerkas() {
         </label>
 
         <div className="px-3 truncate flex-grow flex items-center">
-          {/* 👇 PERBAIKAN: Nama file kembali dijadikan link untuk pratinjau */}
           {formData[name] ? (
             <a
               href={URL.createObjectURL(formData[name])}
@@ -131,7 +129,6 @@ export default function UnggahBerkas() {
         Unggah Berkas Magang
       </h2>
 
-      {/* 👇 PERBAIKAN: Typo grid layout dari md-grid-cols-2 menjadi md:grid-cols-2 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
         {renderFileInput(
           'Surat Rekomendasi Bakesbangpol Sidoarjo',

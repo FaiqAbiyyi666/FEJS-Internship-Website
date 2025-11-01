@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx'; // Pastikan Anda sudah install xlsx
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 // Helper untuk format tanggal (bisa ditaruh di file terpisah)
 const formatTgl = (dateStr) => {
@@ -282,47 +283,169 @@ export default function AdminAjuanMagangPage() {
       return;
     }
 
-    const exportData = dataToExport.map((p) => ({
-      Nama: p.nama,
-      Email: p.email,
-      Instansi: p.instansi,
-      Jurusan: p.jurusan,
-      Nim_Nis: p.nim,
-      Status_Pendidikan: p.statusPendidikan,
-      Jenjang_Pendidikan: p.jenjangPendidikan,
-      Tema_Magang: p.temaMagang,
-      'Periode Usulan': formatPeriode(p.tanggalMulai, p.tanggalSelesai),
-      Bidang: p.bidang,
-      'Tanggal Pengajuan': formatTgl(p.createdAt),
-      Status: p.status,
-      'Tanggal Keputusan': formatTgl(p.updatedAt),
-      Surat_Pengantar: p.suratPengantar || '-',
-      Proposal_Magang: p.proposalMagang || '-',
-      cv: p.cv || '-',
-      ktp: p.ktp || '-',
-      BakesbangpolSDA: p.bakesbangsda || '-',
-      BakesbangpolProv: p.bakesbangprov || '-',
-    }));
-
     try {
-      // Dinamis import xlsx
-      const XLSX = await import('xlsx');
-      const ws = XLSX.utils.aoa_to_sheet([
-        ['Riwayat Persetujuan Ajuan Magang'],
-      ]);
-      XLSX.utils.sheet_add_json(ws, exportData, { origin: 'A3' });
-      const range = XLSX.utils.decode_range(ws['!ref']);
-      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: range.e.c } }];
-      if (!ws['A1']) ws['A1'] = {}; // Pastikan cell A1 ada
-      ws['A1'].s = { font: { bold: true, sz: 14 } }; // Set style
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, ws, 'RiwayatAjuan');
+      // 1. Buat Workbook & Worksheet
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Riwayat Ajuan Magang');
+
+      // --- ⬇️ PERBAIKAN LOGIKA HEADER ⬇️ ---
+
+      // 2. Tentukan Kolom (HANYA 'key' dan 'width', HAPUS 'header')
+      //    Ini penting agar library tidak otomatis menambah header
+      worksheet.columns = [
+        { key: 'nama', width: 30 },
+        { key: 'email', width: 30 },
+        { key: 'instansi', width: 30 },
+        { key: 'jurusan', width: 25 },
+        { key: 'nimNis', width: 20 },
+        { key: 'statusPendidikan', width: 20 },
+        { key: 'jenjangPendidikan', width: 20 },
+        { key: 'temaMagang', width: 40 },
+        { key: 'periodeUsulan', width: 25 },
+        { key: 'bidang', width: 25 },
+        { key: 'tglPengajuan', width: 20 },
+        { key: 'status', width: 15 },
+        { key: 'tglKeputusan', width: 20 },
+        { key: 'suratPengantar', width: 40 },
+        { key: 'proposalMagang', width: 40 },
+        { key: 'cv', width: 40 },
+        { key: 'ktp', width: 40 },
+        { key: 'bakesbangsda', width: 40 },
+        { key: 'bakesbangprov', width: 40 },
+      ];
+
+      // 3. Tambahkan Baris Judul (di Baris 1)
+      worksheet.addRow(['Riwayat Persetujuan Ajuan Magang']);
+
+      // 4. Merge Judul dan Rata Tengah (Sesuai permintaan Anda)
+      //    'S' adalah kolom ke-19 (sesuai jumlah kolom)
+      worksheet.mergeCells('A1:S1');
+      worksheet.getCell('A1').font = { bold: true, size: 14, name: 'Calibri' };
+      worksheet.getCell('A1').alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+      };
+
+      // 5. Tambahkan Baris Header secara MANAUL (di Baris 2)
+      const headerTexts = [
+        'NAMA',
+        'EMAIL',
+        'INSTANSI',
+        'JURUSAN',
+        'NIM / NIS',
+        'STATUS PENDIDIKAN',
+        'JENJANG PENDIDIKAN',
+        'TEMA MAGANG',
+        'PERIODE USULAN',
+        'BIDANG',
+        'TANGGAL PENGAJUAN',
+        'STATUS',
+        'TANGGAL KEPUTUSAN',
+        'SURAT PENGANTAR',
+        'PROPOSAL MAGANG',
+        'CV',
+        'KTP',
+        'BAKESBANGPOL SDA',
+        'BAKESBANGPOL PROV',
+      ];
+      worksheet.addRow(headerTexts); // Ini menjadi Baris 2
+
+      // 6. STYLING HEADER (Baris 2)
+      const headerRow = worksheet.getRow(2); // ⬅️ Arahkan ke Baris 2
+      headerRow.eachCell((cell) => {
+        cell.font = {
+          bold: true,
+          color: { argb: 'FFFFFFFF' },
+          name: 'Calibri',
+        };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF006DA6' },
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+        cell.alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+          wrapText: true,
+        };
+      });
+
+      // 7. Siapkan data (Map data Anda - Kode Anda sudah benar)
+      const exportData = dataToExport.map((p) => ({
+        nama: p.nama,
+        email: p.email,
+        instansi: p.instansi,
+        jurusan: p.jurusan,
+        nimNis: p.nim,
+        statusPendidikan: p.statusPendidikan,
+        jenjangPendidikan: p.jenjangPendidikan,
+        temaMagang: p.temaMagang,
+        periodeUsulan: formatPeriode(p.tanggalMulai, p.tanggalSelesai),
+        bidang: p.bidang,
+        tglPengajuan: formatTgl(p.createdAt),
+        status: p.status,
+        tglKeputusan: formatTgl(p.updatedAt),
+        suratPengantar: p.suratPengantar || '-',
+        proposalMagang: p.proposalMagang || '-',
+        cv: p.cv || '-',
+        ktp: p.ktp || '-',
+        bakesbangsda: p.bakesbangsda || '-',
+        bakesbangprov: p.bakesbangprov || '-',
+      }));
+
+      // 8. Tambahkan Data (Mulai di Baris 3)
+      worksheet.addRows(exportData); // Data akan dimulai di baris 3
+
+      // 9. STYLING DATA CELLS (Mulai dari baris 3)
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber <= 2) return; // ⬅️ Lewati Baris 1 (Judul) dan 2 (Header)
+
+        row.eachCell((cell, colNumber) => {
+          // Border untuk semua sel data
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+
+          const colKey = worksheet.columns[colNumber - 1].key;
+
+          // Wrap text untuk kolom yang mungkin panjang (URL/Tema)
+          const wrapTextColumns = [
+            'temaMagang',
+            'suratPengantar',
+            'proposalMagang',
+            'cv',
+            'ktp',
+            'bakesbangsda',
+            'bakesbangprov',
+          ];
+          if (wrapTextColumns.includes(colKey)) {
+            cell.alignment = { wrapText: true, vertical: 'top' };
+          } else {
+            cell.alignment = { vertical: 'middle' }; // Rapikan data lain
+          }
+        });
+      });
+
+      // 10. Hasilkan File dan Download
+      const buffer = await workbook.xlsx.writeBuffer();
       const today = new Date().toISOString().split('T')[0];
-      XLSX.writeFile(workbook, `RiwayatAjuanMagang_${today}.xlsx`);
+      const fileName = `RiwayatAjuanMagang_${today}.xlsx`;
+
+      saveAs(new Blob([buffer]), fileName);
     } catch (exportError) {
       console.error('Gagal export excel:', exportError);
+      // Asumsi Anda punya state 'setError'
       setError(
-        "Gagal melakukan export data ke Excel. Pastikan library 'xlsx' terinstall."
+        "Gagal melakukan export data ke Excel. Pastikan library 'exceljs' dan 'file-saver' terinstall."
       );
     }
   };

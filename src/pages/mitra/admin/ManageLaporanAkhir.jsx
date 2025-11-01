@@ -6,7 +6,8 @@ import React, {
   useCallback,
 } from 'react';
 import { Eye, Search, Download, X, Loader2 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 // Ganti URL ini dengan URL backend Anda
 const BASE_URL = 'http://localhost:3000/api/admin'; // Sesuaikan port jika perlu
@@ -161,26 +162,95 @@ const ManageLaporanAkhir = () => {
   };
 
   // ===== Export Excel untuk Riwayat (Tidak perlu diubah) =====
-  const exportRiwayatToExcel = () => {
+  const exportRiwayatToExcel = async () => {
+    // ⬅️ Ubah menjadi async
     if (riwayat.length === 0) {
       alert('Belum ada data riwayat untuk diekspor.');
       return;
     }
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-    const worksheet = XLSX.utils.json_to_sheet(
-      riwayat.map((l) => ({
-        Nama: l.peserta.nama,
-        Email: l.peserta.email,
-        Bidang: l.peserta.bidang,
-        Status: l.status === 'APPROVED' ? 'Diterima' : 'Ditolak',
-        'Tanggal Respon': new Date(l.respondedAt).toLocaleString(),
-        Catatan: l.catatan,
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Riwayat Laporan');
-    XLSX.writeFile(workbook, `riwayat_laporan_akhir_${formattedDate}.xlsx`);
+
+    // 1. Buat Workbook & Worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Riwayat Laporan Akhir');
+
+    // 2. Tentukan Kolom (Header, Key, dan Lebar)
+    // Header akan otomatis menjadi huruf besar
+    worksheet.columns = [
+      { header: 'NAMA', key: 'nama', width: 30 },
+      { header: 'EMAIL', key: 'email', width: 30 },
+      { header: 'BIDANG', key: 'bidang', width: 25 },
+      { header: 'STATUS', key: 'status', width: 15 },
+      { header: 'TANGGAL RESPON', key: 'tanggalRespon', width: 25 },
+      { header: 'CATATAN', key: 'catatan', width: 50 },
+      { header: 'LINK FILE', key: 'fileLink', width: 30 },
+    ];
+
+    // 3. Siapkan data sesuai 'key' yang ditentukan
+    const exportData = riwayat.map((l) => ({
+      nama: l.peserta.nama,
+      email: l.peserta.email,
+      bidang: l.peserta.bidang,
+      status: l.status === 'APPROVED' ? 'Diterima' : 'Ditolak',
+      tanggalRespon: new Date(l.respondedAt).toLocaleString('id-ID'),
+      catatan: l.catatan,
+      fileLink: l.fileLaporan, // URL tujuan link
+    }));
+
+    // 4. Tambahkan Data ke Worksheet
+    worksheet.addRows(exportData);
+
+    // 5. STYLING HEADER (Bold, Huruf Besar, Border, Warna Latar)
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell) => {
+      // Font
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' }, // Putih
+        name: 'Calibri',
+      };
+
+      // Background
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF006DA6' }, // Warna biru tema Anda
+      };
+
+      // Border
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+
+      // Alignment
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+    // 6. STYLING DATA CELLS (Border & Wrap Text)
+    worksheet.eachRow({ includeEmpty: false, skipHeader: true }, (row) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+
+        // Wrap text untuk kolom 'Catatan'
+        if (worksheet.columns[colNumber - 1].key === 'catatan') {
+          cell.alignment = { wrapText: true, vertical: 'top' };
+        }
+      });
+    });
+
+    // 7. Hasilkan File dan Download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const today = new Date().toISOString().split('T')[0];
+    const fileName = `riwayat_laporan_akhir_${today}.xlsx`;
+
+    saveAs(new Blob([buffer]), fileName);
   };
 
   // Klik luar modal untuk tutup (Tidak perlu diubah)

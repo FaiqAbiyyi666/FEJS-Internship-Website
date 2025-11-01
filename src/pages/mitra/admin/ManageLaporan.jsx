@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, Download } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const formatTanggalLaporan = (isoDate) => {
   if (!isoDate) return '-';
@@ -87,16 +88,14 @@ const ManagementLaporan = () => {
       setError(null);
 
       try {
-        // 1. Buat parameter query
         const params = new URLSearchParams();
         params.append('page', currentPage);
-        params.append('limit', 10); // Tentukan limit per halaman
+        params.append('limit', 10);
 
         if (searchTerm) {
           params.append('search', searchTerm);
         }
         if (bidangFilter !== 'all') {
-          // Pastikan 'value' di <select> adalah ID Bidang
           params.append('bidangId', bidangFilter);
         }
         if (tanggalFilter) {
@@ -108,8 +107,6 @@ const ManagementLaporan = () => {
           throw new Error('Anda harus login untuk melihat data ini.');
         }
 
-        // 3. Panggil API
-        //    Pastikan URL ini benar sesuai setup rute Anda
         const response = await fetch(
           `http://localhost:3000/api/admin/logbook/all?${params.toString()}`,
           {
@@ -126,9 +123,8 @@ const ManagementLaporan = () => {
 
         const data = await response.json();
 
-        // 4. Set state dengan data dari backend
-        setLogbooks(data.data); // data.data berisi array logbook
-        setPagination(data.pagination); // data.pagination berisi info paginasi
+        setLogbooks(data.data);
+        setPagination(data.pagination);
       } catch (err) {
         console.error('Error fetching logbooks:', err);
         setError(err.message);
@@ -140,26 +136,77 @@ const ManagementLaporan = () => {
     fetchLogbooks();
   }, [searchTerm, bidangFilter, tanggalFilter, currentPage]);
 
-  const handleExportExcel = () => {
-    // Gunakan data 'logbooks' dari state, bukan mock data
-    const exportData = logbooks.map(
-      // Hapus avatar & format tanggal agar rapi di Excel
-      ({ avatar, ...rest }) => ({
-        ...rest,
-        tanggal: formatTanggalLaporan(rest.tanggal),
-        tanggalSubmit: formatTanggalSubmit(rest.tanggalSubmit),
-      })
+  const handleExportExcel = async () => {
+    const exportData = logbooks.map(({ avatar, ...rest }) => ({
+      ...rest,
+      tanggal: formatTanggalLaporan(rest.tanggal),
+      tanggalSubmit: formatTanggalSubmit(rest.tanggalSubmit),
+    }));
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Laporan Harian');
+
+    worksheet.columns = [
+      { header: 'ID', key: 'id', width: 35 },
+      { header: 'PESERTA', key: 'peserta', width: 30 },
+      { header: 'BIDANG', key: 'bidang', width: 30 },
+      { header: 'INSTANSI', key: 'instansi', width: 30 },
+      { header: 'TANGGAL LAPORAN', key: 'tanggal', width: 25 },
+      { header: 'KEGIATAN', key: 'kegiatan', width: 50 },
+      { header: 'TANGGAL SUBMIT', key: 'tanggalSubmit', width: 20 },
+    ];
+
+    worksheet.addRows(exportData);
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell, colNumber) => {
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+        name: 'Calibri',
+      };
+
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF006DA6' },
+      };
+
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+    worksheet.eachRow(
+      { includeEmpty: false, skipHeader: true },
+      (row, rowNumber) => {
+        row.eachCell((cell, colNumber) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+
+          if (worksheet.columns[colNumber - 1].key === 'kegiatan') {
+            cell.alignment = { wrapText: true, vertical: 'top' };
+          }
+        });
+      }
     );
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Harian');
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `laporan_harian_${formattedDate}.xlsx`);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const today = new Date().toISOString().split('T')[0];
+    const fileName = `laporan_harian_${today}.xlsx`;
+
+    saveAs(new Blob([buffer]), fileName);
   };
 
-  // Handler untuk mengubah halaman
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
@@ -221,9 +268,9 @@ const ManagementLaporan = () => {
           onClick={handleExportExcel}
           disabled={logbooks.length === 0}
           className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] 
-            transition-colors flex items-center space-x-2"
+            transition-colors flex items-center space-x-2 text-sm"
         >
-          <Download size={20} />
+          <Download size={18} />
           <span>Export Laporan</span>
         </button>
       </div>

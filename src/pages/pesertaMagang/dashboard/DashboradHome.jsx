@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ClipboardList, FileText, Award, Star } from 'lucide-react';
 
-// ✅ Card & CardContent sederhana
 function Card({ children, className = '' }) {
   return (
     <div className={`bg-white rounded-xl shadow ${className}`}>{children}</div>
@@ -12,10 +11,8 @@ function CardContent({ children, className = '' }) {
 }
 
 export default function PesertaDashboardHome() {
-  // State profil
   const [profile, setProfile] = useState(null);
 
-  // State tambahan
   const [statusUsulanData, setStatusUsulanData] = useState('');
   const [bidangUsulan, setBidangUsulan] = useState('');
   const [tanggalPengajuan, setTanggalPengajuan] = useState('');
@@ -24,7 +21,6 @@ export default function PesertaDashboardHome() {
   const [ulasan, setUlasan] = useState('Belum dikirim');
   const [sertifikat, setSertifikat] = useState('Belum terbit');
 
-  // Format tanggal lokal (Indonesia)
   const formatTanggal = (tanggal) => {
     if (!tanggal) return '';
     return new Date(tanggal).toLocaleDateString('id-ID', {
@@ -34,7 +30,6 @@ export default function PesertaDashboardHome() {
     });
   };
 
-  // Fetch profil dari backend
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -55,10 +50,8 @@ export default function PesertaDashboardHome() {
 
         const data = await res.json();
         if (data.status) {
-          // isi profil dari backend
           setProfile(data.data);
 
-          // contoh: ambil status usulan dll dari response (jika ada di backend)
           setStatusUsulanData(data.data.statusUsulan || '');
           setBidangUsulan(data.data.bidangUsulan || '');
           setTanggalPengajuan(data.data.tanggalPengajuan || '');
@@ -77,12 +70,10 @@ export default function PesertaDashboardHome() {
     fetchProfile();
   }, []);
 
-  // Kalau data belum ada
   if (!profile) {
     return <div className="p-6 text-gray-600">Loading profil...</div>;
   }
 
-  // Pengecekan Status Usulan
   const statusUsulan =
     !bidangUsulan || !tanggalPengajuan
       ? 'Belum Mengajukan Usulan'
@@ -90,7 +81,6 @@ export default function PesertaDashboardHome() {
 
   return (
     <div className="space-y-6">
-      {/* ====== Profil ====== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent>
@@ -145,7 +135,6 @@ export default function PesertaDashboardHome() {
         </Card>
       </div>
 
-      {/* ====== Status Usulan Magang ====== */}
       <Card>
         <CardContent className="flex items-center gap-4">
           <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
@@ -153,7 +142,6 @@ export default function PesertaDashboardHome() {
           </div>
 
           <div className="flex-1">
-            {/* Judul + Detail Bidang & Tanggal */}
             <div className="flex flex-col">
               <span className="text-sm font-bold text-black">
                 Status Usulan Magang
@@ -171,7 +159,6 @@ export default function PesertaDashboardHome() {
             </div>
           </div>
 
-          {/* Status Badge */}
           {(() => {
             const statusStyles = {
               'Belum Mengajukan Usulan': 'bg-gray-100 text-black',
@@ -193,7 +180,6 @@ export default function PesertaDashboardHome() {
         </CardContent>
       </Card>
 
-      {/* ====== Progress Laporan Harian ====== */}
       <Card>
         <CardContent className="flex items-center gap-4">
           <div className="p-3 bg-green-100 text-green-600 rounded-full">
@@ -218,7 +204,6 @@ export default function PesertaDashboardHome() {
         </CardContent>
       </Card>
 
-      {/* ====== Kotak Ringkas ====== */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="flex flex-col items-center text-center">

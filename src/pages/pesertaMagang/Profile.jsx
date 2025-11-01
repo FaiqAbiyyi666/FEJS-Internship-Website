@@ -29,7 +29,6 @@ export default function Profile() {
       ...prev,
       [name]: value,
     }));
-    // Hapus error untuk field yang sedang diubah
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -38,8 +37,8 @@ export default function Profile() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
-      setImageFile(file); // Simpan file object untuk dikirim
-      setProfileImage(URL.createObjectURL(file)); // Buat URL sementara untuk pratinjau
+      setImageFile(file);
+      setProfileImage(URL.createObjectURL(file));
     }
   };
 
@@ -63,7 +62,6 @@ export default function Profile() {
     if (!formData.alamat) newErrors.alamat = 'Alamat tidak boleh kosong.';
 
     setErrors(newErrors);
-    // Kembalikan true jika tidak ada error
     return Object.keys(newErrors).length === 0;
   };
 
@@ -108,16 +106,12 @@ export default function Profile() {
         });
         const imageUrl = profileData.pasFoto;
 
-        // Cek apakah imageUrl adalah URL yang valid dari ImageKit
         if (
           imageUrl &&
           (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))
         ) {
-          // Jika ya, gunakan URL itu
           setProfileImage(imageUrl);
         } else {
-          // Jika tidak (misal: null, undefined, atau path "/images/...")
-          // Gunakan gambar default
           setProfileImage('/default-profile.png');
         }
       } else {
@@ -128,12 +122,10 @@ export default function Profile() {
       console.error('Gagal fetch profile:', err);
       setNotification({ message: err.message, type: 'error' });
     } finally {
-      hideLoading(); // <-- (4) Sembunyikan loader (di dalam 'finally')
+      hideLoading();
     }
-  }, [showLoading, hideLoading]); // Dependency array kosong, fungsi ini tidak akan dibuat ulang
+  }, [showLoading, hideLoading]);
 
-  // --- (2) PERBARUI useEffect ---
-  // Sekarang useEffect hanya memanggil fungsi fetchProfile
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
@@ -161,7 +153,6 @@ export default function Profile() {
 
     try {
       if (imageFile) {
-        // ... (logika FormData Anda tidak berubah)
         const dataToSend = new FormData();
         dataToSend.append('namaLengkap', formData.namaLengkap);
         dataToSend.append('noTelepon', formData.noTelepon);
@@ -172,7 +163,6 @@ export default function Profile() {
         dataToSend.append('pasFoto', imageFile);
         requestBody = dataToSend;
       } else {
-        // ... (logika JSON Anda tidak berubah)
         const dataToSend = {
           namaLengkap: formData.namaLengkap,
           noTelepon: formData.noTelepon,
@@ -196,14 +186,10 @@ export default function Profile() {
         throw new Error(result.message || 'Gagal memperbarui profil.');
       }
 
-      // --- INI PERUBAHAN UTAMANYA ---
       setNotification({ message: result.message, type: 'success' });
-      setImageFile(null); // Reset file preview
+      setImageFile(null);
 
-      // Panggil 'fetchProfile' lagi untuk mengambil data terbaru dari server
-      // Ini akan otomatis memperbarui 'formData' DAN 'profileImage'
       await fetchProfile();
-      // -------------------------------
     } catch (err) {
       console.error('Error submitting form:', err);
       setNotification({ message: err.message, type: 'error' });

@@ -65,17 +65,13 @@ export default function PengajuanMagangPage() {
     setError(null);
 
     try {
-      // 1. Ambil token (sesuaikan dengan cara Anda menyimpan token)
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Autentikasi gagal. Silakan login kembali.');
       }
 
-      // 2. Buat objek FormData
       const data = new FormData();
 
-      // 3. Pemetakan (Mapping) state React ke field backend
-      // A. Append data teks (sesuai req.body di controller)
       data.append('namaLengkap', formData.namaLengkap);
       data.append('nis_nim', formData.nis_nim);
       data.append('kategori', formData.kategori);
@@ -88,16 +84,13 @@ export default function PengajuanMagangPage() {
       data.append('tema', formData.tema);
       data.append('bidangPilihan', formData.bidangPilihan);
 
-      // B. Append data file (sesuai field middleware 'uploadBerkasAjuan')
-      // Pastikan state (misal: formData.proposalMagang) berisi File object
       data.append('proposal_magang', formData.proposalMagang);
-      data.append('cv', formData.cvPeserta); // state 'cvPeserta' -> field 'cv'
-      data.append('ktp', formData.ktp); // (Pastikan controller/schema Anda benar)
+      data.append('cv', formData.cvPeserta);
+      data.append('ktp', formData.ktp);
       data.append('surat_pengantar', formData.suratPengantar);
       data.append('surat_bakesbang_sda', formData.suratBakesbangSDA);
       data.append('surat_bakesbang_prov', formData.suratBakesbangProv);
 
-      // 4. Kirim request ke backend (endpoint dari file route Anda)
       const response = await fetch(
         'http://localhost:3000/api/peserta/ajuan-magang',
         {
@@ -112,15 +105,13 @@ export default function PengajuanMagangPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        // Tangkap pesan error dari backend
         throw new Error(result.message || 'Gagal mengirim ajuan.');
       }
 
-      // 5. Handle Sukses
       setIsLoading(false);
       console.log('Ajuan berhasil dikirim:', result.data);
       alert('Data berhasil disimpan!');
-      navigate('/usulan'); // Arahkan ke halaman usulan
+      navigate('/usulan');
     } catch (err) {
       setIsLoading(false);
       setError(err.message);
@@ -144,7 +135,7 @@ export default function PengajuanMagangPage() {
             <h1 className="text-2xl font-extrabold bg-gradient-to-r from-[#002942] to-[#006DA6] bg-clip-text text-transparent text-center flex-1">
               Laman Pengajuan Magang
             </h1>
-            <div className="w-[160px]"></div> {/* Spacer */}
+            <div className="w-[160px]"></div>
           </div>
 
           <div className="flex items-center justify-between mb-6">
@@ -213,7 +204,6 @@ export default function PengajuanMagangPage() {
   );
 }
 
-// Modal Konfirmasi (tidak ada perubahan)
 function ModalKonfirmasi({ onClose, onConfirm }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">

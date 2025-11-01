@@ -1,10 +1,9 @@
 import { useContext } from 'react';
-import { FormDataContext } from './PengajuanMagangPage'; // Import context
+import { FormDataContext } from './PengajuanMagangPage'; 
 
 export default function FormulirPendaftaran() {
   const { formData, setFormData } = useContext(FormDataContext);
 
-  // Buat handler untuk memudahkan update
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));

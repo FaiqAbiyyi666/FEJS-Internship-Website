@@ -169,7 +169,7 @@ export default function LaporanHarianForm() {
 
     setIsSubmitting(true);
     setError(null);
-    const token = localStorage.getItem('token'); // Pastikan key token sudah benar
+    const token = localStorage.getItem('token');
 
     const dataToSend = {
       tanggal: hariData[modalIndex].tanggalISO,
@@ -178,7 +178,7 @@ export default function LaporanHarianForm() {
 
     try {
       const response = await fetch(
-        'http://localhost:3000/api/peserta/logbook', // Pastikan URL ini benar
+        'http://localhost:3000/api/peserta/logbook',
         {
           method: 'POST',
           headers: {
@@ -202,7 +202,7 @@ export default function LaporanHarianForm() {
         })
       );
 
-      setModalIndex(null); // Tutup modal
+      setModalIndex(null);
       setModalContent('');
     } catch (err) {
       console.error('Error submitting logbook:', err);
@@ -222,7 +222,6 @@ export default function LaporanHarianForm() {
 
   return (
     <>
-      {/* Modal Input */}
       {modalIndex !== null && (
         <Modal onClose={() => setModalIndex(null)}>
           <h2 className="text-xl font-bold text-center">Laporan Harian</h2>
@@ -253,7 +252,6 @@ export default function LaporanHarianForm() {
         </Modal>
       )}
 
-      {/* Modal Detail */}
       {showFullIndex !== null && (
         <Modal onClose={() => setShowFullIndex(null)}>
           <h2 className="text-xl font-bold mb-2">

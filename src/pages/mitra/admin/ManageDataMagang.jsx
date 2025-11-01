@@ -1,9 +1,8 @@
 // ManageDataMagang.jsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { Eye, Download } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { useLoading } from '../../../contexts/LoadingContext';
 
 const ITEMS_PER_PAGE = 6;
@@ -16,7 +15,7 @@ export default function ManageDataMagang() {
   const [daftarPeserta, setDaftarPeserta] = useState([]);
   const { showLoading, hideLoading } = useLoading();
   const [isEditing, setIsEditing] = useState(false);
-  const [allBidang, setAllBidang] = useState([]); // Untuk <select> dropdown
+  const [allBidang, setAllBidang] = useState([]);
   const [formData, setFormData] = useState({});
   const [notification, setNotification] = useState({ message: '', type: '' });
 
@@ -47,13 +46,11 @@ export default function ManageDataMagang() {
     fetchSemuaPeserta();
   }, [fetchSemuaPeserta]);
 
-  // Helper untuk memformat tanggal ISO ke YYYY-MM-DD
   const formatDateForInput = (isoString) => {
     if (!isoString) return '';
     return isoString.split('T')[0];
   };
 
-  // Fungsi untuk mengisi state form
   const initializeFormData = (peserta) => {
     setFormData({
       namaLengkap: peserta.nama || '',
@@ -67,40 +64,34 @@ export default function ManageDataMagang() {
       jurusan: peserta.jurusan || '',
       periodeMulai: formatDateForInput(peserta.periodeMulai),
       periodeSelesai: formatDateForInput(peserta.periodeSelesai),
-      bidangId: peserta.bidangId || '', // PRASYARAT (Lihat Bagian 3)
-      ajuanId: peserta.ajuanId || '', // PRASYARAT (Lihat Bagian 3)
+      bidangId: peserta.bidangId || '',
+      ajuanId: peserta.ajuanId || '',
     });
   };
 
-  // Isi form saat data peserta berubah (misal user klik peserta lain)
   useEffect(() => {
     if (selectedPeserta) {
       initializeFormData(selectedPeserta);
-      setIsEditing(false); // Selalu kembali ke mode view
-      setNotification({ message: '', type: '' }); // Hapus notifikasi lama
+      setIsEditing(false);
+      setNotification({ message: '', type: '' });
     }
   }, [selectedPeserta]);
 
-  // Handler untuk input form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handler untuk tombol "Batal"
   const handleCancelClick = () => {
     setIsEditing(false);
     setNotification({ message: '', type: '' });
-    // Reset form ke data asli
     initializeFormData(selectedPeserta);
   };
 
-  // Handler untuk tombol "Simpan Data"
   const handleSubmit = async (e) => {
     e.preventDefault();
     setNotification({ message: '', type: '' });
 
-    // Validasi Konfirmasi
     if (
       !window.confirm('Anda yakin ingin menyimpan perubahan data peserta ini?')
     ) {
@@ -109,11 +100,9 @@ export default function ManageDataMagang() {
 
     try {
       const token = localStorage.getItem('token');
-      // Panggil API baru yang kita buat di Bagian 1
       const res = await fetch(
         `http://localhost:3000/api/admin/peserta-magang/${selectedPeserta.id}`,
         {
-          // selectedPeserta.id adalah userId
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -129,7 +118,6 @@ export default function ManageDataMagang() {
       setNotification({ message: result.message, type: 'success' });
       setIsEditing(false);
 
-      // Beri tahu komponen parent untuk refresh data (PENTING)
       await fetchSemuaPeserta();
     } catch (err) {
       console.error('Error submit:', err);
@@ -145,7 +133,6 @@ export default function ManageDataMagang() {
   const readOnlyClass = 'text-gray-500 bg-gray-100 italic';
   const labelClass = 'font-semibold text-black';
 
-  // filtered & pagination
   const filtered = daftarPeserta.filter((d) => {
     const q = search.trim().toLowerCase();
     const matchSearch =
@@ -167,95 +154,105 @@ export default function ManageDataMagang() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // export all to excel
-  const exportAllExcel = () => {
+  const exportAllExcel = async () => {
+    if (daftarPeserta.length === 0) {
+      alert('Belum ada data peserta untuk diekspor.');
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Data Peserta Magang');
+
+    worksheet.columns = [
+      { header: 'NAMA', key: 'nama', width: 30 },
+      { header: 'TANGGAL LAHIR', key: 'tglLahir', width: 20 },
+      { header: 'NIM / NIS', key: 'nim', width: 20 },
+      { header: 'EMAIL', key: 'email', width: 30 },
+      { header: 'NO TELEPON', key: 'noTelepon', width: 20 },
+      { header: 'NIK', key: 'nik', width: 20 },
+      { header: 'BIDANG', key: 'bidang', width: 25 },
+      { header: 'INSTANSI', key: 'instansi', width: 30 },
+      { header: 'JURUSAN', key: 'jurusan', width: 25 },
+      { header: 'ALAMAT', key: 'alamat', width: 50 },
+      { header: 'PERIODE', key: 'periode', width: 25 },
+      { header: 'SURAT MAGANG', key: 'suratMagang', width: 40 },
+      { header: 'SERTIFIKAT', key: 'sertifikat', width: 40 },
+      { header: 'STATUS MAGANG', key: 'statusMagang', width: 20 },
+    ];
+
     const exportData = daftarPeserta.map((d) => ({
-      NAMA: d.nama,
-      'TANGGAL LAHIR': d.tglLahir ? d.tglLahir.split('T')[0] : '', // Tambahan: Format juga tgl lahir
-      'NIM / NIS': d.nim,
-      EMAIL: d.email,
-      'NO TELEPON': d.noTelepon,
-      NIK: d.nik,
-      BIDANG: d.bidang,
-      INSTANSI: d.instansi,
-      JURUSAN: d.jurusan,
-      ALAMAT: d.alamat,
-      PERIODE: `${d.periodeMulai.split('T')[0]} - ${
+      nama: d.nama,
+      tglLahir: d.tglLahir ? d.tglLahir.split('T')[0] : '',
+      nim: d.nim,
+      email: d.email,
+      noTelepon: d.noTelepon,
+      nik: d.nik,
+      bidang: d.bidang,
+      instansi: d.instansi,
+      jurusan: d.jurusan,
+      alamat: d.alamat,
+      periode: `${d.periodeMulai.split('T')[0]} - ${
         d.periodeSelesai.split('T')[0]
       }`,
-      'SURAT MAGANG': d.suratMagang,
-      SERTIFIKAT: d.sertifikat,
-      'STATUS MAGANG': d.statusMagang,
+      suratMagang: d.suratMagang,
+      sertifikat: d.sertifikat,
+      statusMagang: d.statusMagang,
     }));
 
-    // Buat tanggal export (YYYY-MM-DD)
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
+    worksheet.addRows(exportData);
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell) => {
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+        name: 'Calibri',
+      };
 
-    // ---- MULAI MODIFIKASI STYLE ----
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF006DA6' },
+      };
 
-    // 1. Definisikan style
-    const borderStyle = {
-      top: { style: 'thin', color: { rgb: '000000' } },
-      bottom: { style: 'thin', color: { rgb: '000000' } },
-      left: { style: 'thin', color: { rgb: '000000' } },
-      right: { style: 'thin', color: { rgb: '000000' } },
-    };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
 
-    const headerStyle = {
-      font: { bold: true },
-      fill: { fgColor: { rgb: 'DDEBF7' } }, // Warna Biru muda (Excel)
-      border: borderStyle,
-    };
-
-    const cellStyle = {
-      border: borderStyle,
-    };
-
-    // 2. Dapatkan range worksheet
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    const numRows = range.e.r; // 0-indexed end row
-    const numCols = range.e.c; // 0-indexed end col
-
-    // 3. Loop semua sel untuk menerapkan border
-    for (let R = 0; R <= numRows; R++) {
-      for (let C = 0; C <= numCols; C++) {
-        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-        const cell = ws[cellRef];
-
-        if (!cell) continue; // Lewati sel kosong
-
-        // Terapkan border ke semua sel
-        cell.s = cellStyle;
-
-        // Terapkan style header HANYA ke baris pertama (R === 0)
-        if (R === 0) {
-          cell.s = headerStyle;
-        }
-      }
-    }
-
-    // (Opsional) Atur lebar kolom agar sedikit lebih rapi
-    if (exportData.length > 0) {
-      const colWidths = Object.keys(exportData[0]).map((key) => ({
-        wch: Math.max(key.length, 15), // Lebar kolom min 15, atau selebar judul
-      }));
-      ws['!cols'] = colWidths;
-    }
-
-    // ---- SELESAI MODIFIKASI STYLE ----
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'PesertaMagang');
-    XLSX.writeFile(wb, `Arsip_Data_Magang_${formattedDate}.xlsx`, {
-      bookType: 'xlsx',
-      cellStyles: true,
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
+
+    worksheet.eachRow({ includeEmpty: false, skipHeader: true }, (row) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+
+        const colKey = worksheet.columns[colNumber - 1].key;
+
+        if (
+          colKey === 'alamat' ||
+          colKey === 'suratMagang' ||
+          colKey === 'sertifikat'
+        ) {
+          cell.alignment = { wrapText: true, vertical: 'top' };
+        }
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const today = new Date().toISOString().split('T')[0];
+    const fileName = `Arsip_Data_Magang_${today}.xlsx`;
+
+    saveAs(new Blob([buffer]), fileName);
   };
 
-  // pagination helpers
   const goToPage = (n) => {
     const p = Math.min(Math.max(1, n), totalPages);
     setCurrentPage(p);
@@ -263,9 +260,7 @@ export default function ManageDataMagang() {
 
   return (
     <div className="space-y-6">
-      {/* Search, filter, & Export */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* Kiri: Input & Filter */}
         <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
           <input
             type="text"
@@ -278,7 +273,6 @@ export default function ManageDataMagang() {
             className="w-auto min-w-[28rem] px-4 py-2 border rounded-md focus:ring-[#006DA6] focus:border-[#006DA6]"
           />
 
-          {/* Bidang Filter */}
           <select
             value={bidangFilter}
             onChange={(e) => setBidangFilter(e.target.value)}
@@ -300,7 +294,6 @@ export default function ManageDataMagang() {
           </select>
         </div>
 
-        {/* Kanan: Tombol Ekspor */}
         <div className="flex items-center gap-2">
           <button
             onClick={exportAllExcel}
@@ -311,7 +304,6 @@ export default function ManageDataMagang() {
         </div>
       </div>
 
-      {/* Cards list */}
       <div className="space-y-4">
         {paginated.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
@@ -323,7 +315,6 @@ export default function ManageDataMagang() {
               key={p.id}
               className="bg-white rounded-lg shadow p-4 flex items-start gap-4"
             >
-              {/* Foto */}
               <div className="w-20 h-20 rounded-md overflow-hidden border flex-shrink-0">
                 <img
                   src={p.foto}
@@ -332,13 +323,11 @@ export default function ManageDataMagang() {
                 />
               </div>
 
-              {/* Informasi Peserta */}
               <div className="flex-1">
                 <div className="font-bold text-gray-900 text-lg mb-2">
                   {p.nim} - {p.nama}
                 </div>
 
-                {/* Grid dengan 2 kolom fleksibel */}
                 <div className="grid grid-cols-[180px,1fr] gap-y-1 text-sm text-gray-700">
                   <div className="font-semibold">Email</div>
                   <div>: {p.email}</div>
@@ -365,7 +354,6 @@ export default function ManageDataMagang() {
                 </div>
               </div>
 
-              {/* Tombol Aksi */}
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setSelectedPeserta(p)}
@@ -385,7 +373,6 @@ export default function ManageDataMagang() {
         )}
       </div>
 
-      {/* Pagination (diletakkan di bawah daftar, di dalam container) */}
       <div className="bg-white rounded-lg shadow px-4 py-3 flex flex-col md:flex-row items-center justify-between mt-4">
         <p className="text-sm text-gray-700 mb-2 md:mb-0">
           Menampilkan{' '}
@@ -430,7 +417,6 @@ export default function ManageDataMagang() {
         </div>
       </div>
 
-      {/* Modal Detail Peserta */}
       {selectedPeserta && (
         <div
           className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-start justify-center overflow-auto p-6"
@@ -440,7 +426,6 @@ export default function ManageDataMagang() {
             className="bg-white w-full max-w-5xl rounded-lg shadow-lg overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header two colors */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 p-6 bg-white">
                 <div className="w-24 h-24 rounded overflow-hidden">
@@ -475,9 +460,7 @@ export default function ManageDataMagang() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Info cards: Personal & Instansi */}
               <form onSubmit={handleSubmit}>
-                {/* --- Notifikasi Sukses/Error --- */}
                 {notification.message && (
                   <div
                     className={`p-3 mb-4 rounded-lg text-sm ${
@@ -490,12 +473,9 @@ export default function ManageDataMagang() {
                   </div>
                 )}
 
-                {/* --- Grid 2 Kartu --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* --- KARTU INFO PERSONAL --- */}
                   <div className="bg-white border rounded-lg p-4 shadow-sm">
                     <div className="text-base space-y-3">
-                      {/* Nama */}
                       <div>
                         <div className={labelClass}>Nama</div>
                         {isEditing ? (
@@ -513,7 +493,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* NIM */}
                       <div>
                         <div className={labelClass}>NIM / NIS</div>
                         {isEditing ? (
@@ -531,7 +510,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* Email */}
                       <div>
                         <div className={labelClass}>Email</div>
                         {isEditing ? (
@@ -549,7 +527,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* Tgl Lahir */}
                       <div>
                         <div className={labelClass}>Tanggal Lahir</div>
                         {isEditing ? (
@@ -569,7 +546,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* No Telepon */}
                       <div>
                         <div className={labelClass}>No. Telepon</div>
                         {isEditing ? (
@@ -587,7 +563,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* NIK */}
                       <div>
                         <div className={labelClass}>
                           Nomor Induk Kependudukan
@@ -607,7 +582,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* Alamat */}
                       <div>
                         <div className={labelClass}>Alamat</div>
                         {isEditing ? (
@@ -625,7 +599,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* Instansi */}
                       <div>
                         <div className={labelClass}>Instansi</div>
                         {isEditing ? (
@@ -643,7 +616,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* Jurusan */}
                       <div>
                         <div className={labelClass}>Jurusan</div>
                         {isEditing ? (
@@ -663,10 +635,8 @@ export default function ManageDataMagang() {
                     </div>
                   </div>
 
-                  {/* --- KARTU INFO MAGANG --- */}
                   <div className="bg-white border rounded-lg p-4 shadow-sm">
                     <div className="text-base space-y-3">
-                      {/* Periode */}
                       <div>
                         <div className={labelClass}>Periode</div>
                         {isEditing ? (
@@ -700,7 +670,6 @@ export default function ManageDataMagang() {
                         )}
                       </div>
 
-                      {/* Bidang */}
                       <div>
                         <div className={labelClass}>Bidang</div>
                         {isEditing ? (
@@ -725,8 +694,6 @@ export default function ManageDataMagang() {
                           </div>
                         )}
                       </div>
-
-                      {/* --- Bagian Read-Only --- */}
 
                       <div>
                         <div className={labelClass}>Status Magang</div>
@@ -762,7 +729,6 @@ export default function ManageDataMagang() {
                   </div>
                 </div>
 
-                {/* --- Tombol Kontrol --- */}
                 <div className="flex justify-end gap-3 mt-6">
                   {isEditing ? (
                     <>
@@ -792,7 +758,6 @@ export default function ManageDataMagang() {
                 </div>
               </form>
 
-              {/* Weekly cards like reference */}
               <div>
                 <h4 className="text-xl font-bold text-[#006DA6] mb-3">
                   Laporan Harian
@@ -847,7 +812,6 @@ export default function ManageDataMagang() {
                 </div>
               </div>
 
-              {/* If expanded week (simple inline rendering) */}
               {typeof selectedPeserta._expandedWeek === 'number' &&
                 selectedPeserta.logbook[selectedPeserta._expandedWeek] && (
                   <div className="mt-4 bg-white border rounded-lg p-4 shadow-sm">

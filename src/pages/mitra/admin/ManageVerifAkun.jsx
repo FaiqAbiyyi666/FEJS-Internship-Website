@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx';
-import autoTable from 'jspdf-autotable';
+import { Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const ITEMS_PER_PAGE_PENDING = 5;
 const ITEMS_PER_PAGE_APPROVED = 5;
@@ -29,7 +29,6 @@ export default function ManageVerifAkun() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Token tidak ada, silakan login ulang');
 
-      // Jalankan keduanya sekaligus dengan Promise.all
       const [pendingRes, historyRes] = await Promise.all([
         fetch('http://localhost:3000/api/admin/peserta-magang/pending', {
           headers: { Authorization: `Bearer ${token}` },
@@ -39,7 +38,6 @@ export default function ManageVerifAkun() {
         }),
       ]);
 
-      // Ambil data JSON
       const pending = await pendingRes.json();
       const history = await historyRes.json();
 
@@ -48,9 +46,8 @@ export default function ManageVerifAkun() {
       if (!historyRes.ok)
         throw new Error(history.message || 'Gagal ambil history');
 
-      // Set state
-      setPendingPeserta(pending.data || []); // tergantung response backend
-      setApprovedPeserta(history.data || []); // tergantung response backend
+      setPendingPeserta(pending.data || []); 
+      setApprovedPeserta(history.data || []); 
     } catch (err) {
       console.error('Gagal fetch data:', err.message);
     }
@@ -60,15 +57,13 @@ export default function ManageVerifAkun() {
     fetchData();
   }, []);
 
-  // Terima Peserta
   const handleAccPeserta = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      // REKOMENDASI: Gunakan PATCH untuk update parsial
       const res = await fetch(
         `http://localhost:3000/api/admin/peserta-magang/${id}/approve`,
         {
-          method: 'PATCH', // Mengubah status adalah update parsial, jadi PATCH lebih tepat
+          method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -78,24 +73,18 @@ export default function ManageVerifAkun() {
       if (res.ok) {
         alert(result.message);
 
-        // --- PERBAIKAN LOGIKA UI ---
-        // 1. Cari data peserta yang baru saja di-approve dari state pending
         const approvedParticipant = pendingPeserta.find((p) => p.id === id);
 
         if (approvedParticipant) {
-          // 2. Hapus peserta dari daftar pending
           setPendingPeserta((prevPending) =>
             prevPending.filter((p) => p.id !== id)
           );
 
-          // 3. Tambahkan peserta ke daftar history (approvedPeserta) dengan status baru
-          //    Menambahkan di awal array agar muncul paling atas.
           setApprovedPeserta((prevHistory) => [
-            { ...approvedParticipant, status: 'APPROVED' }, // Gunakan status yang konsisten dengan backend
+            { ...approvedParticipant, status: 'APPROVED' },
             ...prevHistory,
           ]);
         }
-        // -----------------------------
       } else {
         alert(result.message || 'Gagal approve peserta');
       }
@@ -105,10 +94,7 @@ export default function ManageVerifAkun() {
     }
   };
 
-  // Tolak Peserta
   const handleTolakPeserta = async (id, alasan) => {
-    // Tambahkan parameter 'alasan'
-    // PENTING: Backend Anda memerlukan 'alasan' untuk menolak.
     if (!window.confirm('Apakah Anda yakin ingin menolak peserta ini?')) {
       return;
     }
@@ -118,7 +104,7 @@ export default function ManageVerifAkun() {
       const res = await fetch(
         `http://localhost:3000/api/admin/peserta-magang/${id}/reject`,
         {
-          method: 'PATCH', // Gunakan PATCH
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -131,22 +117,18 @@ export default function ManageVerifAkun() {
       if (res.ok) {
         alert(result.message);
 
-        // --- PERBAIKAN LOGIKA UI (Sama seperti approve) ---
         const rejectedParticipant = pendingPeserta.find((p) => p.id === id);
 
         if (rejectedParticipant) {
-          // Hapus dari pending
           setPendingPeserta((prevPending) =>
             prevPending.filter((p) => p.id !== id)
           );
 
-          // Tambahkan ke history dengan status REJECTED
           setApprovedPeserta((prevHistory) => [
             { ...rejectedParticipant, status: 'REJECTED' },
             ...prevHistory,
           ]);
         }
-        // ----------------------------------------------------
       } else {
         alert(result.message || 'Gagal menolak peserta');
       }
@@ -156,7 +138,6 @@ export default function ManageVerifAkun() {
     }
   };
 
-  // === Modal Handler ===
   const handleOpenDetail = (peserta) => {
     setSelectedPeserta(peserta);
     setIsDetailModalOpen(true);
@@ -167,7 +148,6 @@ export default function ManageVerifAkun() {
     setSelectedPeserta(null);
   };
 
-  // === Filter Approved ===
   const filteredApprovedPeserta = approvedPeserta.filter((p) => {
     const term = searchTerm.toLowerCase();
 
@@ -192,7 +172,6 @@ export default function ManageVerifAkun() {
     return matchUmum && matchTanggal && matchStatus;
   });
 
-  // === Pagination ===
   const [currentPendingPage, setCurrentPendingPage] = useState(1);
   const [currentApprovedPage, setCurrentApprovedPage] = useState(1);
 
@@ -203,11 +182,9 @@ export default function ManageVerifAkun() {
     filteredApprovedPeserta.length / ITEMS_PER_PAGE_APPROVED
   );
 
-  // === Pagination Helper ===
   const paginate = (data, page, itemsPerPage) =>
     data.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  // === Paginated Data ===
   const paginatedPendingPeserta = paginate(
     pendingPeserta,
     currentPendingPage,
@@ -219,45 +196,88 @@ export default function ManageVerifAkun() {
     ITEMS_PER_PAGE_APPROVED
   );
 
-  // === Export PDF / Excel ===
-  const handleExportPDFHistory = () => {
-    const doc = new jsPDF({ orientation: 'landscape' });
-    doc.setFontSize(13);
-    doc.text('History Persetujuan Akun Peserta Magang', 14, 15);
-    const tableColumn = [
-      'Nama',
-      'Email',
-      'NIM/NIS',
-      'Instansi',
-      'Jurusan',
-      'Tanggal',
-      'Status',
-    ];
-    const tableRows = filteredApprovedPeserta.map((p) => [
-      p.nama,
-      p.email,
-      p.nim,
-      p.instansi,
-      p.jurusan,
-      new Date(p.createdAt).toLocaleDateString('id-ID'),
-      p.status,
-    ]);
-    autoTable(doc, { head: [tableColumn], body: tableRows, startY: 25 });
-    doc.save('RiwayatPersetujuanAkun.pdf');
-  };
+  const handleExportExcelHistory = async () => {
+    if (filteredApprovedPeserta.length === 0) {
+      alert('Tidak ada data riwayat untuk diekspor.');
+      return;
+    }
 
-  const handleExportExcelHistory = () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Riwayat Persetujuan Akun');
+
+    worksheet.columns = [
+      { header: 'NAMA LENGKAP', key: 'namaLengkap', width: 30 },
+      { header: 'EMAIL', key: 'email', width: 30 },
+      { header: 'NIM / NIS', key: 'nimNis', width: 20 },
+      { header: 'NIK', key: 'nik', width: 20 },
+      { header: 'NO TELEPON', key: 'noTelepon', width: 20 },
+      { header: 'INSTANSI', key: 'instansi', width: 30 },
+      { header: 'JURUSAN', key: 'jurusan', width: 25 },
+      { header: 'ALAMAT', key: 'alamat', width: 50 },
+      { header: 'TANGGAL DAFTAR', key: 'tanggalDaftar', width: 20 },
+      { header: 'STATUS', key: 'status', width: 15 },
+    ];
+
     const exportData = filteredApprovedPeserta.map((p) => ({
-      Nama: p.nama,
-      Email: p.email,
-      Instansi: p.instansi,
-      Jurusan: p.jurusan,
-      Status: p.status,
+      namaLengkap: p.namaLengkap,
+      email: p.user.email,
+      nimNis: p.nimNis,
+      nik: p.nik,
+      noTelepon: p.noTelepon,
+      instansi: p.instansi,
+      jurusan: p.jurusan,
+      alamat: p.alamat,
+      tanggalDaftar: new Date(p.createdAt).toLocaleDateString('id-ID'),
+      status: p.status,
     }));
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'PesertaMagang');
-    XLSX.writeFile(workbook, 'RiwayatPersetujuanAkun.xlsx');
+
+    worksheet.addRows(exportData);
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell) => {
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+        name: 'Calibri',
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF006DA6' },
+      };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+    worksheet.eachRow({ includeEmpty: false, skipHeader: true }, (row) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+
+        const colKey = worksheet.columns[colNumber - 1].key;
+
+        if (colKey === 'alamat') {
+          cell.alignment = { wrapText: true, vertical: 'top' };
+        } else {
+          cell.alignment = { vertical: 'middle' };
+        }
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const today = new Date().toISOString().split('T')[0];
+    const fileName = `RiwayatPersetujuanAkun_${today}.xlsx`;
+
+    saveAs(new Blob([buffer]), fileName);
   };
 
   return (
@@ -320,7 +340,6 @@ export default function ManageVerifAkun() {
           </tbody>
         </table>
 
-        {/* Pagination Pending */}
         {totalPendingPages > 1 && (
           <div className="flex justify-between items-center p-4">
             <p className="text-sm text-gray-600">
@@ -389,7 +408,6 @@ export default function ManageVerifAkun() {
             className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Foto Peserta */}
             <div className="flex justify-center mb-6">
               <img
                 src={selectedPeserta.pasFoto || '/default-user.png'}
@@ -402,7 +420,6 @@ export default function ManageVerifAkun() {
               Detail Peserta Magang
             </h2>
 
-            {/* Grid data */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-base">
               <div className="border rounded p-3">
                 <label className="text-gray-600 text-sm">Nama Lengkap</label>
@@ -468,7 +485,6 @@ export default function ManageVerifAkun() {
               </div>
             </div>
 
-            {/* Tombol */}
             <div className="mt-8 text-right">
               <button
                 onClick={handleCloseDetail}
@@ -481,7 +497,6 @@ export default function ManageVerifAkun() {
         </div>
       )}
 
-      {/* Tabel History Akun yang Sudah Disetujui */}
       <div className="overflow-x-auto bg-white shadow rounded-lg">
         <div className="flex justify-between items-center px-4 py-3">
           <h3 className="text-lg font-semibold text-gray-700">
@@ -490,20 +505,14 @@ export default function ManageVerifAkun() {
           <div className="flex gap-2">
             <button
               onClick={handleExportExcelHistory}
-              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-sm rounded"
+              className="flex items-center gap-2 px-4 py-2 bg-[#006DA6] text-white rounded-md hover:bg-[#00476d] text-sm"
             >
-              Export Excel
-            </button>
-            <button
-              onClick={handleExportPDFHistory}
-              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-sm rounded"
-            >
-              Export PDF
+              <Download size={18} />
+              <span>Eksport Riwayat Verifikasi</span>
             </button>
           </div>
         </div>
 
-        {/* Search */}
         <div className="flex flex-col sm:flex-row gap-3 px-4 pb-3">
           <input
             type="text"
@@ -585,7 +594,6 @@ export default function ManageVerifAkun() {
           </tbody>
         </table>
 
-        {/* Pagination History Approved */}
         {totalApprovedPages > 1 && (
           <div className="flex justify-between items-center p-4">
             <p className="text-sm text-gray-600">

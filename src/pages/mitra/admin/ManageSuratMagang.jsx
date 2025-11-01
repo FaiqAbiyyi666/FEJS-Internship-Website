@@ -28,9 +28,8 @@ export default function ManageSuratMagang() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // 2. State form diperbarui dengan email
   const [form, setForm] = useState({
-    ajuanId: '', // <-- Ganti nama
+    ajuanId: '',
     namaPeserta: '',
     email: '',
     noSurat: '',
@@ -41,26 +40,21 @@ export default function ManageSuratMagang() {
     const fetchPeserta = async () => {
       setIsLoading(true);
       try {
-        // 1. Panggil fetch dan tambahkan token auth jika perlu
         const response = await fetch(
           'http://localhost:3000/api/admin/peserta-diterima',
           {
             headers: {
-              // Sesuaikan ini jika Anda butuh otentikasi
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
           }
         );
 
-        // 2. Cek jika respons tidak OK
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // 3. Ambil data JSON
         const result = await response.json();
 
-        // 4. Cek status dari body JSON Anda
         if (result.status) {
           setPesertaDiterima(result.data);
         } else {
@@ -78,9 +72,8 @@ export default function ManageSuratMagang() {
 
   useEffect(() => {
     const fetchRiwayat = async () => {
-      setIsLoadingTabel(true); // Gunakan loading terpisah untuk tabel
+      setIsLoadingTabel(true);
       try {
-        // Buat query params berdasarkan state filter
         const params = new URLSearchParams();
         if (searchNama) params.append('search', searchNama);
         if (filterBidang) params.append('bidang', filterBidang);
@@ -97,7 +90,7 @@ export default function ManageSuratMagang() {
         if (!response.ok) throw new Error('Gagal mengambil riwayat surat.');
         const result = await response.json();
         if (result.status) {
-          setRiwayat(result.data); // Set data riwayat
+          setRiwayat(result.data);
         } else {
           throw new Error(result.message);
         }
@@ -121,16 +114,14 @@ export default function ManageSuratMagang() {
     setForm((prev) => ({ ...prev, file: e.target.files[0] }));
   };
 
-  // 3. handlePilihPeserta diperbarui untuk mengisi email
   const handlePilihPeserta = (e) => {
     const namaTerpilih = e.target.value;
-    // Cari di state 'pesertaDiterima'
     const peserta = pesertaDiterima.find((p) => p.nama === namaTerpilih);
 
     if (peserta) {
       setForm((prev) => ({
         ...prev,
-        ajuanId: peserta.ajuanId, // <-- Simpan ajuanId
+        ajuanId: peserta.ajuanId,
         namaPeserta: peserta.nama,
         bidang: peserta.bidang,
         email: peserta.email,
@@ -145,7 +136,6 @@ export default function ManageSuratMagang() {
     }
   };
 
-  // 4. handleSubmit diperbarui untuk validasi & reset
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -186,7 +176,7 @@ export default function ManageSuratMagang() {
       const fileLink = URL.createObjectURL(form.file);
       setRiwayat((prev) => [
         {
-          id: Date.now(), // ID sementara
+          id: Date.now(),
           namaPeserta: form.namaPeserta,
           email: form.email,
           bidang: form.bidang,
@@ -214,7 +204,6 @@ export default function ManageSuratMagang() {
       console.error('Gagal mengirim surat:', error);
       alert(
         'Gagal mengirim surat: ' +
-          // 'error.response?.data?.message' (dari Axios) diubah menjadi 'error.message'
           (error.message || 'Terjadi kesalahan tidak diketahui')
       );
     } finally {
@@ -243,7 +232,6 @@ export default function ManageSuratMagang() {
 
   return (
     <div className="space-y-6">
-      {/* Filter & Button */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-wrap">
           <input
@@ -280,13 +268,11 @@ export default function ManageSuratMagang() {
         </button>
       </div>
 
-      {/* Tabel Riwayat Surat */}
       <div className="overflow-x-auto bg-white shadow rounded-lg">
         <table className="min-w-full text-sm text-left">
           <thead className="bg-[#006DA6] text-white">
             <tr>
               <th className="px-4 py-3">Nama Peserta</th>
-              {/* 5. Kolom Email Ditambahkan di Tabel */}
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Bidang</th>
               <th className="px-4 py-3">No Surat</th>
@@ -299,7 +285,6 @@ export default function ManageSuratMagang() {
               currentData.map((item) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3">{item.namaPeserta}</td>
-                  {/* 6. Data Email Ditampilkan di Tabel */}
                   <td className="px-4 py-3">{item.email}</td>
                   <td className="px-4 py-3">{item.bidang}</td>
                   <td className="px-4 py-3">{item.noSurat}</td>
@@ -320,7 +305,6 @@ export default function ManageSuratMagang() {
             ) : (
               <tr>
                 <td
-                  // 7. Colspan diubah menjadi 6
                   colSpan="6"
                   className="text-center py-4 text-gray-500 italic"
                 >
@@ -331,7 +315,6 @@ export default function ManageSuratMagang() {
           </tbody>
         </table>
 
-        {/* Pagination */}
         {filteredRiwayat.length > 0 && (
           <div className="flex justify-between items-center p-4 text-sm">
             <span>
@@ -372,7 +355,6 @@ export default function ManageSuratMagang() {
         )}
       </div>
 
-      {/* Modal Preview PDF */}
       {showPreviewModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
@@ -397,7 +379,6 @@ export default function ManageSuratMagang() {
         </div>
       )}
 
-      {/* Modal Tambah Surat */}
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
@@ -440,7 +421,6 @@ export default function ManageSuratMagang() {
                 </datalist>
               </div>
 
-              {/* 8. Field Email Ditambahkan di Form Modal */}
               <div>
                 <label className="block mb-1 text-gray-700">
                   Email Peserta
@@ -449,9 +429,9 @@ export default function ManageSuratMagang() {
                   type="email"
                   name="email"
                   value={form.email}
-                  readOnly // Dibuat readOnly agar tidak bisa diubah manual
+                  readOnly
                   placeholder="Email akan terisi otomatis..."
-                  className="w-full border px-3 py-2 rounded bg-gray-100" // Diberi background abu-abu
+                  className="w-full border px-3 py-2 rounded bg-gray-100"
                 />
               </div>
 
@@ -486,7 +466,6 @@ export default function ManageSuratMagang() {
                 />
               </div>
 
-              {/* Preview PDF */}
               {previewUrl && (
                 <div className="mt-4">
                   <label className="block mb-1 text-gray-700">

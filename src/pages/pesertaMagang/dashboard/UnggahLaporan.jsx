@@ -89,7 +89,6 @@ export default function UnggahLaporanPage() {
     uploadHistory.length > 0 ? uploadHistory[0].status : null;
   const canUpload = !latestStatus || latestStatus === 'REJECTED';
 
-  // Handler file (Tidak berubah)
   const handleFileChange = (e) => {
     const uploadedFile = e.target.files[0];
     if (uploadedFile) {
@@ -156,8 +155,6 @@ export default function UnggahLaporanPage() {
     }
   };
 
-  // === FUNGSI BADGE (Diperbarui) ===
-  // Menangani nilai dari backend (PENDING, APPROVED, REJECTED)
   const StatusBadge = ({ status }) => {
     const styles = {
       PENDING: 'bg-yellow-100 text-yellow-800',
@@ -180,11 +177,9 @@ export default function UnggahLaporanPage() {
     );
   };
 
-  // Komponen Input File
   const CustomFileInput = () => (
     <div className="space-y-1 mb-6">
       <label className="block text-sm font-medium">
-        {/* **PERBAIKAN**: Sesuaikan dengan nilai backend ('REJECTED') */}
         {latestStatus === 'REJECTED'
           ? 'Pilih File Laporan Perbaikan'
           : 'Pilih File Laporan'}
@@ -196,7 +191,7 @@ export default function UnggahLaporanPage() {
         accept=".pdf"
         onChange={handleFileChange}
         className="hidden"
-        disabled={isSubmitting} // Disable saat proses submit
+        disabled={isSubmitting}
       />
       <div
         className={`form-input w-full flex items-center p-0 ${
@@ -234,12 +229,10 @@ export default function UnggahLaporanPage() {
           </button>
         )}
       </div>
-      {/* Tampilkan error submit atau error validasi */}
       {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
     </div>
   );
 
-  // === Tampilan Loading Utama ===
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -249,7 +242,6 @@ export default function UnggahLaporanPage() {
     );
   }
 
-  // === JSX Utama ===
   return (
     <>
       <div className="w-full bg-white p-6 rounded shadow ">

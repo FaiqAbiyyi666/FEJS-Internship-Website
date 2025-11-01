@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, Plus, AlertTriangle, Loader } from 'react-feather';
 
-const ITEMS_PER_PAGE = 10;
-
 export default function ManageSertifikat() {
   const [history, setHistory] = useState([]);
   const [pesertaList, setPesertaList] = useState([]);
@@ -33,8 +31,7 @@ export default function ManageSertifikat() {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Ambil token (asumsi dari localStorage)
-      const token = localStorage.getItem('token'); // <-- SESUAIKAN DENGAN NAMA KEY ANDA
+      const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Autentikasi tidak ditemukan. Silakan login kembali.');
       }
@@ -46,11 +43,9 @@ export default function ManageSertifikat() {
         tanggal: filterTanggal,
       });
 
-      // 2. Gunakan URL dari error log Anda
       const res = await fetch(
         `http://localhost:3000/api/admin/sertifikat/history?${params.toString()}`,
         {
-          // 3. Tambahkan header Authorization
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -59,7 +54,6 @@ export default function ManageSertifikat() {
 
       if (!res.ok) {
         const errData = await res.json();
-        // Jika 401, token mungkin sudah kadaluarsa
         if (res.status === 401)
           throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
         throw new Error(errData.message || 'Gagal mengambil riwayat');
@@ -78,10 +72,8 @@ export default function ManageSertifikat() {
 
   const fetchPeserta = async () => {
     try {
-      // 1. Ambil token
-      const token = localStorage.getItem('token'); // <-- SESUAIKAN DENGAN NAMA KEY ANDA
+      const token = localStorage.getItem('token');
       if (!token) {
-        // Tidak perlu throw error utama, biarkan tabel history tetap ter-load
         console.error(
           'Autentikasi tidak ditemukan untuk mengambil daftar peserta.'
         );
@@ -91,7 +83,6 @@ export default function ManageSertifikat() {
       const res = await fetch(
         'http://localhost:3000/api/admin/sertifikat-list',
         {
-          // 3. Tambahkan header Authorization
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -115,7 +106,7 @@ export default function ManageSertifikat() {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      fetchHistory(1); // Reset ke halaman 1 saat filter
+      fetchHistory(1); 
     }, 500);
     return () => clearTimeout(handler);
   }, [searchTerm, selectedBidang, filterTanggal]);
@@ -155,8 +146,7 @@ export default function ManageSertifikat() {
       return;
     }
 
-    // 1. Ambil token
-    const token = localStorage.getItem('token'); // <-- SESUAIKAN DENGAN NAMA KEY ANDA
+    const token = localStorage.getItem('token');
     if (!token) {
       alert('Sesi Anda berakhir. Silakan login kembali.');
       return;
@@ -169,15 +159,11 @@ export default function ManageSertifikat() {
     formData.append('file', form.file);
 
     try {
-      // 2. Kirim ke API dengan header
-      // Pastikan URL ini sesuai dengan router Anda (misal: /api/admin/kirim-sertifikat)
       const res = await fetch(
         'http://localhost:3000/api/admin/kirim-sertifikat',
         {
-          // <-- SESUAIKAN URL API ANDA
           method: 'POST',
           body: formData,
-          // 3. Tambahkan header Authorization (tanpa Content-Type)
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -295,7 +281,6 @@ export default function ManageSertifikat() {
                     key={item.id}
                     className="border-t hover:bg-gray-50 transition-colors"
                   >
-                    {/* Sesuaikan Data dari API */}
                     <td className="px-4 py-3">{item.peserta.namaLengkap}</td>
                     <td className="px-4 py-3">{item.noSertifikat}</td>
                     <td className="px-4 py-3">{item.bidang}</td>
@@ -315,7 +300,6 @@ export default function ManageSertifikat() {
                 ))}
                 <tr>
                   <td colSpan="6" className="px-4 py-3 border-t">
-                    {/* ... Logika Paginasi ... */}
                     <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-sm">
                       <p className="text-gray-700">
                         Halaman {currentPage} dari {totalPages}
@@ -328,7 +312,6 @@ export default function ManageSertifikat() {
                         >
                           Previous
                         </button>
-                        {/* Tombol halaman bisa ditambahkan jika perlu */}
                         <button
                           onClick={() => setCurrentPage((p) => p + 1)}
                           className="px-3 py-1 border rounded hover:bg-gray-100"
@@ -352,7 +335,6 @@ export default function ManageSertifikat() {
         </table>
       </div>
 
-      {/* Modal Kirim Sertifikat */}
       {modalKirim && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
@@ -442,7 +424,6 @@ export default function ManageSertifikat() {
         </div>
       )}
 
-      {/* Modal Preview Sertifikat */}
       {modalPreview && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">

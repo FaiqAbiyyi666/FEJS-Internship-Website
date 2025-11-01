@@ -1,11 +1,8 @@
-// src/pages/pesertaMagang/dashboard/Sidebar.jsx
-
 import { FaBook, FaHome } from 'react-icons/fa';
 import { TbCertificate } from 'react-icons/tb';
 import { BiLike } from 'react-icons/bi';
-import { NavLink } from 'react-router-dom'; // <-- Import NavLink
+import { NavLink } from 'react-router-dom';
 
-// Hapus props { activeMenu, setActiveMenu } karena tidak lagi digunakan
 export default function Sidebar() {
   const menuItems = [
     {
@@ -42,12 +39,9 @@ export default function Sidebar() {
       <ul className="space-y-4">
         {menuItems.map(({ key, icon, label, path }) => (
           <li key={key}>
-            {/* Gunakan NavLink untuk navigasi dan styling otomatis */}
             <NavLink
               to={path}
-              // NavLink untuk /dashboard perlu 'end' agar tidak selalu aktif
               end={path === '/dashboard'}
-              // Berikan fungsi ke className untuk styling kondisional
               className={({ isActive }) =>
                 `flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-colors duration-200 ${
                   isActive ? activeClassName : inactiveClassName

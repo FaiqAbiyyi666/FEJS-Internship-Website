@@ -130,7 +130,6 @@ const ManagementBidang = () => {
   const [formErrors, setFormErrors] = useState({ nama: '', kuota: '' });
   const [modalLoading, setModalLoading] = useState(false);
 
-  // === Fungsi untuk Ambil Data dari API ===
   const fetchData = async () => {
     setLoading(true);
     setApiError(null);
@@ -155,12 +154,10 @@ const ManagementBidang = () => {
     }
   };
 
-  // Ambil data saat komponen pertama kali dimuat
   useEffect(() => {
     fetchData();
   }, []);
 
-  // === Validasi Form ===
   const validateForm = () => {
     const errors = { nama: '', kuota: '' };
     let isValid = true;
@@ -181,7 +178,6 @@ const ManagementBidang = () => {
     return isValid;
   };
 
-  // === Fungsi Modal ===
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setIsEditMode(false);
@@ -209,9 +205,8 @@ const ManagementBidang = () => {
     setIsModalOpen(true);
   };
 
-  // === Handler Submit Form (Create & Update) ===
   const handleSubmitForm = async () => {
-    if (!validateForm()) return; // Hentikan jika validasi gagal
+    if (!validateForm()) return;
 
     setModalLoading(true);
     setApiError(null);
@@ -242,13 +237,12 @@ const ManagementBidang = () => {
 
       alert(result.message);
       handleCloseModal();
-      fetchData(); // Ambil ulang data terbaru dari server
+      fetchData();
     } catch (err) {
-      // Tangani error duplikat atau validasi dari server
       if (err.message.toLowerCase().includes('sudah ada')) {
         setFormErrors((prev) => ({ ...prev, nama: err.message }));
       } else {
-        setApiError(err.message); // Tampilkan error umum
+        setApiError(err.message);
         alert(`Error: ${err.message}`);
       }
     } finally {
@@ -256,12 +250,11 @@ const ManagementBidang = () => {
     }
   };
 
-  // === Delete bidang ===
   const handleDeleteBidang = async (id) => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus bidang ini?'))
       return;
 
-    setLoading(true); // Tampilkan loading di seluruh halaman saat menghapus
+    setLoading(true);
     setApiError(null);
     const token = localStorage.getItem('token');
 
@@ -275,17 +268,15 @@ const ManagementBidang = () => {
       if (!res.ok) throw new Error(result.message || 'Gagal menghapus');
 
       alert(result.message);
-      // Update UI secara lokal (lebih cepat)
       setBidangList((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       setApiError(err.message);
-      alert(`Error: ${err.message}`); // Tampilkan error (misal: "Bidang masih digunakan")
+      alert(`Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // === Logika Filter dan Paginasi (Sudah benar) ===
   const filteredBidang = bidangList.filter((bidang) =>
     bidang.nama.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -298,7 +289,6 @@ const ManagementBidang = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1 sm:max-w-md">
           <Search
@@ -311,13 +301,13 @@ const ManagementBidang = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // reset ke halaman 1
+              setCurrentPage(1);
             }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
           />
         </div>
         <button
-          onClick={handleOpenTambah} // Panggil fungsi pembuka modal
+          onClick={handleOpenTambah}
           className="bg-[#006DA6] text-white px-4 py-2 rounded-lg hover:bg-[#002942] transition-colors flex items-center space-x-2"
         >
           <Plus size={20} />
@@ -325,7 +315,6 @@ const ManagementBidang = () => {
         </button>
       </div>
 
-      {/* Tampilkan error global jika ada */}
       {apiError && (
         <div
           className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
@@ -336,7 +325,6 @@ const ManagementBidang = () => {
         </div>
       )}
 
-      {/* Tabel Bidang */}
       <div className="overflow-x-auto bg-white shadow rounded-lg">
         {loading ? (
           <div className="p-6 text-center text-gray-500">
@@ -393,7 +381,6 @@ const ManagementBidang = () => {
           </table>
         )}
 
-        {/* Pagination */}
         {!loading && totalPages > 1 && (
           <div className="flex flex-col md:flex-row items-center justify-between px-4 py-3 bg-white border-t">
             <p className="text-sm text-gray-700 mb-2 md:mb-0">
@@ -443,7 +430,6 @@ const ManagementBidang = () => {
         )}
       </div>
 
-      {/* Modal (Hanya satu) */}
       <BidangModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

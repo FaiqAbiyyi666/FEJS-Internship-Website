@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// Hapus 'import api from ...'
 
 export default function KritikSaran() {
   const [form, setForm] = useState({
@@ -28,11 +27,9 @@ export default function KritikSaran() {
     setMessage({ type: '', text: '' });
 
     try {
-      // ===== Menggunakan FETCH (menggantikan api.post) =====
       const response = await fetch(
         'http://localhost:3000/api/peserta/kritik-saran',
         {
-          // Pastikan URL '/api' sudah benar
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -44,18 +41,15 @@ export default function KritikSaran() {
       const result = await response.json();
 
       if (!response.ok) {
-        // Tangkap error dari backend (misal: 400, 500)
         throw new Error(result.message || 'Gagal mengirim pesan.');
       }
-      // ===================================================
 
-      // Asumsi 'result.status' adalah 'true' dari backend Anda
       if (result.status) {
         setMessage({
           type: 'success',
           text: 'Kritik dan saran berhasil dikirim. Terima kasih!',
         });
-        setForm({ nama: '', email: '', pesan: '' }); // Reset form
+        setForm({ nama: '', email: '', pesan: '' });
       } else {
         setMessage({ type: 'error', text: result.message });
       }

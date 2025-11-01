@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
 export default function KuotaMagang() {
-  // State untuk menyimpan data dari API
   const [data, setData] = useState([]);
-  // State untuk status loading
   const [loading, setLoading] = useState(true);
-  // State untuk menangani error
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fungsi untuk mengambil data
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Ganti '/api/admin/bidang' jika path API Anda berbeda
         const response = await fetch(
           'http://localhost:3000/api/peserta/kuota-bidang'
         );
@@ -24,14 +19,10 @@ export default function KuotaMagang() {
 
         const result = await response.json();
 
-        // Backend mengembalikan: { id, nama, kuota, pesertaAktif }
-        // Frontend membutuhkan: { bidang, kuota, tersedia }
-        // Kita perlu mentransformasi data di sini
         const transformedData = result.data.map((item) => ({
-          id: item.id, // simpan id untuk key
-          bidang: item.nama, // 'nama' dari backend menjadi 'bidang'
+          id: item.id,
+          bidang: item.nama,
           kuota: item.kuota,
-          // Hitung 'tersedia' berdasarkan 'kuota' dan 'pesertaAktif'
           tersedia: item.kuota - item.pesertaAktif,
         }));
 
@@ -44,8 +35,8 @@ export default function KuotaMagang() {
       }
     };
 
-    fetchData(); // Panggil fungsi saat komponen dimuat
-  }, []); // [] dependency array berarti useEffect hanya berjalan sekali saat mount
+    fetchData();
+  }, []);
 
   return (
     <section className="bg-[#F7FAFC] py-12">
@@ -111,13 +102,11 @@ export default function KuotaMagang() {
               {!loading &&
                 !error &&
                 data.map((row) => (
-                  // Gunakan ID unik dari data sebagai key
                   <tr key={row.id}>
                     <td className="py-3 px-4">{row.bidang}</td>
                     <td className="py-3 px-4 text-center">{row.kuota}</td>
                     <td className="py-3 px-4 text-center">
                       {row.tersedia > 0 ? (
-                        // Tampilkan kuota tersedia jika lebih dari 0
                         row.tersedia
                       ) : (
                         <span className="text-gray-600 italic">

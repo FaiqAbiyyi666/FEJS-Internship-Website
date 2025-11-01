@@ -36,7 +36,6 @@ const AdminProfile = () => {
 
   return (
     <div className="space-y-6">
-      {/* Profile Header */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -170,7 +169,6 @@ const AdminProfile = () => {
         </form>
       </div>
 
-      {/* Change Password Section */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Ubah Password

@@ -1,8 +1,7 @@
 import { useContext, useState, useEffect } from 'react';
-import { FormDataContext } from './PengajuanMagangPage'; // Pastikan path import ini benar
+import { FormDataContext } from './PengajuanMagangPage';
 
 export default function PilihBidang() {
-  // 2. Hubungkan ke state terpusat via Context
   const { formData, setFormData } = useContext(FormDataContext);
   const [kuota, setKuota] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -13,9 +12,6 @@ export default function PilihBidang() {
       setIsLoading(true);
       setError(null);
       try {
-        // Panggil endpoint API Anda.
-        // Sesuaikan '/api/kuota-bidang' jika base URL atau path-nya berbeda.
-        // Ini didasarkan pada router: router.get('/kuota-bidang', ...);
         const response = await fetch(
           'http://localhost:3000/api/peserta/kuota-bidang'
         );
@@ -30,8 +26,8 @@ export default function PilihBidang() {
           const transformedData = result.data.map((bidang) => ({
             id: bidang.id,
             nama: bidang.nama,
-            total: bidang.kuota, // 'kuota' dari backend adalah 'total' di frontend
-            tersedia: Math.max(0, bidang.kuota - bidang.pesertaAktif), // Hitung sisa kuota
+            total: bidang.kuota,
+            tersedia: Math.max(0, bidang.kuota - bidang.pesertaAktif),
           }));
           setKuota(transformedData);
         } else {
@@ -64,7 +60,6 @@ export default function PilihBidang() {
     );
   }
 
-  // 8. Tampilkan pesan error jika terjadi kegagalan fetch
   if (error) {
     return (
       <div className="text-center py-10">
@@ -83,7 +78,6 @@ export default function PilihBidang() {
         Kuota Magang Yang Tersedia
       </h2>
 
-      {/* TABEL (Dibuat secara dinamis dari data) */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left border border-gray-300">
           <thead className="bg-gradient-to-r from-[#002942] to-[#006DA6] text-white">
@@ -117,7 +111,6 @@ export default function PilihBidang() {
         </table>
       </div>
 
-      {/* INPUT BIDANG YANG DIPILIH */}
       <div className="flex flex-col gap-2 mt-4">
         <div className="flex items-center gap-4">
           <label className="w-1/3 text-sm font-medium text-gray-700">
@@ -125,9 +118,9 @@ export default function PilihBidang() {
           </label>
           <div className="w-2/3 relative">
             <select
-              name="bidangPilihan" // Sesuaikan dengan key di state formData
-              value={formData.bidangPilihan} // Nilai diambil dari state terpusat
-              onChange={handleChange} // Perubahan akan mengupdate state terpusat
+              name="bidangPilihan"
+              value={formData.bidangPilihan}
+              onChange={handleChange}
               className="w-full border border-gray-400 rounded-md pl-3 pr-8 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#006DA6] focus:border-[#006DA6] appearance-none"
             >
               <option value="" disabled>

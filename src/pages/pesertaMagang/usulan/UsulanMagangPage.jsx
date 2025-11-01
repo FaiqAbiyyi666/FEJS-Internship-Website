@@ -11,9 +11,6 @@ const formatDate = (dateString) => {
   });
 };
 
-/**
- * Helper function untuk memformat periode
- */
 const formatPeriode = (tglMulai, tglSelesai) => {
   if (!tglMulai || !tglSelesai) return '-';
 
@@ -31,20 +28,16 @@ const formatPeriode = (tglMulai, tglSelesai) => {
     .replace(/\//g, '-');
 
   if (mulai === selesai) return mulai;
-  // Menggunakan "sampai" sesuai permintaan Anda
   return `${mulai} sampai ${selesai}`;
 };
 
-/**
- * Helper function untuk memetakan status
- */
 const getStatusBadge = (status) => {
   switch (status) {
     case 'DITERIMA':
-    case 'APPROVED': // (Menangani kedua kemungkinan)
+    case 'APPROVED':
       return 'bg-green-100 text-green-800';
     case 'DITOLAK':
-    case 'REJECTED': // (Menangani kedua kemungkinan)
+    case 'REJECTED': 
       return 'bg-red-100 text-red-800';
     case 'PENDING':
     default:
@@ -63,7 +56,6 @@ export default function UsulanMagangPage() {
       setIsLoading(true);
       setError(null);
       try {
-        // 1. Ambil token dari localStorage
         const token = localStorage.getItem('token');
         if (!token) {
           throw new Error('Anda harus login untuk melihat data ini.');
@@ -89,14 +81,13 @@ export default function UsulanMagangPage() {
         console.log('Raw data from backend:', result.data);
 
         if (result.status && Array.isArray(result.data)) {
-          // 3. Transformasi data backend ke format frontend
           const transformedData = result.data.map((item) => ({
-            id: item.id, // ID dari AjuanMagang (untuk detail)
+            id: item.id, 
             tanggal: formatDate(item.createdAt),
             tema: item.temaMagang,
             periode: formatPeriode(item.tglMulai, item.tglSelesai),
-            bidang: item.bidang?.nama || 'N/A', // 'bidang.nama' dari include
-            status: item.statusUsulan, // PENDING, DITERIMA, DITOLAK
+            bidang: item.bidang?.nama || 'N/A',
+            status: item.statusUsulan, 
           }));
           console.log('Transformed data being set to state:', transformedData);
           setUsulanMagang(transformedData);
@@ -125,7 +116,7 @@ export default function UsulanMagangPage() {
 
           <div className="mb-6">
             <button
-              onClick={() => navigate('/pengajuan-magang/formulir')} // Arahkan ke step pertama
+              onClick={() => navigate('/pengajuan-magang/formulir')} 
               className="bg-[#006DA6] hover:bg-[#0093DD] text-white font-medium px-5 py-2 rounded-lg shadow inline-flex items-center gap-2"
             >
               <span className="text-xl font-bold">＋</span> Daftar Magang
@@ -191,9 +182,7 @@ export default function UsulanMagangPage() {
                       <td className="px-6 py-4">
                         <button
                           onClick={() => {
-                            // --- TAMBAHKAN LOG INI ---
                             console.log('Button clicked, item.id is:', item.id);
-                            // -------------------------
                             navigate(`/usulan/detail/${item.id}`);
                           }}
                           className="text-blue-600 hover:underline"

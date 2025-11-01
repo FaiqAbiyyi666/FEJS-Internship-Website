@@ -1,13 +1,10 @@
 import { useContext } from 'react';
-import { FormDataContext } from './PengajuanMagangPage'; // Pastikan path import ini benar
+import { FormDataContext } from './PengajuanMagangPage';
 
-// 1. Hapus props 'isAgreed' dan 'setIsAgreed'
 export default function KonfirmasiSimpan() {
-  // 2. Gunakan Context untuk mendapatkan state dan setter
   const { formData, setFormData } = useContext(FormDataContext);
 
   const handleAgreementChange = (e) => {
-    // 3. Update properti 'isAgreed' di dalam state terpusat 'formData'
     setFormData((prevData) => ({
       ...prevData,
       isAgreed: e.target.checked,
@@ -16,7 +13,6 @@ export default function KonfirmasiSimpan() {
 
   return (
     <div className="space-y-6 text-[#002942]">
-      {/* Pakta Integritas */}
       <div>
         <h2 className="text-lg font-bold text-center mb-4">Pakta Integritas</h2>
         <p className="font-semibold mt-2">
@@ -40,7 +36,6 @@ export default function KonfirmasiSimpan() {
         </ol>
       </div>
 
-      {/* Tata Tertib */}
       <div>
         <h2 className="text-lg font-bold text-center">Tata Tertib</h2>
         <ol className="list-decimal list-inside text-gray-700 mt-2 space-y-1 font-semibold">
@@ -50,12 +45,10 @@ export default function KonfirmasiSimpan() {
         </ol>
       </div>
 
-      {/* Persetujuan */}
       <div className="flex items-center space-x-3 bg-[#0093DD] text-white px-4 py-3 rounded-md">
         <input
           type="checkbox"
           id="setuju"
-          // 4. Hubungkan checkbox ke state terpusat
           checked={formData.isAgreed}
           onChange={handleAgreementChange}
           className="form-checkbox w-5 h-5 bg-white border-white text-[#006DA6] focus:ring-offset-0 focus:ring-0"
@@ -65,7 +58,6 @@ export default function KonfirmasiSimpan() {
         </label>
       </div>
 
-      {/* Simpan Data */}
       <div>
         <h2 className="text-lg font-bold">Simpan Data</h2>
         <p className="text-gray-600 text-sm mt-1">

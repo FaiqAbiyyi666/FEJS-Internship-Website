@@ -8,7 +8,7 @@ const AdminHeader = ({ title }) => {
   const notifRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const navigate = useNavigate(); // ✅ Pindahkan ke dalam komponen
+  const navigate = useNavigate(); 
   const notifications = [
     {
       id: 1,

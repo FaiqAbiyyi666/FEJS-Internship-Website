@@ -19,19 +19,16 @@ export default function UlasanMagangPage({ onSubmit }) {
 
     setIsLoading(true);
 
-    // Kirim data ke API
     try {
       const token = localStorage.getItem('token');
 
       if (!token) {
-        // Langsung gagalkan jika user tidak punya token
         throw new Error('Autentikasi gagal. Silakan login kembali.');
       }
 
-      // 2. Siapkan headers dengan token
       const headers = {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`, // <-- TAMBAHKAN INI
+        Authorization: `Bearer ${token}`,
       };
 
       const response = await fetch(
@@ -48,13 +45,11 @@ export default function UlasanMagangPage({ onSubmit }) {
         throw new Error(errorData.message || 'Gagal mengirim ulasan');
       }
 
-      // Jika sukses
       setMessage({ type: 'success', text: 'Ulasan berhasil dikirim!' });
       setUlasan('');
       setRating(0);
       setHover(null);
 
-      // Panggil prop onSubmit jika ada (misal untuk menutup modal)
       if (onSubmit) {
         onSubmit({ ulasan, rating });
       }
@@ -68,12 +63,10 @@ export default function UlasanMagangPage({ onSubmit }) {
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 w-full">
-      {/* Judul rata tengah */}
       <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
         Berikan Ulasan Magang
       </h2>
 
-      {/* Tampilkan pesan sukses atau error */}
       {message && (
         <div
           className={`p-3 rounded-md mb-4 text-center ${
@@ -88,8 +81,6 @@ export default function UlasanMagangPage({ onSubmit }) {
 
       {message?.type !== 'success' && (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ... (rest of the form: textarea, rating stars) ... */}
-          {/* Input Ulasan */}
           <div>
             <label className="block text-gray-700 mb-2">Ulasan</label>
             <textarea
@@ -102,7 +93,6 @@ export default function UlasanMagangPage({ onSubmit }) {
             />
           </div>
 
-          {/* Rating Bintang */}
           <div className="text-center">
             <label className="block text-gray-700 mb-2">Rating</label>
             <div className="flex justify-center space-x-1">
@@ -127,7 +117,6 @@ export default function UlasanMagangPage({ onSubmit }) {
             </div>
           </div>
 
-          {/* Tombol Submit */}
           <div className="text-center">
             <button
               type="submit"

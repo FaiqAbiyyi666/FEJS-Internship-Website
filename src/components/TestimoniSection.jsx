@@ -36,7 +36,6 @@ export default function TestimoniSection() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Panggil API untuk data publik
     const fetchTestimoni = async () => {
       try {
         setIsLoading(true);
@@ -48,33 +47,27 @@ export default function TestimoniSection() {
           throw new Error('Gagal mengambil data testimoni');
         }
 
-        // Ganti nama variabel agar tidak bingung
         const result = await response.json();
 
-        // PERBAIKAN:
-        // Pastikan API mengembalikan status sukses dan 'data' adalah sebuah array
         if (result.status && Array.isArray(result.data)) {
-          setTestimonies(result.data); // Ambil array dari properti 'data'
+          setTestimonies(result.data);
         } else {
-          // Tangani jika 'result.status' false atau 'result.data' bukan array
           console.error('Format data tidak terduga:', result);
-          setTestimonies([]); // Set ke array kosong agar tidak error
+          setTestimonies([]);
         }
       } catch (error) {
         console.error(error);
-        setTestimonies([]); // Set ke array kosong jika terjadi error fetch
+        setTestimonies([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchTestimoni();
-  }, []); // [] berarti useEffect hanya jalan sekali saat komponen dimuat // [] berarti useEffect hanya jalan sekali saat komponen dimuat
+  }, []);
 
-  // Jangan tampilkan section jika loading atau tidak ada testimoni
   if (isLoading || testimonies.length === 0) {
-    // Anda bisa tampilkan skeleton loader di sini
-    return null; // atau <LoadingSpinner />
+    return null;
   }
 
   return (

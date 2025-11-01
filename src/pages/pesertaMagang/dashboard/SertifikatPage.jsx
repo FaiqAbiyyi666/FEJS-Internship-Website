@@ -25,8 +25,6 @@ export default function SertifikatPage() {
       setIsLoading(true);
       setError(null);
       try {
-        // 1. Ambil token dari localStorage
-        //    (Ganti 'token' jika Anda menyimpannya dengan nama key yang berbeda)
         const token = localStorage.getItem('token');
 
         if (!token) {
@@ -35,12 +33,11 @@ export default function SertifikatPage() {
           );
         }
 
-        // 2. Panggil endpoint API dengan menyertakan header Authorization
         const res = await fetch(
           'http://localhost:3000/api/peserta/sertifikat',
           {
             headers: {
-              Authorization: `Bearer ${token}`, // <-- Ini perbaikannya
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -48,14 +45,13 @@ export default function SertifikatPage() {
         const data = await res.json();
 
         if (!res.ok) {
-          // Tangani jika token kadaluwarsa atau tidak valid
           if (res.status === 401) {
             throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
           }
           throw new Error(data.message || 'Gagal mengambil data');
         }
 
-        setMySertifikat(data.data); // Data ada di dalam properti 'data'
+        setMySertifikat(data.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -108,7 +104,6 @@ export default function SertifikatPage() {
                 {formatPeriode(sertifikat.tglMulai, sertifikat.tglSelesai)}
               </p>
 
-              {/* PDF Preview */}
               <div className="border rounded overflow-hidden mb-4">
                 <Document
                   file={sertifikat.fileUrl}
@@ -130,7 +125,6 @@ export default function SertifikatPage() {
                 </Document>
               </div>
 
-              {/* Tombol Download */}
               <a
                 href={sertifikat.fileUrl}
                 target="_blank"

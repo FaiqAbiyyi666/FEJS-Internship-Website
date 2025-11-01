@@ -21,7 +21,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// ✅ Card & Button Custom (Tailwind)
 function Card({ children, className = '' }) {
   return (
     <div className={`bg-white rounded-xl shadow ${className}`}>{children}</div>
@@ -42,7 +41,6 @@ function Button({ children, className = '', ...props }) {
 }
 
 export default function AdminDashboardHome() {
-  // Dummy data → nanti tinggal dihubungkan ke backend
   const stats = [
     { title: 'Akun Pending', value: 5, icon: Users },
     { title: 'Peserta Aktif', value: 32, icon: CheckCircle },
@@ -80,7 +78,6 @@ export default function AdminDashboardHome() {
 
   return (
     <div className="space-y-6">
-      {/* Ringkasan Statistik */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((stat, idx) => (
           <Card key={idx} className="hover:shadow-md transition">
@@ -97,9 +94,7 @@ export default function AdminDashboardHome() {
         ))}
       </div>
 
-      {/* Grafik */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Grafik Pie Bidang */}
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-2">Peserta per Bidang</h2>
           <ResponsiveContainer width="100%" height={250}>
@@ -121,7 +116,6 @@ export default function AdminDashboardHome() {
           </ResponsiveContainer>
         </Card>
 
-        {/* Grafik Tren Ajuan */}
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-2">Tren Ajuan Magang</h2>
           <ResponsiveContainer width="100%" height={250}>
@@ -134,7 +128,6 @@ export default function AdminDashboardHome() {
           </ResponsiveContainer>
         </Card>
 
-        {/* Grafik Status Laporan */}
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-2">Status Laporan</h2>
           <ResponsiveContainer width="100%" height={250}>

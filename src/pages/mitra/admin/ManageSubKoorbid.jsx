@@ -1,6 +1,6 @@
 // ManageSubKoorbid.jsx
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Edit, Plus } from 'lucide-react';
+import { Edit, Plus } from 'lucide-react';
 import { FaTrash } from 'react-icons/fa';
 
 const ITEMS_PER_PAGE = 10;
@@ -13,11 +13,9 @@ export default function ManagementSubKoorbid() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const [namaError, setNamaError] = useState('');
   const [subKoorList, setSubKoorList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [bidangList, setBidangList] = useState([]);
-  const [subKoors, setSubKoors] = useState([]);
 
   const [formData, setFormData] = useState({
     nama: '',
@@ -39,7 +37,6 @@ export default function ManagementSubKoorbid() {
     fetchBidangList();
   }, []);
 
-  // Fetch semua sub koordinator
   const fetchSubKoorList = async () => {
     setLoading(true);
     try {
@@ -51,7 +48,6 @@ export default function ManagementSubKoorbid() {
       );
       const json = await res.json();
       if (json.status) {
-        // API diharapkan mengembalikan array berisi { id, nama, email, bidang: 'Nama Bidang' }
         setSubKoorList(json.data);
       } else {
         console.error(json.message || 'Gagal ambil data');
@@ -63,7 +59,6 @@ export default function ManagementSubKoorbid() {
     }
   };
 
-  // Ambil daftar bidang (untuk dropdown)
   const fetchBidangList = async () => {
     try {
       const res = await fetch('http://localhost:3000/api/admin/bidang', {
@@ -71,7 +66,6 @@ export default function ManagementSubKoorbid() {
       });
       const json = await res.json();
       if (json.status) {
-        // API bidang diharapkan mengembalikan array { id, nama }
         setBidangList(json.data);
       } else {
         console.error('Gagal ambil bidang:', json.message);
@@ -81,7 +75,6 @@ export default function ManagementSubKoorbid() {
     }
   };
 
-  // Ambil detail sub koordinator by sub.id
   const openModal = async (subKoor) => {
     try {
       const res = await fetch(
@@ -90,7 +83,7 @@ export default function ManagementSubKoorbid() {
       );
       const data = await res.json();
       if (data.status) {
-        setSelectedSubKoor(data.data); // data.data contains id, userId, nama, email, bidang:{id,nama}
+        setSelectedSubKoor(data.data);
         setFormData({
           nama: data.data.nama || '',
           email: data.data.email || '',
@@ -117,13 +110,12 @@ export default function ManagementSubKoorbid() {
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
-  // Simpan (PUT) perubahan — menggunakan sub.id di URL
   const handleSave = async () => {
     if (!selectedSubKoor) return;
 
     try {
       const res = await fetch(
-        `http://localhost:3000/api/admin/subkoordinator/${selectedSubKoor.id}`, // pakai sub.id (bukan userId)
+        `http://localhost:3000/api/admin/subkoordinator/${selectedSubKoor.id}`,
         {
           method: 'PUT',
           headers: {
@@ -140,7 +132,6 @@ export default function ManagementSubKoorbid() {
       );
       const data = await res.json();
       if (data.status) {
-        // Update list: cari item.id === data.data.id
         setSubKoorList((prev) =>
           prev.map((item) =>
             item.id === data.data.id
@@ -164,7 +155,6 @@ export default function ManagementSubKoorbid() {
     }
   };
 
-  // Hapus sub koordinator by sub.id
   const handleDeleteSubkoor = async (id) => {
     if (!confirm('Yakin ingin menghapus akun ini?')) return;
     try {
@@ -188,7 +178,6 @@ export default function ManagementSubKoorbid() {
     }
   };
 
-  // Create (not implemented backend) - placeholder
   const openCreateModal = () => setIsCreateModalOpen(true);
   const closeCreateModal = () => {
     setIsCreateModalOpen(false);
@@ -208,7 +197,7 @@ export default function ManagementSubKoorbid() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`, // kalau pakai JWT
+            Authorization: `Bearer ${localStorage.getItem('token')}`, 
           },
           body: JSON.stringify(createFormData),
         }
@@ -232,7 +221,6 @@ export default function ManagementSubKoorbid() {
     }
   };
 
-  // safe filter usage (hindari undefined.toLowerCase())
   const filteredData = subKoorList.filter((item) => {
     const s = searchTerm.toLowerCase();
     return (
@@ -377,7 +365,6 @@ export default function ManagementSubKoorbid() {
         )}
       </div>
 
-      {/* Modal Edit */}
       {isModalOpen && selectedSubKoor && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
@@ -469,7 +456,6 @@ export default function ManagementSubKoorbid() {
         </div>
       )}
 
-      {/* Modal Create (sederhana) */}
       {isCreateModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"

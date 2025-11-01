@@ -1,10 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../../../src/components/navigations/Navbar';
-import { useEffect, useState } from 'react'; // <-- Import hooks
+import { useEffect, useState } from 'react';
 
-/**
- * Helper function untuk memformat tanggal
- */
 const formatDate = (dateString) => {
   if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString('id-ID', {
@@ -14,9 +11,6 @@ const formatDate = (dateString) => {
   });
 };
 
-/**
- * Helper function untuk memformat periode
- */
 const formatPeriode = (tglMulai, tglSelesai) => {
   if (!tglMulai || !tglSelesai) return '-';
 
@@ -34,28 +28,25 @@ const formatPeriode = (tglMulai, tglSelesai) => {
     .replace(/\//g, '-');
 
   if (mulai === selesai) return mulai;
-  // Menggunakan "sampai" sesuai permintaan Anda
   return `${mulai} sampai ${selesai}`;
 };
 
 export default function DetailUsulanMagang() {
-  const { id } = useParams(); // Ambil ID ajuan dari URL
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  // State untuk data, loading, dan error
   const [detail, setDetail] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // useEffect untuk fetch data saat komponen dimuat
   useEffect(() => {
     const fetchDetail = async () => {
-      console.log('ID inside useEffect:', id); // <-- Tambahkan log ini!
+      console.log('ID inside useEffect:', id);
       if (!id) {
         console.error('Fetch aborted: ID is undefined!');
         setError('Tidak dapat memuat detail: ID ajuan tidak ditemukan di URL.');
         setIsLoading(false);
-        return; // Hentikan fetch jika id undefined
+        return;
       }
 
       setIsLoading(true);
@@ -67,7 +58,6 @@ export default function DetailUsulanMagang() {
           throw new Error('Autentikasi diperlukan. Silakan login kembali.');
         }
 
-        // Sesuaikan endpoint ini agar sama dengan yang Anda buat di router
         const response = await fetch(
           `http://localhost:3000/api/peserta/ajuan-magang/${id}`,
           {
@@ -83,7 +73,7 @@ export default function DetailUsulanMagang() {
         }
 
         if (result.status && result.data) {
-          setDetail(result.data); // Simpan data dari backend ke state
+          setDetail(result.data);
         } else {
           throw new Error('Format data dari server tidak valid.');
         }
@@ -96,7 +86,7 @@ export default function DetailUsulanMagang() {
     };
 
     fetchDetail();
-  }, [id]); // Dependensi [id], agar fetch ulang jika id berubah
+  }, [id]);
 
   const renderField = (label, value) => (
     <div>
@@ -107,7 +97,6 @@ export default function DetailUsulanMagang() {
     </div>
   );
 
-  // Tampilkan state Loading
   if (isLoading) {
     return (
       <>
@@ -121,7 +110,6 @@ export default function DetailUsulanMagang() {
     );
   }
 
-  // Tampilkan state Error
   if (error) {
     return (
       <>
@@ -142,8 +130,6 @@ export default function DetailUsulanMagang() {
     );
   }
 
-  // Tampilkan data jika fetch sukses
-  // (detail.peserta.berkas[0] mungkin 'undefined' jika tidak ada berkas)
   const berkas = detail.peserta.berkas?.[0] || {};
   const detailData = {
     tanggal: formatDate(detail.createdAt),
@@ -159,12 +145,12 @@ export default function DetailUsulanMagang() {
     bidang: detail.bidang?.nama || 'N/A',
     status: detail.statusUsulan,
     berkas: {
-      suratBakesbangProv: berkas.suratBakesbangpolSby, // Mapping Sby -> Prov
+      suratBakesbangProv: berkas.suratBakesbangpolSby,
       suratBakesbangSDA: berkas.suratBakesbangpolSda,
       suratPengantar: berkas.suratPengantar,
       proposalMagang: berkas.proposalMagang,
       cv: berkas.cv,
-      ktp: berkas.pasFoto, // Mapping pasFoto -> ktp
+      ktp: berkas.pasFoto,
     },
   };
 
@@ -183,7 +169,7 @@ export default function DetailUsulanMagang() {
             <h1 className="text-xl font-bold text-[#006DA6] text-center flex-1">
               Detail Usulan Magang
             </h1>
-            <div className="w-[80px]"></div> {/* Spacer */}
+            <div className="w-[80px]"></div>
           </div>
 
           <div className="space-y-4 text-sm">

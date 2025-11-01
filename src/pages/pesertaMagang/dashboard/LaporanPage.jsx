@@ -21,7 +21,6 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
   let currentDate = new Date(tglMulaiISO);
   const endDate = new Date(tglSelesaiISO);
 
-  // Buat Set dari tanggal logbook yang sudah diisi untuk pencarian cepat
   const filledLogbookDates = new Set(
     logbooks.map((log) => toISODateString(new Date(log.tanggal)))
   );
@@ -42,7 +41,7 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
       const dayDate = new Date(currentDate.getTime());
       dayDate.setDate(dayDate.getDate() + i); // Maju 1 hari
 
-      if (dayDate > endDate) break; // Berhenti jika sudah melewati tgl selesai
+      if (dayDate > endDate) break;
 
       const isoDate = toISODateString(dayDate);
       weekDays.push({
@@ -50,7 +49,7 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
         dayName: dayDate
           .toLocaleDateString('id-ID', { weekday: 'short' })
           .charAt(0)
-          .toUpperCase(), // S, S, R, K, J
+          .toUpperCase(),
         isFilled: filledLogbookDates.has(isoDate),
       });
     }
@@ -59,7 +58,6 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
       // Ambil tanggal terakhir di array weekDays (Jumat atau hari terakhir magang)
       const weekEndDate = new Date(weekDays[weekDays.length - 1].date);
       weeks.push({
-        // Gunakan startDateISO sebagai ID unik untuk 'key' React
         id: toISODateString(weekStartDate),
         tanggal: formatWeekRange(weekStartDate, weekEndDate),
         days: weekDays.map((d) => d.dayName),
@@ -67,8 +65,7 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
       });
     }
 
-    // Maju ke hari Senin berikutnya
-    currentDate.setDate(currentDate.getDate() + 7 - 4); // Maju ke Senin depan
+    currentDate.setDate(currentDate.getDate() + 7 - 4);
   }
 
   return weeks;
@@ -88,7 +85,7 @@ export default function LaporanPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('token'); // Ambil token
+        const token = localStorage.getItem('token');
         if (!token) {
           throw new Error('Otentikasi dibutuhkan. Silakan login kembali.');
         }
@@ -110,7 +107,6 @@ export default function LaporanPage() {
         const res = await response.json();
         const { periode, logbooks } = res.data;
 
-        // Buat struktur minggu dinamis
         const weeks = generateWeeklyStructure(
           periode.tglMulai,
           periode.tglSelesai,
@@ -136,7 +132,6 @@ export default function LaporanPage() {
     navigate(`/dashboard/laporan-harian-form/${mingguIndex}/${dayIndex}`);
   };
 
-  // Komponen helper untuk badge status
   const StatusBadge = ({ status }) => {
     const styles = {
       Pending: 'bg-yellow-100 text-yellow-800',
@@ -152,7 +147,6 @@ export default function LaporanPage() {
     );
   };
 
-  // Objek helper untuk status di bagian atas
   const topStatusInfo = {
     Pending: { icon: '🕒', text: 'File Sudah Diupload, Menunggu Review' },
     Diterima: { icon: '✅', text: 'File Sudah Diterima' },
@@ -161,9 +155,7 @@ export default function LaporanPage() {
 
   return (
     <div>
-      {/* --- Card Laporan Hasil Magang --- */}
       <div className="bg-white p-6 rounded shadow mb-6">
-        {/* BAGIAN 1: Status di atas (sekarang dinamis) */}
         {latestSubmission ? (
           <p className="font-semibold flex items-center gap-2 text-gray-700">
             <span className="text-lg">
@@ -177,7 +169,6 @@ export default function LaporanPage() {
           </p>
         )}
 
-        {/* BAGIAN 2: Judul dan Deskripsi (tetap statis) */}
         <h2 className="font-bold text-lg mt-2">Laporan Hasil Magang</h2>
         <p className="text-sm text-gray-600">
           Laporan hasil magang dapat diunggah ketika semua laporan harian sudah
@@ -186,7 +177,6 @@ export default function LaporanPage() {
 
         <hr className="my-6 border-t border-gray-200" />
 
-        {/* BAGIAN 3: Konten di bawah garis (sekarang dinamis) */}
         {latestSubmission ? (
           // Tampilan JIKA SUDAH UPLOAD
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -276,7 +266,7 @@ export default function LaporanPage() {
               <hr className="my-6 border-t border-gray-200" />
               <div className="flex justify-center">
                 <button
-                  onClick={() => handleOpenForm(idx, 0)} // idx masih dipakai LaporanHarianForm
+                  onClick={() => handleOpenForm(idx, 0)}
                   className="bg-[#006DA6] text-white px-6 py-2 rounded"
                 >
                   Lengkapi Laporan Harian

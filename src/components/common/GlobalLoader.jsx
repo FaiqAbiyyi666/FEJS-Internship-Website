@@ -1,5 +1,5 @@
 import { useLoading } from '../../contexts/LoadingContext';
-import './GlobalLoader.css'; // Kita akan buat file CSS ini di bawah
+import './GlobalLoader.css';
 
 export default function GlobalLoader() {
   const { isLoading } = useLoading();

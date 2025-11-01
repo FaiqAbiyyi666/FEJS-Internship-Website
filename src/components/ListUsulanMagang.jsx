@@ -1,15 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'; // Import useMemo
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const formatTgl = (dateInput) => {
   if (!dateInput) return '-';
   try {
     const date = new Date(dateInput);
-    // Validasi tanggal
     if (isNaN(date.getTime())) {
       return '-';
     }
     const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   } catch (e) {
@@ -49,7 +48,6 @@ export default function ListUsulanMagang() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [bidangFilter, setBidangFilter] = useState('');
-  // const [tahun, setTahun] = useState('');
 
   // === State Pagination ===
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,9 +58,6 @@ export default function ListUsulanMagang() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    console.log(
-      `Fetching data for page: ${currentPage}, status: ${status}, bidang: ${bidangFilter}`
-    ); // Log filter yang dikirim
 
     try {
       const params = new URLSearchParams({
@@ -102,7 +97,6 @@ export default function ListUsulanMagang() {
     fetchData();
   }, [fetchData]);
 
-  // --- CLIENT-SIDE FILTERING (Hanya untuk Search) ---
   const filteredAjuanList = useMemo(() => {
     let list = ajuanList;
 
@@ -124,7 +118,7 @@ export default function ListUsulanMagang() {
 
   useEffect(() => {
     const newTotalPages = Math.ceil(filteredAjuanList.length / ITEMS_PER_PAGE);
-    setTotalPages(newTotalPages > 0 ? newTotalPages : 1); // minimal 1 halaman
+    setTotalPages(newTotalPages > 0 ? newTotalPages : 1);
     if (currentPage > newTotalPages && newTotalPages > 0) {
       setCurrentPage(1);
     } else if (filteredAjuanList.length === 0) {
@@ -176,7 +170,6 @@ export default function ListUsulanMagang() {
 
         {/* Filter Input */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
-          {/* Search (Client-side) */}
           <input
             type="text"
             placeholder="Cari nama atau tema..."
@@ -259,31 +252,26 @@ export default function ListUsulanMagang() {
               )}
               {/* Data State (gunakan paginatedData) */}
               {!isLoading &&
-                paginatedData.map(
-                  (
-                    item,
-                    idx // Render dari paginatedData
-                  ) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">{item.nama}</td>
-                      <td className="py-3 px-4">{formatTgl(item.createdAt)}</td>
-                      <td className="py-3 px-4">{item.tema || '-'}</td>
-                      <td className="py-3 px-4">
-                        {formatPeriode(item.tglMulai, item.tglSelesai)}
-                      </td>
-                      <td className="py-3 px-4">{item.bidang}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
-                            item.status
-                          )}`}
-                        >
-                          {item.status === 'PENDING' ? 'Diproses' : item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                )}
+                paginatedData.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-gray-50">
+                    <td className="py-3 px-4">{item.nama}</td>
+                    <td className="py-3 px-4">{formatTgl(item.createdAt)}</td>
+                    <td className="py-3 px-4">{item.tema || '-'}</td>
+                    <td className="py-3 px-4">
+                      {formatPeriode(item.tglMulai, item.tglSelesai)}
+                    </td>
+                    <td className="py-3 px-4">{item.bidang}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
+                          item.status
+                        )}`}
+                      >
+                        {item.status === 'PENDING' ? 'Diproses' : item.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

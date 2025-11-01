@@ -13,25 +13,20 @@ const ManageUlasanMagang = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      setErrorMessage(null); // Reset pesan error setiap kali fetch
+      setErrorMessage(null); 
 
       try {
-        // 1. Ambil token dari localStorage (atau di mana pun Anda menyimpannya)
         const token = localStorage.getItem('token');
 
         if (!token) {
-          // Jika tidak ada token, jangan lakukan fetch
           throw new Error('Token tidak ditemukan. Silakan login kembali.');
         }
 
-        // 2. Buat headers dengan token Authorization
         const headers = {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         };
 
-        // 3. Buat URL dengan query params (jika Anda ingin filter di backend)
-        // Kode controller Anda sudah siap untuk ini.
         const params = new URLSearchParams();
         if (searchNama) params.append('searchNama', searchNama);
         if (filterBidang) params.append('filterBidang', filterBidang);
@@ -42,29 +37,26 @@ const ManageUlasanMagang = () => {
           `http://localhost:3000/api/admin/ulasan-magang?${params.toString()}`,
           {
             method: 'GET',
-            headers: headers, // <-- PERBAIKAN UTAMA
+            headers: headers, 
           }
         );
 
         const result = await response.json();
 
         if (!response.ok || !result.status) {
-          // Tangani error dari server (termasuk 401 jika token salah/expired)
           throw new Error(result.message || 'Gagal mengambil data ulasan');
         }
 
-        // 4. Set data dari properti 'data' di respon JSON Anda
         setDataUlasan(result.data);
       } catch (error) {
         console.error('Error di fetchData:', error.message);
-        setErrorMessage(error.message); // Tampilkan pesan error ke user
+        setErrorMessage(error.message); 
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-    // Tambahkan dependensi filter agar data di-fetch ulang saat filter berubah
   }, [searchNama, filterBidang, filterRating, filterTanggal]);
 
   const filteredData = dataUlasan.filter((item) => {
@@ -87,7 +79,6 @@ const ManageUlasanMagang = () => {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-[#006DA6]">Ulasan Magang</h1>
 
-      {/* Filter */}
       <div className="flex flex-wrap gap-4">
         <input
           type="text"
@@ -128,7 +119,6 @@ const ManageUlasanMagang = () => {
         />
       </div>
 
-      {/* Tabel */}
       <div className="bg-white shadow rounded-lg overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-[#006DA6] text-white">
@@ -163,8 +153,6 @@ const ManageUlasanMagang = () => {
             ) : filteredData.length > 0 ? (
               filteredData.map((item) => (
                 <tr key={item.id}>
-                  {/* ... (TD Foto, Nama, Bidang, Tanggal, Ulasan, Rating) ... */}
-                  {/* Pastikan format tanggal sudah benar */}
                   <td className="px-4 py-3">
                     <img
                       src={item.foto}
