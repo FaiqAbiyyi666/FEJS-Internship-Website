@@ -9,6 +9,7 @@ import PromotionSection from '../components/PromotionSection';
 import ListUsulanMagang from '../components/ListUsulanMagang';
 import VideoTataCaraMagang from '../components/VideoTataCaraMagang';
 import FAQSection from '../components/FAQSection';
+import StatistikMagang from '../components/StatistikMagang';
 
 export default function Home() {
   return (
@@ -19,6 +20,7 @@ export default function Home() {
       </section>
       <PromotionSection />
       <TahapanMagang />
+      <StatistikMagang />
       <section id="kuota-magang" className="scroll-mt-[120px]">
         <KuotaMagang />
       </section>

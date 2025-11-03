@@ -7,8 +7,10 @@ const AdminHeader = ({ title }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const notifRef = useRef(null);
   const dropdownRef = useRef(null);
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const notifications = [
     {
       id: 1,

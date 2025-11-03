@@ -41,12 +41,9 @@ export default function PesertaDashboardHome() {
           return;
         }
 
-        const res = await fetch(
-          `http://localhost:3000/api/peserta/profile/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await fetch(`http://localhost:3000/api/peserta/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const data = await res.json();
         if (data.status) {

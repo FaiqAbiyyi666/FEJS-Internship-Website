@@ -38,7 +38,7 @@ export default function Login() {
 
       // Cek role
       if (data.data.user.role === 'peserta_magang') {
-        navigate('/'); // ✅ arahkan ke dashboard peserta
+        navigate('/dashboard');
       } else if (data.data.user.role === 'admin') {
         navigate('/dashboard-admin'); // ✅ arahkan ke dashboard admin
       } else {

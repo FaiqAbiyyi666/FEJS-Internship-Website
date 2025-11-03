@@ -29,7 +29,7 @@ export default function Footer() {
               className="w-56 h-auto mb-4"
             />
             <p className="text-sm text-gray-300">
-              © 2024 teamDISKOMINFO. All rights reserved
+              © 2025 teamDISKOMINFO. All rights reserved
             </p>
           </div>
 
