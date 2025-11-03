@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 function StatistikCard({ title, value, imageUrl }) {
   const formattedValue = new Intl.NumberFormat('id-ID').format(value);
 
   return (
-    // 'transition-all' dan 'duration-300' telah dihapus dari sini
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg hover:-translate-y-1">
+    <div className="bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-lg hover:-translate-y-1">
       <div className="w-full h-32 rounded-t-lg overflow-hidden">
         <img
           src={imageUrl}
@@ -27,7 +26,6 @@ function StatistikCard({ title, value, imageUrl }) {
 
 function StatistikCardSkeleton() {
   return (
-    // 'transition-all', 'duration-300', dan 'animate-pulse' telah dihapus
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
       <div className="w-full h-32 rounded-t-lg bg-gray-200" />
       <div className="p-6 text-center">
@@ -43,36 +41,69 @@ export default function StatistikMagang() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const effectRan = useRef(false);
+
   useEffect(() => {
+    // 3. Cek apakah efek sudah berjalan (di development)
+    if (effectRan.current === true) {
+      return; // Hentikan jika ini adalah 'Run 2' dari Strict Mode
+    }
+
+    // Tandai bahwa 'Run 1' sedang berjalan
+    effectRan.current = true;
+
+    // --- Semua logika Anda sekarang aman di dalam sini ---
+
+    setLoading(true);
+
     const fetchData = async () => {
       try {
-        setLoading(true);
-        const response = await fetch('http://localhost:3000/api/statistik');
-
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/statistik'
+        );
         if (!response.ok) {
           throw new Error('Gagal mengambil data statistik');
         }
-
         const result = await response.json();
-        setStats(result.data);
-        setError(null);
+        return result.data;
       } catch (err) {
         setError(err.message);
-        setStats({
-          pengunjung: 150,
-          aktif: 50,
-          lulus: 75,
-          pendaftar: 200,
-        });
-      } finally {
-        setLoading(false);
+        return { pengunjung: 150, aktif: 50, lulus: 75, pendaftar: 200 };
       }
     };
-    fetchData(); // Hapus setTimeout ini di produksi
+
+    const incrementVisit = async () => {
+      try {
+        await fetch('http://localhost:3000/api/peserta/statistik/increment', {
+          method: 'POST',
+        });
+      } catch (err) {
+        console.error('Gagal menambah hitungan pengunjung:', err);
+        sessionStorage.removeItem('sessionTracked');
+      }
+    };
+
+    const checkSessionAndFetch = async () => {
+      let statsData = await fetchData();
+      const sessionTracked = sessionStorage.getItem('sessionTracked');
+
+      if (!sessionTracked) {
+        sessionStorage.setItem('sessionTracked', 'true');
+        incrementVisit();
+        statsData = {
+          ...statsData,
+          pengunjung: statsData.pengunjung + 1,
+        };
+      }
+
+      setStats(statsData);
+      setLoading(false);
+    };
+
+    checkSessionAndFetch();
   }, []);
 
   const renderContent = () => {
-    // 1. Saat Loading
     if (loading) {
       return (
         <>
@@ -94,43 +125,38 @@ export default function StatistikMagang() {
       );
     }
 
-    // 3. Saat Sukses
     if (stats) {
       return (
         <>
           <StatistikCard
             title="Pengunjung Website Tahun Ini"
             value={stats.pengunjung}
-            // Gambar: Tim/mahasiswa berkolaborasi di depan laptop
             imageUrl="/statistik_pict/pengunjungWebsite2.jpg"
           />
           <StatistikCard
             title="Peserta Magang yang Aktif"
             value={stats.aktif}
-            // Gambar: Suasana kerja magang di kantor modern
             imageUrl="/statistik_pict/pesertaAktif2.jpg"
           />
           <StatistikCard
             title="Peserta Magang yang Telah Lulus"
             value={stats.lulus}
-            // Gambar: Mahasiswa merayakan kelulusan/keberhasilan
             imageUrl="/statistik_pict/graduatePeserta2.jpg"
           />
           <StatistikCard
             title="Jumlah Peserta yang Telah Mendaftar Magang"
             value={stats.pendaftar}
-            // Gambar: Seseorang mendaftar/mengisi form di laptop
             imageUrl="/statistik_pict/jumlahPeserta2.jpg"
           />
         </>
       );
     }
 
-    return null; // Fallback jika tidak ada kondisi yang terpenuhi
+    return null;
   };
 
   return (
-    <section className="bg-[#F7FAFC] py-12">
+    <section className="bg-[#ffffff] py-12">
       <div className="max-w-6xl mx-auto px-4">
         {/* Judul Bagian */}
         <div className="text-center mb-12">

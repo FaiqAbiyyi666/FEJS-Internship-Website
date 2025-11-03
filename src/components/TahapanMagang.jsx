@@ -27,7 +27,7 @@ export default function TataCaraMagang() {
   ];
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-[#F7FAFC]">
       <div className="text-center mb-12">
         <div className="w-36 h-1 mx-auto mt-4 mb-5 bg-[#006DA6] rounded-full" />
         <h2 className="text-2xl md:text-3xl font-normal text-[#002942]">

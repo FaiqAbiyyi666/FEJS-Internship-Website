@@ -1,6 +1,6 @@
 export default function VideoTataCaraMagang() {
   return (
-    <section className="bg-[#F9FBFD] py-12 px-4 text-[#002942]">
+    <section className="bg-[#ffffff] py-12 px-4 text-[#002942]">
       <div className="max-w-4xl mx-auto text-center">
         {/* Judul */}
         <div className="mb-8">

@@ -71,7 +71,7 @@ export default function TestimoniSection() {
   }
 
   return (
-    <section className="py-12 bg-[#F9FBFD] text-[#006DA6] px-4">
+    <section className="py-12 bg-[#F7FAFC] text-[#006DA6] px-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold">Apa Kata Mereka?</h2>
