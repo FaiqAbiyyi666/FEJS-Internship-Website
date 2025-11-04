@@ -37,7 +37,7 @@ const getStatusBadge = (status) => {
     case 'APPROVED':
       return 'bg-green-100 text-green-800';
     case 'DITOLAK':
-    case 'REJECTED': 
+    case 'REJECTED':
       return 'bg-red-100 text-red-800';
     case 'PENDING':
     default:
@@ -50,6 +50,7 @@ export default function UsulanMagangPage() {
   const [usulanMagang, setUsulanMagang] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [canApply, setCanApply] = useState(false);
 
   useEffect(() => {
     const fetchUsulanMagang = async () => {
@@ -81,21 +82,43 @@ export default function UsulanMagangPage() {
         console.log('Raw data from backend:', result.data);
 
         if (result.status && Array.isArray(result.data)) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const hasBlockingAjuan = result.data.some((item) => {
+            // 1. Blokir jika ada yang PENDING
+            if (item.statusUsulan === 'PENDING') {
+              return true;
+            }
+            // 2. Blokir jika DITERIMA dan periode belum selesai
+            if (item.statusUsulan === 'DITERIMA') {
+              const endDate = new Date(item.tglSelesai);
+              // Jika tanggal selesai >= hari ini, berarti magang masih/akan berlangsung
+              return endDate >= today;
+            }
+            // Abaikan jika DITOLAK atau DITERIMA tapi sudah selesai
+            return false;
+          });
+
+          setCanApply(!hasBlockingAjuan);
+
           const transformedData = result.data.map((item) => ({
-            id: item.id, 
+            id: item.id,
             tanggal: formatDate(item.createdAt),
             tema: item.temaMagang,
             periode: formatPeriode(item.tglMulai, item.tglSelesai),
             bidang: item.bidang?.nama || 'N/A',
-            status: item.statusUsulan, 
+            status: item.statusUsulan,
           }));
           console.log('Transformed data being set to state:', transformedData);
           setUsulanMagang(transformedData);
         } else {
+          setCanApply(true);
           throw new Error(result.message || 'Format data dari server salah.');
         }
       } catch (err) {
         setError(err.message);
+        setCanApply(false);
         console.error('Error fetching usulan magang:', err);
       } finally {
         setIsLoading(false);
@@ -104,6 +127,16 @@ export default function UsulanMagangPage() {
 
     fetchUsulanMagang();
   }, []);
+
+  const getButtonTitle = () => {
+    if (isLoading) {
+      return 'Sedang memverifikasi status ajuan...';
+    }
+    if (!canApply) {
+      return 'Anda sudah memiliki ajuan yang sedang diproses atau sedang dalam periode magang.';
+    }
+    return 'Ajukan pendaftaran magang baru';
+  };
 
   return (
     <>
@@ -116,8 +149,10 @@ export default function UsulanMagangPage() {
 
           <div className="mb-6">
             <button
-              onClick={() => navigate('/pengajuan-magang/formulir')} 
-              className="bg-[#006DA6] hover:bg-[#0093DD] text-white font-medium px-5 py-2 rounded-lg shadow inline-flex items-center gap-2"
+              onClick={() => navigate('/pengajuan-magang/formulir')}
+              className="bg-[#006DA6] hover:bg-[#0093DD] text-white font-medium px-5 py-2 rounded-lg shadow inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || !canApply}
+              title={getButtonTitle()}
             >
               <span className="text-xl font-bold">＋</span> Daftar Magang
             </button>

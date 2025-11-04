@@ -81,27 +81,23 @@ export default function AdminAjuanMagangPage() {
   // === State Loading & Error ===
   const [isPendingLoading, setIsPendingLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
-  const [error, setError] = useState(null); // Satu state error cukup
+  const [error, setError] = useState(null);
 
   // === State Filter & Pagination (Server-side) ===
-  const [searchTerm, setSearchTerm] = useState(''); // Untuk tab History
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // Untuk tab History ('all', 'DITERIMA', 'DITOLAK')
   const [currentPendingPage, setCurrentPendingPage] = useState(1);
   const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
   const [totalPendingPages, setTotalPendingPages] = useState(1);
   const [totalHistoryPages, setTotalHistoryPages] = useState(1);
-  const [totalHistoryItems, setTotalHistoryItems] = useState(0); // State baru untuk total item history
+  const [totalHistoryItems, setTotalHistoryItems] = useState(0);
 
   // === State Modal ===
   const [selectedPeserta, setSelectedPeserta] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const ITEMS_PER_PAGE = 5; // Konsisten untuk kedua tabel
+  const ITEMS_PER_PAGE = 5;
 
-  /**
-   * Mengubah data dari Backend (Prisma) ke format Frontend (State)
-   * (Tidak berubah)
-   */
   const transformBackendData = useCallback((ajuan) => {
     const berkas = ajuan.peserta.berkas?.[0] || {};
     return {
@@ -127,14 +123,10 @@ export default function AdminAjuanMagangPage() {
       ktp: berkas.pasFoto,
       bakesbangsda: berkas.suratBakesbangpolSda,
       bakesbangprov: berkas.suratBakesbangpolSby,
-      // Tambahkan foto jika ada di data backend (misal dari PesertaMagang)
-      foto: ajuan.peserta.pasFoto, // Asumsi nama field 'pasFoto' di PesertaMagang
+      foto: ajuan.peserta.pasFoto,
     };
   }, []);
 
-  /**
-   * Fungsi utama untuk mengambil data dari Backend
-   */
   const fetchAjuan = useCallback(
     async (statusQuery, page, search = '', limit = ITEMS_PER_PAGE) => {
       const setLoading =
@@ -151,7 +143,6 @@ export default function AdminAjuanMagangPage() {
           page: page,
           limit: limit,
         });
-        // Search hanya ditambahkan jika request BUKAN untuk PENDING
         if (search && statusQuery !== 'PENDING') {
           params.append('search', search);
         }
@@ -169,7 +160,7 @@ export default function AdminAjuanMagangPage() {
 
         const transformedData = result.data.map(transformBackendData);
         let finalData = transformedData;
-        const finalPagination = result.pagination; // Pagination dari backend
+        const finalPagination = result.pagination;
 
         if (statusQuery !== 'PENDING' && statusQuery === 'all') {
           finalData = transformedData.filter(
@@ -178,13 +169,12 @@ export default function AdminAjuanMagangPage() {
         }
 
         if (statusQuery === 'PENDING') {
-          setPendingPeserta(finalData); // Data pending
+          setPendingPeserta(finalData);
           setTotalPendingPages(finalPagination.totalPages);
         } else {
-          // Data history ('all' yang sudah difilter, 'DITERIMA', atau 'DITOLAK')
           setHistoryPeserta(finalData);
           setTotalHistoryPages(finalPagination.totalPages);
-          setTotalHistoryItems(finalPagination.totalItems); // Mungkin tidak akurat jika status='all'
+          setTotalHistoryItems(finalPagination.totalItems);
         }
       } catch (err) {
         setError(
@@ -201,20 +191,14 @@ export default function AdminAjuanMagangPage() {
     [transformBackendData]
   );
 
-  // Fetch data "Pending"
   useEffect(() => {
     fetchAjuan('PENDING', currentPendingPage);
   }, [currentPendingPage, fetchAjuan]);
 
-  // Fetch data "History"
   useEffect(() => {
-    // statusFilter akan menjadi 'all', 'DITERIMA', atau 'DITOLAK'
     fetchAjuan(statusFilter, currentHistoryPage, searchTerm);
   }, [currentHistoryPage, searchTerm, statusFilter, fetchAjuan]);
 
-  /**
-   * Helper untuk me-refresh kedua list
-   */
   const refreshLists = useCallback(() => {
     fetchAjuan('PENDING', currentPendingPage);
     fetchAjuan(statusFilter, currentHistoryPage, searchTerm);
@@ -226,22 +210,18 @@ export default function AdminAjuanMagangPage() {
     searchTerm,
   ]);
 
-  /**
-   * Fungsi Aksi (ACC / Tolak) - Panggil API
-   */
   const handleUpdateStatus = async (idAjuan, newStatus) => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `http://localhost:3000/api/admin/ajuan-magang/${idAjuan}/status`, // Pastikan endpoint benar
+        `http://localhost:3000/api/admin/ajuan-magang/${idAjuan}/status`,
         {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          // Hanya kirim status
           body: JSON.stringify({ status: newStatus }),
         }
       );
@@ -272,7 +252,6 @@ export default function AdminAjuanMagangPage() {
     setSelectedPeserta(null);
   };
 
-  // === Export Excel ===
   const handleExportExcelHistory = async () => {
     const dataToExport = historyPeserta.filter(
       (p) => p.status === 'DITERIMA' || p.status === 'DITOLAK'
@@ -284,14 +263,9 @@ export default function AdminAjuanMagangPage() {
     }
 
     try {
-      // 1. Buat Workbook & Worksheet
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Riwayat Ajuan Magang');
 
-      // --- ⬇️ PERBAIKAN LOGIKA HEADER ⬇️ ---
-
-      // 2. Tentukan Kolom (HANYA 'key' dan 'width', HAPUS 'header')
-      //    Ini penting agar library tidak otomatis menambah header
       worksheet.columns = [
         { key: 'nama', width: 30 },
         { key: 'email', width: 30 },
@@ -314,11 +288,8 @@ export default function AdminAjuanMagangPage() {
         { key: 'bakesbangprov', width: 40 },
       ];
 
-      // 3. Tambahkan Baris Judul (di Baris 1)
       worksheet.addRow(['Riwayat Persetujuan Ajuan Magang']);
 
-      // 4. Merge Judul dan Rata Tengah (Sesuai permintaan Anda)
-      //    'S' adalah kolom ke-19 (sesuai jumlah kolom)
       worksheet.mergeCells('A1:S1');
       worksheet.getCell('A1').font = { bold: true, size: 14, name: 'Calibri' };
       worksheet.getCell('A1').alignment = {
@@ -326,7 +297,6 @@ export default function AdminAjuanMagangPage() {
         vertical: 'middle',
       };
 
-      // 5. Tambahkan Baris Header secara MANAUL (di Baris 2)
       const headerTexts = [
         'NAMA',
         'EMAIL',
@@ -348,10 +318,9 @@ export default function AdminAjuanMagangPage() {
         'BAKESBANGPOL SDA',
         'BAKESBANGPOL PROV',
       ];
-      worksheet.addRow(headerTexts); // Ini menjadi Baris 2
+      worksheet.addRow(headerTexts);
 
-      // 6. STYLING HEADER (Baris 2)
-      const headerRow = worksheet.getRow(2); // ⬅️ Arahkan ke Baris 2
+      const headerRow = worksheet.getRow(2);
       headerRow.eachCell((cell) => {
         cell.font = {
           bold: true,
@@ -376,7 +345,6 @@ export default function AdminAjuanMagangPage() {
         };
       });
 
-      // 7. Siapkan data (Map data Anda - Kode Anda sudah benar)
       const exportData = dataToExport.map((p) => ({
         nama: p.nama,
         email: p.email,
@@ -399,15 +367,12 @@ export default function AdminAjuanMagangPage() {
         bakesbangprov: p.bakesbangprov || '-',
       }));
 
-      // 8. Tambahkan Data (Mulai di Baris 3)
-      worksheet.addRows(exportData); // Data akan dimulai di baris 3
+      worksheet.addRows(exportData);
 
-      // 9. STYLING DATA CELLS (Mulai dari baris 3)
       worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber <= 2) return; // ⬅️ Lewati Baris 1 (Judul) dan 2 (Header)
+        if (rowNumber <= 2) return;
 
         row.eachCell((cell, colNumber) => {
-          // Border untuk semua sel data
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -417,7 +382,6 @@ export default function AdminAjuanMagangPage() {
 
           const colKey = worksheet.columns[colNumber - 1].key;
 
-          // Wrap text untuk kolom yang mungkin panjang (URL/Tema)
           const wrapTextColumns = [
             'temaMagang',
             'suratPengantar',
@@ -435,7 +399,6 @@ export default function AdminAjuanMagangPage() {
         });
       });
 
-      // 10. Hasilkan File dan Download
       const buffer = await workbook.xlsx.writeBuffer();
       const today = new Date().toISOString().split('T')[0];
       const fileName = `RiwayatAjuanMagang_${today}.xlsx`;
@@ -443,7 +406,6 @@ export default function AdminAjuanMagangPage() {
       saveAs(new Blob([buffer]), fileName);
     } catch (exportError) {
       console.error('Gagal export excel:', exportError);
-      // Asumsi Anda punya state 'setError'
       setError(
         "Gagal melakukan export data ke Excel. Pastikan library 'exceljs' dan 'file-saver' terinstall."
       );
@@ -452,9 +414,7 @@ export default function AdminAjuanMagangPage() {
 
   return (
     <>
-      {/* <Navbar /> */}
       <div className="container mx-auto">
-        {/* Menampilkan Error Global */}
         {error && (
           <div
             className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -490,7 +450,6 @@ export default function AdminAjuanMagangPage() {
                 </tr>
               </thead>
               <tbody>
-                {/* Loading State */}
                 {isPendingLoading && (
                   <tr>
                     <td colSpan="7" className="text-center py-6 text-gray-500">
@@ -498,7 +457,6 @@ export default function AdminAjuanMagangPage() {
                     </td>
                   </tr>
                 )}
-                {/* Empty State */}
                 {!isPendingLoading && pendingPeserta.length === 0 && (
                   <tr>
                     <td colSpan="7" className="text-center py-6 text-gray-500">
@@ -506,7 +464,6 @@ export default function AdminAjuanMagangPage() {
                     </td>
                   </tr>
                 )}
-                {/* Data State */}
                 {!isPendingLoading &&
                   pendingPeserta.map((peserta) => (
                     <tr key={peserta.id} className="border-b hover:bg-gray-50">
@@ -546,10 +503,8 @@ export default function AdminAjuanMagangPage() {
               </tbody>
             </table>
 
-            {/* Pagination Pending */}
             {totalPendingPages > 1 && (
               <div className="flex justify-between items-center p-4">
-                {/* Menampilkan jumlah item (optional) */}
                 <p className="text-sm text-gray-600">
                   Halaman {currentPendingPage} dari {totalPendingPages}
                 </p>
@@ -563,8 +518,6 @@ export default function AdminAjuanMagangPage() {
                   >
                     Previous
                   </button>
-                  {/* Tombol halaman bisa ditambahkan di sini jika mau */}
-                  {/* Contoh sederhana, biasanya butuh logika lebih kompleks */}
                   {[...Array(totalPendingPages)].map((_, i) => (
                     <button
                       key={i}
@@ -619,21 +572,19 @@ export default function AdminAjuanMagangPage() {
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  setCurrentHistoryPage(1); // Reset halaman ke 1 saat search
+                  setCurrentHistoryPage(1);
                 }}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/2"
               />
-              {/* Input tanggal dihapus */}
               <select
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
-                  setCurrentHistoryPage(1); // Reset halaman ke 1 saat filter
+                  setCurrentHistoryPage(1);
                 }}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/4"
               >
                 <option value="all">Semua Status (Diterima/Ditolak)</option>{' '}
-                {/* Label diperjelas */}
                 <option value="DITERIMA">Diterima</option>
                 <option value="DITOLAK">Ditolak</option>
               </select>
@@ -672,54 +623,47 @@ export default function AdminAjuanMagangPage() {
                 )}
                 {/* Data State */}
                 {!isHistoryLoading &&
-                  historyPeserta.map(
-                    (
-                      peserta // Gunakan historyPeserta
-                    ) => (
-                      <tr
-                        key={peserta.id}
-                        className="border-b hover:bg-gray-50"
-                      >
-                        <td className="px-4 py-3">{peserta.nama}</td>
-                        <td className="px-4 py-3">{peserta.email}</td>
-                        <td className="px-4 py-3">{peserta.instansi}</td>
-                        <td className="px-4 py-3">{peserta.jurusan}</td>
-                        <td className="px-4 py-3">
-                          {formatPeriode(
-                            peserta.tanggalMulai,
-                            peserta.tanggalSelesai
-                          )}
-                        </td>
-                        <td className="px-4 py-3">{peserta.bidang}</td>
-                        <td className="px-4 py-3">
-                          {formatTgl(peserta.createdAt)}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
-                              peserta.status
-                            )}`}
-                          >
-                            {peserta.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {formatTgl(peserta.updatedAt)}
-                        </td>
-                        <td className="px-4 py-3 text-center relative">
-                          <button
-                            onClick={() => {
-                              handleOpenDetail(peserta);
-                            }}
-                            className="p-1 rounded hover:bg-gray-200 text-gray-600"
-                            title="Lihat Detail"
-                          >
-                            <EyeIcon />
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  )}
+                  historyPeserta.map((peserta) => (
+                    <tr key={peserta.id} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-3">{peserta.nama}</td>
+                      <td className="px-4 py-3">{peserta.email}</td>
+                      <td className="px-4 py-3">{peserta.instansi}</td>
+                      <td className="px-4 py-3">{peserta.jurusan}</td>
+                      <td className="px-4 py-3">
+                        {formatPeriode(
+                          peserta.tanggalMulai,
+                          peserta.tanggalSelesai
+                        )}
+                      </td>
+                      <td className="px-4 py-3">{peserta.bidang}</td>
+                      <td className="px-4 py-3">
+                        {formatTgl(peserta.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
+                            peserta.status
+                          )}`}
+                        >
+                          {peserta.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatTgl(peserta.updatedAt)}
+                      </td>
+                      <td className="px-4 py-3 text-center relative">
+                        <button
+                          onClick={() => {
+                            handleOpenDetail(peserta);
+                          }}
+                          className="p-1 rounded hover:bg-gray-200 text-gray-600"
+                          title="Lihat Detail"
+                        >
+                          <EyeIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
 
@@ -735,7 +679,7 @@ export default function AdminAjuanMagangPage() {
                   <span className="font-medium">
                     {Math.min(
                       currentHistoryPage * ITEMS_PER_PAGE,
-                      totalHistoryItems // Gunakan total item dari state
+                      totalHistoryItems
                     )}
                   </span>{' '}
                   dari <span className="font-medium">{totalHistoryItems}</span>{' '}
@@ -758,7 +702,7 @@ export default function AdminAjuanMagangPage() {
                       onClick={() => setCurrentHistoryPage(i + 1)}
                       className={`px-3 py-1 border rounded text-sm ${
                         currentHistoryPage === i + 1
-                          ? 'bg-[#006DA6] text-white' // Style berbeda untuk history
+                          ? 'bg-[#006DA6] text-white'
                           : 'hover:bg-gray-100'
                       }`}
                     >
@@ -816,13 +760,13 @@ export default function AdminAjuanMagangPage() {
               {/* Foto Peserta */}
               <div className="flex justify-center mb-4">
                 <img
-                  src={selectedPeserta.foto || '/default-user.png'} // Fallback ke default image
+                  src={selectedPeserta.foto || '/default-user.png'}
                   alt={`Foto ${selectedPeserta.nama}`}
                   className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = '/default-user.png';
-                  }} // Handle error load gambar
+                  }}
                 />
               </div>
 
@@ -933,7 +877,7 @@ export default function AdminAjuanMagangPage() {
                   ) : (
                     <li key={label} className="text-gray-500 italic">
                       {label} (Tidak ada)
-                    </li> // Tampilkan jika file tidak ada
+                    </li>
                   )
                 )}
               </ul>
