@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Download } from 'lucide-react';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import { Search, Eye, Download, X, ChevronDown } from 'lucide-react';
+// 1. Hapus semua 'import' library eksternal yang gagal
+// (Kita akan memuatnya dari CDN)
+// import ExcelJS from 'exceljs';
+// import { saveAs } from 'file-saver';
+// import $ from 'jquery';
+// import DataTable from 'datatables.net-react';
+// import DT from 'datatables.net-dt';
+// import 'datatables.net-dt/css/dataTables.dataTables.css';
+// import Modal from 'react-modal';
 
+// --- Helper Functions (Tidak Berubah) ---
 const formatTanggalLaporan = (isoDate) => {
   if (!isoDate) return '-';
   return new Date(isoDate).toLocaleDateString('id-ID', {
@@ -12,7 +20,6 @@ const formatTanggalLaporan = (isoDate) => {
     year: 'numeric',
   });
 };
-
 const formatTanggalSubmit = (isoDateTime) => {
   if (!isoDateTime) return '-';
   return new Date(isoDateTime).toLocaleString('id-ID', {
@@ -24,42 +31,61 @@ const formatTanggalSubmit = (isoDateTime) => {
     hour12: false,
   });
 };
+// --- Akhir Helper ---
 
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+// --- Komponen Paginasi (Gaya dari Referensi Gambar Anda) ---
+const Pagination = ({ pagination, onPageChange }) => {
+  const { currentPage, totalPages, totalItems, itemsPerPage } = pagination;
   if (totalPages <= 1) return null;
 
-  const pages = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pages.push(i);
-  }
+  const start = (currentPage - 1) * itemsPerPage + 1;
+  const end = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-    <div className="flex justify-center items-center space-x-2 mt-6">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        &lt;
-      </button>
-      {pages.map((page) => (
+    <div className="py-4 px-6 flex items-center justify-between border-t border-gray-200">
+      {/* Info "Menampilkan..." */}
+      <div className="text-sm text-gray-700">
+        Menampilkan <span className="font-medium">{start}</span> sampai{' '}
+        <span className="font-medium">{end}</span> dari{' '}
+        <span className="font-medium">{totalItems}</span> entri
+      </div>
+
+      {/* Tombol Paginasi */}
+      <div className="flex items-center space-x-2">
         <button
-          key={page}
-          onClick={() => onPageChange(page)}
-          className={`px-3 py-1 rounded ${
-            currentPage === page ? 'bg-[#006DA6] text-white' : 'bg-gray-200'
-          }`}
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          className="text-sm px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {page}
+          Pertama
         </button>
-      ))}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        &gt;
-      </button>
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="text-sm px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Sebelumnya
+        </button>
+
+        <span className="text-sm px-4 py-2 bg-gray-100 rounded-md">
+          {currentPage}
+        </span>
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="text-sm px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Berikutnya
+        </button>
+        <button
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          className="text-sm px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Terakhir
+        </button>
+      </div>
     </div>
   );
 };
@@ -69,38 +95,78 @@ const ManagementLaporan = () => {
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
   });
-
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [bidangFilter, setBidangFilter] = useState('all');
   const [tanggalFilter, setTanggalFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Modal state
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLaporan, setSelectedLaporan] = useState(null);
 
+  // --- 2. useEffect untuk memuat SEMUA script dari CDN ---
+  useEffect(() => {
+    const scripts = [
+      'https://code.jquery.com/jquery-3.7.1.min.js',
+      'https://cdn.datatables.net/2.0.8/js/dataTables.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js',
+    ];
+    const styles = [
+      'https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css',
+    ];
+
+    // Muat CSS
+    styles.forEach((href) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.id = href;
+      document.head.appendChild(link);
+    });
+
+    // Muat Scripts
+    scripts.forEach((src) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.id = src;
+      document.body.appendChild(script);
+    });
+
+    // Cleanup scripts dan styles
+    return () => {
+      scripts.forEach((src) => {
+        const script = document.getElementById(src);
+        if (script) document.body.removeChild(script);
+      });
+      styles.forEach((href) => {
+        const link = document.getElementById(href);
+        if (link) document.head.removeChild(link);
+      });
+    };
+  }, []);
+
+  // --- Fungsi Fetch Data (Sesuai Controller) ---
   useEffect(() => {
     const fetchLogbooks = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
         const params = new URLSearchParams();
+        const itemsPerPage = 10;
         params.append('page', currentPage);
-        params.append('limit', 10);
-
-        if (searchTerm) {
-          params.append('search', searchTerm);
-        }
-        if (bidangFilter !== 'all') {
-          params.append('bidangId', bidangFilter);
-        }
-        if (tanggalFilter) {
-          params.append('tanggal', tanggalFilter);
-        }
+        params.append('limit', itemsPerPage);
+        if (searchTerm) params.append('search', searchTerm);
+        if (bidangFilter !== 'all') params.append('bidangId', bidangFilter);
+        if (tanggalFilter) params.append('tanggal', tanggalFilter);
 
         const token = localStorage.getItem('token');
         if (!token) {
@@ -115,14 +181,11 @@ const ManagementLaporan = () => {
             },
           }
         );
-
         if (!response.ok) {
           const errData = await response.json();
           throw new Error(errData.message || 'Gagal mengambil data');
         }
-
         const data = await response.json();
-
         setLogbooks(data.data);
         setPagination(data.pagination);
       } catch (err) {
@@ -132,18 +195,82 @@ const ManagementLaporan = () => {
         setIsLoading(false);
       }
     };
-
     fetchLogbooks();
   }, [searchTerm, bidangFilter, tanggalFilter, currentPage]);
 
+  // --- 3. useEffect untuk menginisialisasi DataTables ---
+  useEffect(() => {
+    // Cek jika library sudah dimuat, loading selesai, dan data ada
+    if (
+      typeof window.$ === 'undefined' ||
+      typeof window.$.fn.DataTable === 'undefined' ||
+      isLoading ||
+      logbooks.length === 0
+    ) {
+      return;
+    }
+
+    const tableId = '#logbook-admin-table';
+    const $ = window.$;
+
+    // Hancurkan tabel yang ada (jika ada) sebelum inisialisasi ulang
+    if ($.fn.DataTable.isDataTable(tableId)) {
+      $(tableId).DataTable().destroy();
+    }
+
+    // Inisialisasi DataTables
+    const table = $(tableId).DataTable({
+      paging: false, // Paging kita tangani manual (backend)
+      searching: false, // Search kita tangani manual (backend)
+      info: false, // Info "showing entries" kita tangani manual
+      ordering: true, // ⬅️ AKTIFKAN SORTIR
+      order: [[2, 'desc']], // Urutkan berdasarkan kolom ke-3 (Tanggal Laporan)
+      destroy: true,
+      language: {
+        emptyTable: 'Tidak ada data logbook',
+      },
+    });
+
+    // --- Event listener untuk tombol 'Lihat' ---
+    // Kita harus pakai 'delegation' (.on()) karena tombol dibuat oleh React
+    $(tableId + ' tbody').off('click', '.view-logbook-btn'); // Hapus listener lama
+    $(tableId + ' tbody').on('click', '.view-logbook-btn', function () {
+      const id = $(this).data('id');
+      const logbook = logbooks.find((l) => l.id === id);
+      if (logbook) {
+        handleOpenModal(logbook);
+      }
+    });
+
+    // Cleanup: Hancurkan tabel saat komponen unmount
+    return () => {
+      if ($.fn.DataTable.isDataTable(tableId)) {
+        $(tableId).DataTable().destroy();
+      }
+      $(tableId + ' tbody').off('click', '.view-logbook-btn');
+    };
+  }, [isLoading, logbooks]); // Jalankan ulang saat loading atau data berubah
+
+  // --- 4. Fungsi Export (Menggunakan window.ExcelJS) ---
   const handleExportExcel = async () => {
+    // Cek jika library sudah dimuat
+    if (
+      typeof window.ExcelJS === 'undefined' ||
+      typeof window.saveAs === 'undefined'
+    ) {
+      alert('Library export sedang dimuat. Silakan coba lagi sesaat.');
+      return;
+    }
+
+    // (Gunakan window.ExcelJS dan window.saveAs)
     const exportData = logbooks.map(({ pasFoto, ...rest }) => ({
       ...rest,
       tanggal: formatTanggalLaporan(rest.tanggal),
       tanggalSubmit: formatTanggalSubmit(rest.tanggalSubmit),
+      logbookFile: rest.logbookFile || 'Tidak ada file',
     }));
 
-    const workbook = new ExcelJS.Workbook();
+    const workbook = new window.ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Laporan Harian');
 
     worksheet.columns = [
@@ -154,241 +281,289 @@ const ManagementLaporan = () => {
       { header: 'TANGGAL LAPORAN', key: 'tanggal', width: 25 },
       { header: 'KEGIATAN', key: 'kegiatan', width: 50 },
       { header: 'TANGGAL SUBMIT', key: 'tanggalSubmit', width: 20 },
+      { header: 'FILE BUKTI', key: 'logbookFile', width: 50 },
     ];
 
     worksheet.addRows(exportData);
 
     const headerRow = worksheet.getRow(1);
-    headerRow.eachCell((cell, colNumber) => {
-      cell.font = {
-        bold: true,
-        color: { argb: 'FFFFFFFF' },
-        name: 'Calibri',
-      };
-
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Calibri' };
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: 'FF006DA6' },
       };
-
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
         bottom: { style: 'thin' },
         right: { style: 'thin' },
       };
-
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
-    worksheet.eachRow(
-      { includeEmpty: false, skipHeader: true },
-      (row, rowNumber) => {
-        row.eachCell((cell, colNumber) => {
-          cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' },
-          };
-
-          if (worksheet.columns[colNumber - 1].key === 'kegiatan') {
-            cell.alignment = { wrapText: true, vertical: 'top' };
-          }
-        });
-      }
-    );
+    worksheet.eachRow({ includeEmpty: false, skipHeader: true }, (row) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+        const colKey = worksheet.columns[colNumber - 1].key;
+        if (colKey === 'kegiatan' || colKey === 'logbookFile') {
+          cell.alignment = { wrapText: true, vertical: 'top' };
+        }
+      });
+    });
 
     const buffer = await workbook.xlsx.writeBuffer();
     const today = new Date().toISOString().split('T')[0];
     const fileName = `laporan_harian_${today}.xlsx`;
-
-    saveAs(new Blob([buffer]), fileName);
+    window.saveAs(new Blob([buffer]), fileName);
   };
 
+  // --- Fungsi Paginasi & Modal (Tidak Berubah) ---
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+  const handleOpenModal = (laporan) => {
+    setSelectedLaporan(laporan);
+    setIsOpen(true);
+  };
+  const handleCloseModal = () => {
+    setIsOpen(false);
+    setSelectedLaporan(null);
   };
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex w-full sm:w-auto items-center gap-4">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search
-              size={20}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Cari berdasarkan nama atau instansi peserta..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full min-w-[430px] pl-10 pr-4 py-2 border border-gray-300 rounded-lg 
-                  focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-            />
-          </div>
-
-          {/* Bidang Filter */}
+      {/* Filters: Disesuaikan agar 'Cari' di kanan */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        {/* Filter Kiri: Bidang & Tanggal */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <select
             value={bidangFilter}
-            onChange={(e) => setBidangFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+            onChange={(e) => {
+              setBidangFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg 
+                       focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
           >
             <option value="all">Semua Bidang</option>
-            <option value="Tata Kelola Informatika">
-              Tata Kelola Informatika
-            </option>
-            <option value="Pengelolaan Informasi dan Komunikasi Publik">
-              Pengelolaan Informasi dan Komunikasi Publik
-            </option>
-            <option value="Infrastruktur & Keamanan TIK">
-              Infrastruktur & Keamanan TIK
-            </option>
-            <option value="Sekretariat">Sekretariat</option>
-            <option value="Statistik">Statistik</option>
+            {/* Ganti 'value' dengan ID Bidang Anda */}
+            <option value="ID_BIDANG_1">Tata Kelola Informatika</option>
+            <option value="ID_BIDANG_2">Pengelolaan Informasi...</option>
+            <option value="ID_BIDANG_3">Infrastruktur & Keamanan TIK</option>
+            <option value="ID_BIDANG_4">Sekretariat</option>
+            <option value="ID_BIDANG_5">Statistik</option>
           </select>
-
-          {/* Filter tanggal */}
           <input
             type="date"
             value={tanggalFilter}
-            onChange={(e) => setTanggalFilter(e.target.value)}
+            onChange={(e) => {
+              setTanggalFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none 
-              focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+                       focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
           />
         </div>
 
-        {/* Export Button */}
-        <button
-          onClick={handleExportExcel}
-          disabled={logbooks.length === 0}
-          className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] 
-            transition-colors flex items-center space-x-2 text-sm"
-        >
-          <Download size={18} />
-          <span>Export Laporan</span>
-        </button>
+        {/* Filter Kanan: Cari & Export */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="relative">
+            <label htmlFor="search-input" className="sr-only">
+              Cari
+            </label>
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Cari..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full sm:w-64 pl-4 pr-4 py-2 border border-gray-300 rounded-lg 
+                         focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={handleExportExcel}
+            disabled={logbooks.length === 0}
+            className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] 
+                       transition-colors flex items-center justify-center space-x-2 text-sm"
+          >
+            <Download size={18} />
+            <span>Export Laporan</span>
+          </button>
+        </div>
       </div>
 
-      {/* Laporan Cards */}
-      <div className="space-y-4">
+      {/* --- 5. Mengganti .map() Laporan Cards menjadi <table> --- */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
         {isLoading && (
           <div className="text-center text-gray-500 py-10">
             Memuat data laporan harian...
           </div>
         )}
         {error && (
-          <div className="text-center text-red-600 bg-red-100 p-4 rounded-lg">
+          <div className="text-center text-red-600 bg-red-100 p-4">
             <strong>Error:</strong> {error}
           </div>
         )}
+
+        {/* Tabel ini akan di-enhance oleh DataTables dari CDN */}
+        <div className="overflow-x-auto">
+          <table id="logbook-admin-table" className="w-full text-sm text-left">
+            <thead className="text-gray-700">
+              <tr>
+                <th className="px-6 py-4 font-medium">
+                  Peserta <ChevronDown size={14} className="inline-block" />
+                </th>
+                <th className="px-6 py-4 font-medium">
+                  Bidang <ChevronDown size={14} className="inline-block" />
+                </th>
+                <th className="px-6 py-4 font-medium">
+                  Tanggal Laporan{' '}
+                  <ChevronDown size={14} className="inline-block" />
+                </th>
+                <th className="px-6 py-4 font-medium">
+                  File Bukti <ChevronDown size={14} className="inline-block" />
+                </th>
+                {/* --- ⬇️ TAMBAHAN BARU ⬇️ --- */}
+                <th className="px-6 py-4 font-medium">
+                  Tgl. Pengiriman{' '}
+                  <ChevronDown size={14} className="inline-block" />
+                </th>
+                {/* --- ⬆️ AKHIR TAMBAHAN ⬆️ --- */}
+                <th className="px-6 py-4 font-medium">Aksi</th>
+              </tr>
+            </thead>
+            {/* React akan me-render <tbody>, DataTables akan mengambil alih */}
+            <tbody>
+              {!isLoading &&
+                !error &&
+                logbooks.length > 0 &&
+                logbooks.map((laporan) => (
+                  <tr
+                    key={laporan.id}
+                    className="hover:bg-gray-50 border-b border-gray-200"
+                  >
+                    {/* Kolom Peserta */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {laporan.pasFoto ? (
+                            <img
+                              src={laporan.pasFoto}
+                              alt={laporan.peserta}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white font-medium">
+                              {laporan.peserta
+                                ? laporan.peserta.substring(0, 2).toUpperCase()
+                                : '??'}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">
+                            {laporan.peserta}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {laporan.instansi}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Kolom Bidang */}
+                    <td className="px-6 py-4 text-gray-700">
+                      {laporan.bidang}
+                    </td>
+                    {/* Kolom Tanggal Laporan */}
+                    <td className="px-6 py-4 text-gray-700">
+                      {
+                        /* Format tanggal lebih singkat di tabel */
+                        new Date(laporan.tanggal).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })
+                      }
+                    </td>
+                    {/* Kolom File Bukti */}
+                    <td className="px-6 py-4">
+                      {laporan.logbookFile ? (
+                        <a
+                          href={laporan.logbookFile}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          Lihat Bukti
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">Tidak ada</span>
+                      )}
+                    </td>
+                    {/* --- ⬇️ TAMBAHAN BARU ⬇️ --- */}
+                    <td className="px-6 py-4 text-gray-700">
+                      {formatTanggalSubmit(laporan.tanggalSubmit)}
+                    </td>
+                    {/* --- ⬆️ AKHIR TAMBAHAN ⬆️ --- */}
+                    {/* Kolom Aksi */}
+                    <td className="px-6 py-4">
+                      <button
+                        data-id={laporan.id} // ⬅️ ID PENTING untuk jQuery
+                        className="view-logbook-btn p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg"
+                        title="Lihat Detail"
+                      >
+                        <Eye size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Status jika tabel kosong */}
         {!isLoading && !error && logbooks.length === 0 && (
           <div className="text-center text-gray-500 py-10">
             Tidak ada laporan harian yang ditemukan.
           </div>
         )}
-
-        {!isLoading &&
-          !error &&
-          logbooks.map((laporan) => (
-            <div
-              key={laporan.id}
-              className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center overflow-hidden">
-                    {laporan.pasFoto ? (
-                      // JIKA ADA FOTO: Tampilkan <img>
-                      <img
-                        src={laporan.pasFoto}
-                        alt={laporan.peserta}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      // JIKA TIDAK ADA FOTO: Tampilkan <span> dengan inisial
-                      <span className="text-white font-medium">
-                        {laporan.peserta.substring(0, 2).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {laporan.peserta} <span>• </span>
-                      <span className="text-gray-900">{laporan.instansi}</span>
-                    </h3>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-sm text-gray-500 mt-1">
-                      <span>
-                        <span className="font-semibold">Bidang:</span>{' '}
-                        {laporan.bidang}
-                      </span>
-                      <span className="hidden sm:inline">•</span>
-                      <span>
-                        <span className="font-semibold">Tanggal Laporan:</span>{' '}
-                        {formatTanggalLaporan(laporan.tanggal)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tombol Eye */}
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => {
-                      setSelectedLaporan(laporan);
-                      setIsOpen(true);
-                    }}
-                    className="p-2 text-[#006DA6] hover:text-[#002942] hover:bg-[#BFDCFF] hover:bg-opacity-20 rounded-lg"
-                  >
-                    <Eye size={20} />
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-gray-700 mb-4 leading-relaxed line-clamp-3">
-                {laporan.kegiatan}
-              </p>
-
-              <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
-                <div>
-                  <span className="font-medium">Disubmit:</span>{' '}
-                  {formatTanggalSubmit(laporan.tanggalSubmit)}
-                </div>
-              </div>
-            </div>
-          ))}
       </div>
 
+      {/* Paginasi (dari backend) */}
       {!isLoading && !error && pagination.totalPages > 1 && (
-        <Pagination
-          currentPage={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          onPageChange={handlePageChange}
-        />
+        <Pagination pagination={pagination} onPageChange={handlePageChange} />
       )}
 
-      {/* Modal Detail Laporan */}
+      {/* --- Modal (Tetap sama, menggunakan div kondisional) --- */}
       {isOpen && selectedLaporan && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[90vh] flex flex-col">
+            {/* ... (Kode Modal Anda tetap sama) ... */}
+            {/* Header Modal */}
             <div className="flex items-start space-x-4 mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {selectedLaporan.pasFoto ? (
-                  // JIKA ADA FOTO: Tampilkan <img>
                   <img
                     src={selectedLaporan.pasFoto}
                     alt={selectedLaporan.peserta}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  // JIKA TIDAK ADA FOTO: Tampilkan <span> dengan inisial
                   <span className="text-white font-medium">
-                    {selectedLaporan.peserta.substring(0, 2).toUpperCase()}
+                    {selectedLaporan.peserta
+                      ? selectedLaporan.peserta.substring(0, 2).toUpperCase()
+                      : '??'}
                   </span>
                 )}
               </div>
@@ -399,21 +574,24 @@ const ManagementLaporan = () => {
                     {selectedLaporan.instansi}
                   </span>
                 </h3>
-
-                {/* Bidang */}
                 <div className="text-sm text-gray-500 mt-1">
                   <span className="font-semibold">Bidang:</span>{' '}
                   {selectedLaporan.bidang}
                 </div>
-
-                {/* Tanggal laporan */}
                 <div className="text-sm text-gray-500 mt-1">
                   <span className="font-semibold">Tanggal Laporan:</span>{' '}
                   {formatTanggalLaporan(selectedLaporan.tanggal)}
                 </div>
               </div>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-500 hover:text-gray-800 ml-auto"
+              >
+                <X size={24} />
+              </button>
             </div>
 
+            {/* Konten Modal */}
             <div className="mt-4 flex-1 overflow-y-auto">
               <h4 className="text-md font-semibold text-gray-800 mb-2">
                 Detail Kegiatan:
@@ -421,15 +599,32 @@ const ManagementLaporan = () => {
               <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                 {selectedLaporan.kegiatan}
               </p>
+
+              {selectedLaporan.logbookFile && (
+                <>
+                  <h4 className="text-md font-semibold text-gray-800 mb-2 mt-4">
+                    File Bukti:
+                  </h4>
+                  <a
+                    href={selectedLaporan.logbookFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline break-all"
+                  >
+                    {selectedLaporan.logbookFile}
+                  </a>
+                </>
+              )}
             </div>
 
+            {/* Footer Modal */}
             <div className="mt-6 flex justify-between items-center flex-shrink-0">
               <span className="text-sm text-gray-600">
                 <span className="font-semibold">Submit:</span>{' '}
                 {formatTanggalSubmit(selectedLaporan.tanggalSubmit)}
               </span>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={handleCloseModal}
                 className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#005080]"
               >
                 Tutup

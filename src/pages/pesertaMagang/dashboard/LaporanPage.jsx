@@ -1,6 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useContext } from 'react';
 import { LaporanContext } from './LaporanContext';
+import { Plus, X } from 'lucide-react';
+import Modal from 'react-modal';
+
+import $ from 'jquery';
+import DataTable from 'datatables.net-react';
+import DT from 'datatables.net-dt';
+import 'datatables.net-dt/css/dataTables.dataTables.css';
+
+DataTable.use(DT);
+Modal.setAppElement('#root');
 
 const toISODateString = (date) => {
   return date.toISOString().split('T')[0];
@@ -76,61 +86,174 @@ export default function LaporanPage() {
   const { uploadHistory } = useContext(LaporanContext);
   const latestSubmission = uploadHistory.length > 0 ? uploadHistory[0] : null;
 
+  // --- State untuk Laporan Harian (Logbook) ---
+  const [logbooks, setLogbooks] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchLogbookData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Otentikasi dibutuhkan. Silakan login kembali.');
+  // --- State untuk Modal ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalError, setModalError] = useState(null);
+
+  // --- State untuk Form di Modal ---
+  const [tanggal, setTanggal] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+  const [deskripsi, setDeskripsi] = useState('');
+  const [fileBukti, setFileBukti] = useState(null);
+
+  const fetchLogbookData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Otentikasi dibutuhkan. Silakan login kembali.');
+      }
+
+      const response = await fetch(
+        'http://localhost:3000/api/peserta/logbook',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
 
-        const response = await fetch(
-          'http://localhost:3000/api/peserta/logbook',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Gagal mengambil data logbook');
+      }
 
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.message || 'Gagal mengambil data logbook');
-        }
+      const res = await response.json();
+      setLogbooks(res.data.logbooks);
 
-        const res = await response.json();
-        const { periode, logbooks } = res.data;
-
+      const { periode, logbooks } = res.data;
+      if (periode) {
         const weeks = generateWeeklyStructure(
           periode.tglMulai,
           periode.tglSelesai,
           logbooks
         );
         setWeeklyData(weeks);
-      } catch (err) {
-        console.error('Error fetching logbook data:', err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching logbook data:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchLogbookData();
+  useEffect(() => {
+    $(document).ready(() => {});
+    fetchLogbookData(); // Panggil fungsi yang sudah dipindah
   }, []);
 
   const handleNavigateUpload = () => {
     navigate('/dashboard/unggah-laporan-akhir');
   };
 
-  const handleOpenForm = (mingguIndex, dayIndex) => {
-    navigate(`/dashboard/laporan-harian-form/${mingguIndex}/${dayIndex}`);
+  const handleOpenModal = () => {
+    // Reset form
+    setTanggal(new Date().toISOString().split('T')[0]);
+    setDeskripsi('');
+    setFileBukti(null);
+    setModalError(null);
+    setIsModalOpen(true);
   };
+  const handleCloseModal = () => setIsModalOpen(false);
+
+  const handleFileChange = (e) => {
+    if (e.target.files.length > 0) {
+      setFileBukti(e.target.files[0]);
+    } else {
+      setFileBukti(null);
+    }
+  };
+
+  // --- Fungsi Submit Form Modal ---
+  const handleSubmitLogbook = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setModalError(null);
+
+    const formData = new FormData();
+    formData.append('tanggal', tanggal);
+    formData.append('deskripsi', deskripsi);
+
+    if (fileBukti) {
+      formData.append('logbookFile', fileBukti);
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        'http://localhost:3000/api/peserta/logbook',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const res = await response.json();
+      if (!response.ok) {
+        throw new Error(res.message || 'Gagal menyimpan logbook');
+      }
+
+      await fetchLogbookData();
+      handleCloseModal();
+    } catch (err) {
+      console.error('Error submitting logbook:', err);
+      setModalError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const columns = [
+    {
+      title: 'Tanggal Laporan',
+      data: 'tanggal',
+      render: (data) =>
+        new Date(data).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+    },
+    {
+      title: 'Deskripsi Kegiatan',
+      data: 'deskripsi', //
+      render: (data) =>
+        `<div class="line-clamp-2" title="${data}">${data}</div>`,
+    },
+    {
+      title: 'File Bukti',
+      data: 'logbookFile',
+      render: (data) => {
+        if (!data) return '<span class="text-gray-400">Tidak ada</span>';
+        return `<a href="${data}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Lihat Bukti</a>`;
+      },
+    },
+    {
+      title: 'Tanggal Pengiriman',
+      data: 'createdAt',
+      render: (data) =>
+        new Date(data).toLocaleString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+    },
+  ];
 
   const StatusBadge = ({ status }) => {
     const styles = {
@@ -214,73 +337,160 @@ export default function LaporanPage() {
         )}
       </div>
 
-      <h3 className="text-lg font-bold mb-2">Laporan Harian</h3>
-      {isLoading && (
-        <div className="bg-white p-6 rounded shadow mb-6 text-center">
-          Memuat data laporan harian...
+      <div className="bg-white p-6 rounded shadow mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">Laporan Harian</h3>
+          <button
+            onClick={handleOpenModal}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Tambah Laporan Harian
+          </button>
         </div>
-      )}
-      {error && (
-        <div className="bg-white p-6 rounded shadow mb-6 text-center text-red-600">
-          Error: {error}
-        </div>
-      )}
 
-      {!isLoading &&
-        !error &&
-        weeklyData.map((mingguItem, idx) => {
-          const isWeekDone = mingguItem.isi.every((terisi) => terisi);
-          return (
-            <div
-              key={mingguItem.id}
-              className="bg-white p-6 rounded shadow mb-6"
+        {isLoading && <p>Memuat data logbook...</p>}
+        {error && <p className="text-red-600">Error: {error}</p>}
+
+        {!isLoading && !error && (
+          <DataTable
+            data={logbooks}
+            columns={columns}
+            options={{
+              destroy: true,
+              paging: true,
+              searching: true,
+              ordering: true,
+              order: [[3, 'desc']],
+              language: {
+                search: 'Cari:',
+                lengthMenu: 'Tampilkan _MENU_ entri',
+                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ entri',
+                paginate: {
+                  first: 'Pertama',
+                  last: 'Terakhir',
+                  next: 'Berikutnya',
+                  previous: 'Sebelumnya',
+                },
+                emptyTable: 'Tidak ada data logbook',
+              },
+            }}
+          />
+        )}
+      </div>
+
+      {/* --- Modal Tambah Laporan --- */}
+      <Modal
+        isOpen={isModalOpen}
+        onRequestClose={handleCloseModal}
+        contentLabel="Tambah Laporan Harian"
+        style={{
+          overlay: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+          },
+          content: {
+            top: '50%',
+            left: '50%',
+            right: 'auto',
+            bottom: 'auto',
+            marginRight: '-50%',
+            transform: 'translate(-50%, -50%)',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '100%',
+          },
+        }}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Tambah Aktivitas Harian</h2>
+          <button
+            onClick={handleCloseModal}
+            className="text-gray-500 hover:text-gray-800"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmitLogbook} className="space-y-4">
+          <div>
+            <label
+              htmlFor="tanggal"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              <div
-                className={`font-semibold mb-2 flex items-center gap-2 ${
-                  isWeekDone ? 'text-green-600' : 'text-[#FF6B00]'
-                }`}
-              >
-                {isWeekDone ? '✅ Selesai' : '✏️ Belum Dibuat'}
-              </div>
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-lg font-bold">{mingguItem.tanggal}</div>
-                <div className="flex gap-6">
-                  {mingguItem.days.map((day, i) => (
-                    <div key={i} className="flex flex-col items-center">
-                      <span className="text-sm font-semibold text-gray-700 mb-1">
-                        {day}
-                      </span>
-                      <div
-                        className={`w-9 h-9 flex items-center justify-center rounded-full border text-sm ${
-                          mingguItem.isi[i]
-                            ? 'bg-blue-500 text-white border-black border-2'
-                            : 'border-2 bg-gray-200 border-gray-500'
-                        }`}
-                      >
-                        {mingguItem.isi[i] ? '✓' : ''}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <hr className="my-6 border-t border-gray-200" />
-              <div className="flex justify-center">
-                <button
-                  onClick={() => handleOpenForm(idx, 0)}
-                  className="bg-[#006DA6] text-white px-6 py-2 rounded"
-                >
-                  Lengkapi Laporan Harian
-                </button>
-              </div>
-            </div>
-          );
-        })}
+              Tanggal Laporan
+            </label>
+            <input
+              type="date"
+              id="tanggal"
+              name="tanggal"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6]"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="deskripsi"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Deskripsi Kegiatan
+            </label>
+            <textarea
+              id="deskripsi"
+              name="deskripsi"
+              rows={5}
+              value={deskripsi}
+              onChange={(e) => setDeskripsi(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6]"
+              placeholder="Jelaskan kegiatan yang Anda lakukan hari ini..."
+              required
+            ></textarea>
+          </div>
+          <div>
+            <label
+              htmlFor="logbookFile"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              File Bukti Kegiatan (Opsional)
+            </label>
+            <input
+              type="file"
+              id="logbookFile"
+              name="logbookFile" // ⬅️ Pastikan 'name' ini ada dan sama dengan di middleware
+              onChange={handleFileChange}
+              className="w-full text-sm text-gray-500
+                         file:mr-4 file:py-2 file:px-4
+                         file:rounded-lg file:border-0
+                         file:text-sm file:font-semibold
+                         file:bg-[#BFDCFF] file:text-[#006DA6]
+                         hover:file:bg-[#a0caff]"
+            />
+          </div>
 
-      {!isLoading && !error && weeklyData.length === 0 && (
-        <div className="bg-white p-6 rounded shadow mb-6 text-center text-gray-500">
-          Anda tidak memiliki periode magang yang aktif atau disetujui.
-        </div>
-      )}
+          {modalError && <p className="text-sm text-red-600">{modalError}</p>}
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#005080] disabled:bg-gray-400"
+            >
+              {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
