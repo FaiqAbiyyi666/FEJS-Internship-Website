@@ -62,6 +62,7 @@ export default function ManageDataMagang() {
       alamat: peserta.alamat || '',
       instansi: peserta.instansi || '',
       jurusan: peserta.jurusan || '',
+      instagram: peserta.instagram || '',
       periodeMulai: formatDateForInput(peserta.periodeMulai),
       periodeSelesai: formatDateForInput(peserta.periodeSelesai),
       bidangId: peserta.bidangId || '',
@@ -174,6 +175,7 @@ export default function ManageDataMagang() {
       { header: 'INSTANSI', key: 'instansi', width: 30 },
       { header: 'JURUSAN', key: 'jurusan', width: 25 },
       { header: 'ALAMAT', key: 'alamat', width: 50 },
+      { header: 'INSTAGRAM', key: 'instagram', width: 50 },
       { header: 'PERIODE', key: 'periode', width: 25 },
       { header: 'SURAT MAGANG', key: 'suratMagang', width: 40 },
       { header: 'SERTIFIKAT', key: 'sertifikat', width: 40 },
@@ -191,6 +193,7 @@ export default function ManageDataMagang() {
       instansi: d.instansi,
       jurusan: d.jurusan,
       alamat: d.alamat,
+      instagram: d.instagram,
       periode: `${d.periodeMulai.split('T')[0]} - ${
         d.periodeSelesai.split('T')[0]
       }`,
@@ -629,6 +632,23 @@ export default function ManageDataMagang() {
                         ) : (
                           <div className="text-gray-600">
                             {selectedPeserta.jurusan}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className={labelClass}>Instagram</div>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="intagram"
+                            value={formData.instagram}
+                            onChange={handleInputChange}
+                            className={inputClass}
+                          />
+                        ) : (
+                          <div className="text-gray-600">
+                            {selectedPeserta.instagram}
                           </div>
                         )}
                       </div>

@@ -137,7 +137,7 @@ const ManagementLaporan = () => {
   }, [searchTerm, bidangFilter, tanggalFilter, currentPage]);
 
   const handleExportExcel = async () => {
-    const exportData = logbooks.map(({ avatar, ...rest }) => ({
+    const exportData = logbooks.map(({ pasFoto, ...rest }) => ({
       ...rest,
       tanggal: formatTanggalLaporan(rest.tanggal),
       tanggalSubmit: formatTanggalSubmit(rest.tanggalSubmit),
@@ -302,10 +302,20 @@ const ManagementLaporan = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium">
-                      {laporan.avatar}
-                    </span>
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center overflow-hidden">
+                    {laporan.pasFoto ? (
+                      // JIKA ADA FOTO: Tampilkan <img>
+                      <img
+                        src={laporan.pasFoto}
+                        alt={laporan.peserta}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      // JIKA TIDAK ADA FOTO: Tampilkan <span> dengan inisial
+                      <span className="text-white font-medium">
+                        {laporan.peserta.substring(0, 2).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -367,10 +377,20 @@ const ManagementLaporan = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[90vh] flex flex-col">
             <div className="flex items-start space-x-4 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-medium">
-                  {selectedLaporan.avatar}
-                </span>
+              <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {selectedLaporan.pasFoto ? (
+                  // JIKA ADA FOTO: Tampilkan <img>
+                  <img
+                    src={selectedLaporan.pasFoto}
+                    alt={selectedLaporan.peserta}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  // JIKA TIDAK ADA FOTO: Tampilkan <span> dengan inisial
+                  <span className="text-white font-medium">
+                    {selectedLaporan.peserta.substring(0, 2).toUpperCase()}
+                  </span>
+                )}
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">

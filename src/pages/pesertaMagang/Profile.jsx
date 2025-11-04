@@ -15,6 +15,7 @@ export default function Profile() {
     email: '',
     nik: '',
     alamat: '',
+    instagram: '',
   });
 
   const [profileImage, setProfileImage] = useState('/default-profile.png');
@@ -60,6 +61,8 @@ export default function Profile() {
       newErrors.instansi = 'Asal instansi tidak boleh kosong.';
     if (!formData.jurusan) newErrors.jurusan = 'Jurusan tidak boleh kosong.';
     if (!formData.alamat) newErrors.alamat = 'Alamat tidak boleh kosong.';
+    if (!formData.instagram)
+      newErrors.instagram = 'Instagram tidak boleh kosong.';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -102,6 +105,7 @@ export default function Profile() {
           email: profileData.email || '',
           nik: profileData.nik || '',
           alamat: profileData.alamat || '',
+          instagram: profileData.instagram || '',
           pasFoto: profileData.pas_foto || '',
         });
         const imageUrl = profileData.pasFoto;
@@ -159,6 +163,7 @@ export default function Profile() {
         dataToSend.append('nimNis', formData.nimNis);
         dataToSend.append('instansi', formData.instansi);
         dataToSend.append('jurusan', formData.jurusan);
+        dataToSend.append('instagram', formData.instagram);
         dataToSend.append('alamat', formData.alamat);
         dataToSend.append('pasFoto', imageFile);
         requestBody = dataToSend;
@@ -169,6 +174,7 @@ export default function Profile() {
           nimNis: formData.nimNis,
           instansi: formData.instansi,
           jurusan: formData.jurusan,
+          instagram: formData.instagram,
           alamat: formData.alamat,
         };
         requestBody = JSON.stringify(dataToSend);
@@ -263,6 +269,7 @@ export default function Profile() {
                 { id: 'instansi', label: 'Asal Instansi', type: 'text' },
                 { id: 'email', label: 'Email', type: 'email', readOnly: true },
                 { id: 'jurusan', label: 'Jurusan', type: 'text' },
+                { id: 'instagram', label: 'Instagram', type: 'text' },
                 {
                   id: 'nik',
                   label: 'Nomor Induk Kependudukan',

@@ -13,6 +13,7 @@ export default function Register() {
     jurusan: '',
     alamat: '',
     password: '',
+    instagram: '',
     confirmPassword: '',
     pasFoto: null,
   });
@@ -208,6 +209,13 @@ export default function Register() {
               id="alamat"
               name="alamat"
               value={formData.alamat}
+              onChange={handleChange}
+            />
+            <Input
+              label="Instagram (*Opsional)"
+              id="instagram"
+              name="instagram"
+              value={formData.instagram}
               onChange={handleChange}
             />
 

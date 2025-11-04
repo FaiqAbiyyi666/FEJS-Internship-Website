@@ -46,8 +46,8 @@ export default function ManageVerifAkun() {
       if (!historyRes.ok)
         throw new Error(history.message || 'Gagal ambil history');
 
-      setPendingPeserta(pending.data || []); 
-      setApprovedPeserta(history.data || []); 
+      setPendingPeserta(pending.data || []);
+      setApprovedPeserta(history.data || []);
     } catch (err) {
       console.error('Gagal fetch data:', err.message);
     }
@@ -158,6 +158,7 @@ export default function ManageVerifAkun() {
       p.nik.toLowerCase().includes(term) ||
       p.instansi.toLowerCase().includes(term) ||
       p.jurusan.toLowerCase().includes(term) ||
+      p.instagram.toLowerCase().includes(term) ||
       p.alamat.toLowerCase().includes(term) ||
       p.status.toLowerCase().includes(term);
 
@@ -214,6 +215,7 @@ export default function ManageVerifAkun() {
       { header: 'INSTANSI', key: 'instansi', width: 30 },
       { header: 'JURUSAN', key: 'jurusan', width: 25 },
       { header: 'ALAMAT', key: 'alamat', width: 50 },
+      { header: 'INSTAGRAM', key: 'instagram', width: 50 },
       { header: 'TANGGAL DAFTAR', key: 'tanggalDaftar', width: 20 },
       { header: 'STATUS', key: 'status', width: 15 },
     ];
@@ -227,6 +229,7 @@ export default function ManageVerifAkun() {
       instansi: p.instansi,
       jurusan: p.jurusan,
       alamat: p.alamat,
+      instagram: p.instagram,
       tanggalDaftar: new Date(p.createdAt).toLocaleDateString('id-ID'),
       status: p.status,
     }));
@@ -470,6 +473,13 @@ export default function ManageVerifAkun() {
                 </p>
               </div>
 
+              <div className="border rounded p-3">
+                <label className="text-gray-600 text-sm">Instagram</label>
+                <p className="text-gray-800 font-semibold">
+                  {selectedPeserta.instagram}
+                </p>
+              </div>
+
               <div className="border rounded p-3 sm:col-span-2">
                 <label className="text-gray-600 text-sm">Alamat</label>
                 <p className="text-gray-800 font-semibold">
@@ -559,6 +569,7 @@ export default function ManageVerifAkun() {
               <th className="px-4 py-3">Instansi</th>
               <th className="px-4 py-3">Jurusan</th>
               <th className="px-4 py-3">Alamat</th>
+              <th className="px-4 py-3">Instagram</th>
               <th className="px-4 py-3">Tanggal Daftar</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Tanggal Keputusan</th>
@@ -575,6 +586,7 @@ export default function ManageVerifAkun() {
                 <td className="px-4 py-3">{peserta.instansi}</td>
                 <td className="px-4 py-3">{peserta.jurusan}</td>
                 <td className="px-4 py-3">{peserta.alamat}</td>
+                <td className="px-4 py-3">{peserta.instagram}</td>
                 <td className="px-4 py-3">{peserta.createdAt}</td>
                 <td className="px-4 py-3">{peserta.status}</td>
                 <td className="px-4 py-3">
