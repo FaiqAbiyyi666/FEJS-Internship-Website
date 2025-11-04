@@ -1,142 +1,161 @@
-import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Edit, Save, X, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Eye, EyeOff } from 'lucide-react';
+import axios from 'axios';
+
+// Fungsi helper sederhana untuk memformat tanggal
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('id-ID', options);
+  } catch (e) {
+    return dateString;
+  }
+};
 
 const AdminProfile = () => {
-  const [isEditing, setIsEditing] = useState(false);
+  // State untuk data profil (diambil dari API)
   const [formData, setFormData] = useState({
-    nama: 'Administrator',
-    email: 'admin@magang.com',
-    phone: '021-12345678',
-    alamat: 'Jl. Sudirman No. 123, Jakarta',
-    jabatan: 'System Administrator',
-    divisi: 'IT Department',
-    tanggalBergabung: '2023-01-15',
-    bio: 'Bertanggung jawab mengelola sistem informasi magang dan koordinasi dengan semua stakeholder.',
+    nama: 'Memuat...',
+    email: 'Memuat...',
+    bidang: 'Memuat...',
+    tanggalBergabung: 'Memuat...',
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Saving profile:', formData);
-    setIsEditing(false);
+  // State untuk form ubah password
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // --- 1. Mengambil Data Profil Saat Halaman Dimuat ---
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // Asumsi token disimpan di localStorage. Sesuaikan jika perlu.
+        const token = localStorage.getItem('token');
+
+        // Memanggil API yang Anda tentukan di routes
+        const response = await axios.get(
+          'http://localhost:3000/api/admin/profile',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Kirim token untuk middleware
+            },
+          }
+        );
+
+        const data = response.data;
+
+        // Mengisi state dengan data dari controller
+        setFormData({
+          nama: data.nama,
+          email: data.email,
+          // Menampilkan nama bidang, atau 'Super Admin' jika bidang null
+          bidang: data.bidang ? data.bidang.nama : 'Super Admin',
+          tanggalBergabung: formatDate(data.tanggalBergabung),
+        });
+      } catch (error) {
+        console.error('Gagal mengambil profil:', error);
+        setFormData({
+          nama: 'Gagal memuat',
+          email: 'Gagal memuat',
+          bidang: 'Gagal memuat',
+          tanggalBergabung: 'Gagal memuat',
+        });
+      }
+    };
+
+    fetchProfile();
+  }, []); // [] = Jalankan sekali saat komponen dimuat
+
+  // --- 2. Handler untuk Form Ubah Password ---
+  const handlePasswordChange = (e) => {
+    setPasswordData({
+      ...passwordData,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const handleCancel = () => {
-    setFormData({
-      nama: 'Administrator',
-      email: 'admin@magang.com',
-      phone: '021-12345678',
-      alamat: 'Jl. Sudirman No. 123, Jakarta',
-      jabatan: 'System Administrator',
-      divisi: 'IT Department',
-      tanggalBergabung: '2023-01-15',
-      bio: 'Bertanggung jawab mengelola sistem informasi magang dan koordinasi dengan semua stakeholder.',
-    });
-    setIsEditing(false);
+  const handleSubmitPassword = async (e) => {
+    e.preventDefault();
+
+    // Validasi frontend sederhana
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('Password baru dan konfirmasi tidak cocok!');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      // Memanggil API change-password
+      await axios.post(
+        'http://localhost:3000/api/admin/change-password',
+        {
+          oldPassword: passwordData.oldPassword,
+          newPassword: passwordData.newPassword,
+          confirmPassword: passwordData.confirmPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert('Password berhasil diubah!');
+      // Kosongkan form setelah berhasil
+      setPasswordData({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error) {
+      console.error('Gagal mengubah password:', error);
+      // Menampilkan pesan error dari backend
+      alert(`Gagal: ${error.response?.data?.message || error.message}`);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* --- Bagian Informasi Profil (Display Only) --- */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
-            Informasi Profile
+            Informasi Profil
           </h2>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-[#006DA6] text-white px-4 py-2 rounded-lg hover:bg-[#002942] transition-colors flex items-center space-x-2"
-            >
-              <Edit size={20} />
-              <span>Edit Profile</span>
-            </button>
-          )}
+          {/* Tombol Edit dihapus sesuai permintaan */}
         </div>
 
         <div className="flex items-center space-x-6 mb-6">
-          <div className="relative">
-            <div className="w-24 h-24 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center">
-              <User size={48} className="text-white" />
-            </div>
-            {isEditing && (
-              <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#006DA6] rounded-full flex items-center justify-center text-white hover:bg-[#002942] transition-colors">
-                <Camera size={16} />
-              </button>
-            )}
-          </div>
+          {/* Foto profil dihapus sesuai kode Anda yang dikomentari */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
               {formData.nama}
             </h2>
-            <p className="text-gray-600">{formData.jabatan}</p>
-            <p className="text-gray-500 text-sm">{formData.divisi}</p>
-            <div className="flex items-center mt-2">
-              <span className="inline-flex px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                Active
-              </span>
-            </div>
+            {/* Menampilkan bidang di bawah nama */}
+            <p className="text-gray-500 text-sm">{formData.bidang}</p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        {/* Form ini tidak memiliki tombol submit, hanya untuk display */}
+        <form>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
-              {isEditing ? (
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-                  required
-                />
-              ) : (
-                <div className="flex items-center py-2">
-                  <Mail size={16} className="text-gray-400 mr-2" />
-                  <span className="text-gray-900">{formData.email}</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Role
-              </label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={formData.jabatan}
-                  onChange={(e) =>
-                    setFormData({ ...formData, jabatan: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-                  required
-                />
-              ) : (
-                <p className="text-gray-900 py-2">{formData.jabatan}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bidang
-              </label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={formData.divisi}
-                  onChange={(e) =>
-                    setFormData({ ...formData, divisi: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-                  required
-                />
-              ) : (
-                <p className="text-gray-900 py-2">{formData.divisi}</p>
-              )}
+              {/* Hanya menampilkan data, tidak ada input */}
+              <div className="flex items-center py-2">
+                <Mail size={16} className="text-gray-400 mr-2" />
+                <span className="text-gray-900">{formData.email}</span>
+              </div>
             </div>
 
             <div>
@@ -145,65 +164,94 @@ const AdminProfile = () => {
               </label>
               <p className="text-gray-900 py-2">{formData.tanggalBergabung}</p>
             </div>
-          </div>
 
-          {isEditing && (
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-colors"
-              >
-                <X size={20} />
-                <span>Batal</span>
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-[#006DA6] text-white rounded-lg hover:bg-[#002942] flex items-center space-x-2 transition-colors"
-              >
-                <Save size={20} />
-                <span>Simpan</span>
-              </button>
-            </div>
-          )}
+            {/* Field "Role" dan "Bidang" yang lama dihapus agar sesuai data */}
+          </div>
+          {/* Tombol Simpan/Batal dihapus sesuai permintaan */}
         </form>
       </div>
 
+      {/* --- Bagian Ubah Password (Fungsional) --- */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Ubah Password
         </h3>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmitPassword}>
+          {/* --- Password Lama --- */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password Lama
             </label>
-            <input
-              type="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-              placeholder="Masukkan password lama"
-            />
+            <div className="relative">
+              <input
+                type={showOldPassword ? 'text' : 'password'}
+                name="oldPassword"
+                value={passwordData.oldPassword}
+                onChange={handlePasswordChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+                placeholder="Masukkan password lama"
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+              >
+                {showOldPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
+
+          {/* --- Password Baru --- */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password Baru
             </label>
-            <input
-              type="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-              placeholder="Masukkan password baru"
-            />
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                name="newPassword"
+                value={passwordData.newPassword}
+                onChange={handlePasswordChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+                placeholder="Masukkan password baru"
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+              >
+                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
+
+          {/* --- Konfirmasi Password Baru --- */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Konfirmasi Password Baru
             </label>
-            <input
-              type="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
-              placeholder="Konfirmasi password baru"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                value={passwordData.confirmPassword}
+                onChange={handlePasswordChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
+                placeholder="Konfirmasi password baru"
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
+
           <div className="flex justify-end">
             <button
               type="submit"
