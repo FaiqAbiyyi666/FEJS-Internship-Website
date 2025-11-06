@@ -130,13 +130,13 @@ export default function DetailUsulanMagang() {
     );
   }
 
-  const berkas = detail.peserta.berkas?.[0] || {};
+  const berkas = detail.berkas || {};
   const detailData = {
     tanggal: formatDate(detail.createdAt),
     namaLengkap: detail.peserta.namaLengkap,
-    nim: detail.peserta.nimNis,
-    universitas: detail.peserta.instansi,
-    jurusan: detail.peserta.jurusan,
+    nim: detail.peserta.nimNis || '-',
+    universitas: detail.instansi || '-',
+    jurusan: detail.jurusan || '-',
     kategori: detail.kategoriMagang,
     statusPendidikan: detail.statusPendidikan,
     jenjangPendidikan: detail.jenjangPendidikan,
@@ -145,12 +145,12 @@ export default function DetailUsulanMagang() {
     bidang: detail.bidang?.nama || 'N/A',
     status: detail.statusUsulan,
     berkas: {
-      suratBakesbangProv: berkas.suratBakesbangpolSby,
+      suratBakesbangProv: berkas.suratBakesbangpolProv,
       suratBakesbangSDA: berkas.suratBakesbangpolSda,
       suratPengantar: berkas.suratPengantar,
       proposalMagang: berkas.proposalMagang,
       cv: berkas.cv,
-      ktp: berkas.pasFoto,
+      ktp: berkas.ktp,
     },
   };
 
@@ -197,64 +197,109 @@ export default function DetailUsulanMagang() {
               </label>
               <ul className="list-disc pl-6 space-y-1 text-sm">
                 <li>
-                  <a
-                    href={detailData.berkas.suratBakesbangProv || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Surat Bakesbangpol Provinsi
-                  </a>
+                  {detailData.berkas.suratBakesbangProv ? (
+                    <a
+                      href={detailData.berkas.suratBakesbangProv}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Surat Bakesbangpol Provinsi
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 cursor-not-allowed">
+                      Surat Bakesbangpol Provinsi (Opsional, tidak diunggah)
+                    </span>
+                  )}
                 </li>
                 <li>
-                  <a
-                    href={detailData.berkas.suratBakesbangSDA || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Surat Bakesbangpol Sidoarjo
-                  </a>
+                  {detailData.berkas.suratBakesbangSDA ? (
+                    <a
+                      href={detailData.berkas.suratBakesbangSDA}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Surat Bakesbangpol Sidoarjo
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 cursor-not-allowed">
+                      Surat Bakesbangpol Sidoarjo (Berkas tidak ditemukan)
+                    </span>
+                  )}
                 </li>
+
+                {/* --- Surat Pengantar (Wajib) --- */}
                 <li>
-                  <a
-                    href={detailData.berkas.suratPengantar || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Surat Pengantar
-                  </a>
+                  {detailData.berkas.suratPengantar ? (
+                    <a
+                      href={detailData.berkas.suratPengantar}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Surat Pengantar
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 cursor-not-allowed">
+                      Surat Pengantar (Berkas tidak ditemukan)
+                    </span>
+                  )}
                 </li>
+
+                {/* --- Proposal Magang (Wajib) --- */}
                 <li>
-                  <a
-                    href={detailData.berkas.proposalMagang || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Proposal Magang
-                  </a>
+                  {detailData.berkas.proposalMagang ? (
+                    <a
+                      href={detailData.berkas.proposalMagang}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Proposal Magang
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 cursor-not-allowed">
+                      Proposal Magang (Berkas tidak ditemukan)
+                    </span>
+                  )}
                 </li>
+
+                {/* --- CV (Wajib) --- */}
                 <li>
-                  <a
-                    href={detailData.berkas.cv || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Curriculum Vitae (CV)
-                  </a>
+                  {detailData.berkas.cv ? (
+                    <a
+                      href={detailData.berkas.cv}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Curriculum Vitae (CV)
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 cursor-not-allowed">
+                      Curriculum Vitae (CV) (Berkas tidak ditemukan)
+                    </span>
+                  )}
                 </li>
+
+                {/* --- KTP / Kartu (Wajib) --- */}
                 <li>
-                  <a
-                    href={detailData.berkas.ktp || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    KTP / Kartu Pelajar / Kartu Mahasiswa
-                  </a>
+                  {detailData.berkas.ktp ? (
+                    <a
+                      href={detailData.berkas.ktp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      KTP / Kartu Pelajar / Kartu Mahasiswa
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 cursor-not-allowed">
+                      KTP / Kartu Pelajar / Kartu Mahasiswa (Berkas tidak
+                      ditemukan)
+                    </span>
+                  )}
                 </li>
               </ul>
             </div>

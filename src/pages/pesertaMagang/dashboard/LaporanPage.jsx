@@ -342,15 +342,37 @@ export default function LaporanPage() {
           <h3 className="text-lg font-bold">Laporan Harian</h3>
           <button
             onClick={handleOpenModal}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            disabled={
+              isLoading || (error && error.includes('tidak memiliki ajuan'))
+            }
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 
+                 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             <Plus size={18} />
             Tambah Laporan Harian
           </button>
         </div>
 
-        {isLoading && <p>Memuat data logbook...</p>}
-        {error && <p className="text-red-600">Error: {error}</p>}
+        {isLoading && (
+          <p className="text-center text-gray-500 py-4">
+            Memuat data logbook...
+          </p>
+        )}
+
+        {error &&
+          (error.includes('tidak memiliki ajuan') ? (
+            <div className="text-center text-gray-500 py-10">
+              <p className="font-semibold">
+                Kamu belum memiliki ajuan magang yang disetujui.
+              </p>
+              <p className="text-sm mt-2">
+                Silakan daftar magang terlebih dahulu untuk mengisi laporan
+                harian.
+              </p>
+            </div>
+          ) : (
+            <p className="text-red-600 p-4 text-center">Error: {error}</p>
+          ))}
 
         {!isLoading && !error && (
           <DataTable

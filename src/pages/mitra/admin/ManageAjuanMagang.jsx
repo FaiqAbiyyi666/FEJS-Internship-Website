@@ -99,7 +99,7 @@ export default function AdminAjuanMagangPage() {
   const ITEMS_PER_PAGE = 5;
 
   const transformBackendData = useCallback((ajuan) => {
-    const berkas = ajuan.peserta.berkas?.[0] || {};
+    const berkas = ajuan.berkas || {};
     return {
       id: ajuan.id,
       pesertaId: ajuan.peserta.id,
@@ -120,9 +120,9 @@ export default function AdminAjuanMagangPage() {
       suratPengantar: berkas.suratPengantar,
       proposalMagang: berkas.proposalMagang,
       cv: berkas.cv,
-      ktp: berkas.pasFoto,
+      ktp: berkas.ktp,
       bakesbangsda: berkas.suratBakesbangpolSda,
-      bakesbangprov: berkas.suratBakesbangpolSby,
+      bakesbangprov: berkas.suratBakesbangpolProv,
       foto: ajuan.peserta.pasFoto,
     };
   }, []);

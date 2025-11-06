@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { FormDataContext } from './PengajuanMagangPage'; 
+import { FormDataContext } from './PengajuanMagangPage';
 
 export default function FormulirPendaftaran() {
   const { formData, setFormData } = useContext(FormDataContext);
@@ -155,7 +155,11 @@ export default function FormulirPendaftaran() {
               className="form-input w-full"
               placeholder="Masukkan Sekolah / Perguruan Tinggi"
             />
+            <label className="block text-xs font-light mt-1 text-gray-600 text-justify">
+              *) Jika sudah lulus kuliah, masukkan instansi terakhir
+            </label>
           </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Jurusan</label>
             <input

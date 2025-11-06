@@ -24,6 +24,7 @@ import LaporanAkhir from './pages/pesertaMagang/dashboard/UnggahLaporan';
 import LaporanHarian from './pages/pesertaMagang/dashboard/LaporanHarianForm';
 import SertifikatPage from './pages/pesertaMagang/dashboard/SertifikatPage';
 import UlasanMagangPage from './pages/pesertaMagang/dashboard/UlasanMagangPage';
+import FormUlasanWrapper from './pages/pesertaMagang/dashboard/FormUlasanWrapper';
 
 import UsulanMagang from './pages/pesertaMagang/usulan/UsulanMagangPage';
 import DetailUsulanMagang from './pages/pesertaMagang/usulan/DetailUsulanMagang';
@@ -61,7 +62,7 @@ export default function App() {
           />
           <Route path="unggah-laporan-akhir" element={<LaporanAkhir />} />
           <Route path="sertifikat" element={<SertifikatPage />} />
-          <Route path="ulasan-magang" element={<UlasanMagangPage />} />
+          <Route path="ulasan-magang" element={<FormUlasanWrapper />} />
         </Route>
 
         {/* Pengajuan Magang Route */}

@@ -2,6 +2,7 @@ import React, { useState, createContext } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { FaArrowLeft, FaArrowRight, FaSave } from 'react-icons/fa';
 import Navbar from '../../../../src/components/navigations/Navbar';
+import { useLoading } from '../../../contexts/LoadingContext';
 
 export const FormDataContext = createContext(null);
 
@@ -9,8 +10,8 @@ export default function PengajuanMagangPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showModal, setShowModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { showLoading, hideLoading } = useLoading();
 
   const [formData, setFormData] = useState({
     // Step 1: Formulir
@@ -61,7 +62,7 @@ export default function PengajuanMagangPage() {
 
   const handleConfirmSubmit = async () => {
     setShowModal(false);
-    setIsLoading(true);
+    showLoading(true);
     setError(null);
 
     try {
@@ -108,15 +109,15 @@ export default function PengajuanMagangPage() {
         throw new Error(result.message || 'Gagal mengirim ajuan.');
       }
 
-      setIsLoading(false);
       console.log('Ajuan berhasil dikirim:', result.data);
       alert('Data berhasil disimpan!');
       navigate('/usulan');
     } catch (err) {
-      setIsLoading(false);
       setError(err.message);
       console.error('Error saat submit:', err);
       alert(`Terjadi kesalahan: ${err.message}`);
+    } finally {
+      hideLoading(false);
     }
   };
 

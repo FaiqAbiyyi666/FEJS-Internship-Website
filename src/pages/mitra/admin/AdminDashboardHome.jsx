@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'; // Import hooks
+import { useEffect, useState } from 'react';
 import {
   Users,
   FileText,
@@ -22,7 +22,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// --- Card Components (Tidak berubah) ---
 function Card({ children, className = '' }) {
   return (
     <div className={`bg-white rounded-xl shadow ${className}`}>{children}</div>
@@ -31,9 +30,7 @@ function Card({ children, className = '' }) {
 function CardContent({ children, className = '' }) {
   return <div className={`p-4 ${className}`}>{children}</div>;
 }
-// ... (Button component jika Anda membutuhkannya)
 
-// Buat mapping dari string iconName (dari API) ke komponen Ikon
 const iconMap = {
   Users,
   FileText,
@@ -49,12 +46,10 @@ const iconMap = {
 const COLORS = ['#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#6366F1'];
 
 export default function AdminDashboardHome() {
-  // --- State untuk menampung data dinamis ---
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- useEffect untuk Fetching Data ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -79,7 +74,7 @@ export default function AdminDashboardHome() {
         const result = await response.json();
 
         if (result.status) {
-          setDashboardData(result.data); // Simpan data dari API ke state
+          setDashboardData(result.data);
         } else {
           throw new Error(result.message || 'Gagal memuat data');
         }
@@ -91,9 +86,8 @@ export default function AdminDashboardHome() {
     };
 
     fetchDashboardData();
-  }, []); // [] = jalankan sekali saat komponen dimuat
+  }, []);
 
-  // --- Handle Loading State ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -102,7 +96,6 @@ export default function AdminDashboardHome() {
     );
   }
 
-  // --- Handle Error State ---
   if (error) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -111,17 +104,14 @@ export default function AdminDashboardHome() {
     );
   }
 
-  // --- Render Dashboard jika data berhasil dimuat ---
   if (!dashboardData) {
-    return null; // Seharusnya tidak terjadi jika loading & error ditangani
+    return null;
   }
 
   return (
     <div className="space-y-6">
-      {/* --- STATS CARDS (Data dari state) --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {dashboardData.stats.map((stat, idx) => {
-          // Ambil komponen ikon dari map berdasarkan iconName
           const IconComponent = iconMap[stat.iconName] || Users;
           return (
             <Card key={idx} className="hover:shadow-md transition">
@@ -170,12 +160,10 @@ export default function AdminDashboardHome() {
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={dashboardData.charts.ajuanData}>
               {' '}
-              {/* Data dari API */}
-              <XAxis dataKey="month" /> {/* Sesuai 'month' dari controller */}
+              <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
               <Bar dataKey="jumlah" fill="#3B82F6" />{' '}
-              {/* Sesuai 'jumlah' dari controller */}
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -186,11 +174,11 @@ export default function AdminDashboardHome() {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={dashboardData.charts.laporanStatus} // Data dari API
+                data={dashboardData.charts.laporanStatus}
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                dataKey="value" // Sesuai 'value' dari controller
+                dataKey="value"
                 label={({ name, value }) => `${name} (${value}%)`}
               >
                 {dashboardData.charts.laporanStatus.map((entry, index) => (

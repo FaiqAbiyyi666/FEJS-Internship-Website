@@ -138,9 +138,13 @@ export default function UnggahBerkas() {
         {renderFileInput(
           'Surat Rekomendasi Bakesbangpol Provinsi',
           'suratBakesbangProv',
-          '*) Wajib bagi calon peserta magang yang instansinya di luar Sidoarjo'
+          '*) Tidak Wajib bagi calon peserta magang yang instansinya di luar Sidoarjo'
         )}
-        {renderFileInput('Surat Pengantar Instansi', 'suratPengantar')}
+        {renderFileInput(
+          'Surat Pengantar Instansi',
+          'suratPengantar',
+          '*) Bagi calon peserta magang yang sudah lulus kuliah, bisa digantikan dengan SKL (Surat Keterangan Lulus) atau Ijazah'
+        )}
         {renderFileInput('Proposal Magang', 'proposalMagang')}
         {renderFileInput('Curriculum Vitae (CV)', 'cvPeserta')}
         {renderFileInput('KTP / Kartu Pelajar / Kartu Mahasiswa', 'ktp')}

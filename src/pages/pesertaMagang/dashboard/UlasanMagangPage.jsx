@@ -12,8 +12,19 @@ export default function UlasanMagangPage({ onSubmit }) {
     e.preventDefault();
     setMessage(null);
 
+    if (!ajuanId) {
+      setMessage({
+        type: 'error',
+        text: 'ID Ajuan Magang tidak ditemukan.',
+      });
+      return;
+    }
+
     if (rating === 0 || ulasan.trim() === '') {
-      alert('Silakan isi ulasan dan pilih rating.');
+      setMessage({
+        type: 'error',
+        text: 'Silakan isi ulasan dan pilih rating.',
+      });
       return;
     }
 
@@ -31,21 +42,27 @@ export default function UlasanMagangPage({ onSubmit }) {
         Authorization: `Bearer ${token}`,
       };
 
+      const body = JSON.stringify({ ulasan, rating, ajuanId });
+
       const response = await fetch(
         'http://localhost:3000/api/peserta/ulasan-magang',
         {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ ulasan, rating }),
+          body: body,
         }
       );
 
+      const errorData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
         throw new Error(errorData.message || 'Gagal mengirim ulasan');
       }
 
-      setMessage({ type: 'success', text: 'Ulasan berhasil dikirim!' });
+      setMessage({
+        type: 'success',
+        text: errorData.message || 'Ulasan berhasil dikirim!',
+      });
       setUlasan('');
       setRating(0);
       setHover(null);
