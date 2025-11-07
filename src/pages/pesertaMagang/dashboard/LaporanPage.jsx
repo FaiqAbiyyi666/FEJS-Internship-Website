@@ -477,7 +477,7 @@ export default function LaporanPage() {
               htmlFor="logbookFile"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              File Bukti Kegiatan (Opsional)
+              File Bukti Kegiatan (Ukuran File harus dibawah 5MB)
             </label>
             <input
               type="file"

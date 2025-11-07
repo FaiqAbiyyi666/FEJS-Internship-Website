@@ -106,7 +106,7 @@ export default function ManageSertifikat() {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      fetchHistory(1); 
+      fetchHistory(1);
     }, 500);
     return () => clearTimeout(handler);
   }, [searchTerm, selectedBidang, filterTanggal]);
@@ -281,9 +281,11 @@ export default function ManageSertifikat() {
                     key={item.id}
                     className="border-t hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-4 py-3">{item.peserta.namaLengkap}</td>
+                    <td className="px-4 py-3">
+                      {item.ajuan.peserta.namaLengkap}
+                    </td>
                     <td className="px-4 py-3">{item.noSertifikat}</td>
-                    <td className="px-4 py-3">{item.bidang}</td>
+                    <td className="px-4 py-3">{item.ajuan.bidang.nama}</td>
                     <td className="px-4 py-3">{item.nilai}</td>
                     <td className="px-4 py-3">
                       {new Date(item.createdAt).toLocaleDateString('id-ID')}

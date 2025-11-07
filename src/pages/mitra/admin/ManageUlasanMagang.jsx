@@ -13,7 +13,7 @@ const ManageUlasanMagang = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      setErrorMessage(null); 
+      setErrorMessage(null);
 
       try {
         const token = localStorage.getItem('token');
@@ -37,7 +37,7 @@ const ManageUlasanMagang = () => {
           `http://localhost:3000/api/admin/ulasan-magang?${params.toString()}`,
           {
             method: 'GET',
-            headers: headers, 
+            headers: headers,
           }
         );
 
@@ -50,7 +50,7 @@ const ManageUlasanMagang = () => {
         setDataUlasan(result.data);
       } catch (error) {
         console.error('Error di fetchData:', error.message);
-        setErrorMessage(error.message); 
+        setErrorMessage(error.message);
       } finally {
         setIsLoading(false);
       }

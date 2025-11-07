@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import UlasanMagangPage from './UlasanMagangPage'; // Impor form 'bodoh'
+import UlasanMagangPage from './UlasanMagangPage';
 
-// Komponen 'wrapper' inilah yang Anda letakkan di halaman dashboard Anda
 export default function FormUlasanWrapper() {
   const [eligibilityData, setEligibilityData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,18 +36,15 @@ export default function FormUlasanWrapper() {
     fetchEligibility();
   }, []);
 
-  // Fungsi untuk membuka modal
   const handleOpenModal = (ajuanId) => {
     setSelectedAjuanId(ajuanId);
     setShowModal(true);
   };
 
-  // Fungsi untuk menutup modal (dikirim ke UlasanMagangPage)
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedAjuanId(null);
-    // Refresh data kelayakan
-    window.location.reload(); // Cara mudah, bisa diganti fetch ulang
+    window.location.reload();
   };
 
   if (isLoading) {
@@ -61,7 +57,9 @@ export default function FormUlasanWrapper() {
 
   return (
     <div className="bg-white space-y-4 p-4 border rounded-lg text-center">
-      <h2 className="text-xl font-semibold">Ulasan Magang Anda</h2>
+      <h2 className="text-2xl font-bold mb-2 text-gray-800 text-center">
+        Ulasan Magang
+      </h2>
       {eligibilityData.length === 0 && (
         <p className="text-gray-500">
           Anda tidak memiliki data magang yang telah disetujui.
@@ -73,8 +71,8 @@ export default function FormUlasanWrapper() {
           key={ajuan.ajuanId}
           className="p-4 border rounded-md flex justify-between items-center"
         >
-          <div>
-            <h3 className="font-semibold">{ajuan.temaMagang}</h3>
+          <div className={!ajuan.eligible ? 'w-full text-center' : ''}>
+            <h3 className="font-semibold">{ajuan.namaBidang}</h3>
             <p
               className={`text-sm ${
                 ajuan.eligible ? 'text-green-600' : 'text-gray-500'
@@ -84,7 +82,6 @@ export default function FormUlasanWrapper() {
             </p>
           </div>
 
-          {/* INILAH LOGIKA UTAMA: Tampilkan tombol HANYA jika 'eligible' */}
           {ajuan.eligible && (
             <button
               onClick={() => handleOpenModal(ajuan.ajuanId)}
@@ -100,9 +97,6 @@ export default function FormUlasanWrapper() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-4 rounded-lg shadow-xl max-w-lg w-full">
-            {/* Kirimkan ajuanId dan fungsi 'onSubmit' (untuk menutup modal) 
-              ke komponen form 'bodoh' 
-            */}
             <UlasanMagangPage
               ajuanId={selectedAjuanId}
               onSubmit={handleCloseModal}
