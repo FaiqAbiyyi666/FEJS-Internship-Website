@@ -3,7 +3,7 @@ import { Eye, Plus, AlertTriangle, Loader } from 'react-feather';
 
 export default function ManageSertifikat() {
   const [history, setHistory] = useState([]);
-  const [pesertaList, setPesertaList] = useState([]);
+  const [ajuanList, setAjuanList] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,8 +19,8 @@ export default function ManageSertifikat() {
   const [modalPreview, setModalPreview] = useState(null);
 
   const [form, setForm] = useState({
-    pesertaId: '',
-    namaPeserta: '',
+    ajuanId: '',
+    namaDisplay: '',
     noSertifikat: '',
     nilai: '',
     file: null,
@@ -70,18 +70,16 @@ export default function ManageSertifikat() {
     }
   };
 
-  const fetchPeserta = async () => {
+  const fetchAjuansForSertifikat = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        console.error(
-          'Autentikasi tidak ditemukan untuk mengambil daftar peserta.'
-        );
+        console.error('Autentikasi tidak ditemukan.');
         return;
       }
 
       const res = await fetch(
-        'http://localhost:3000/api/admin/sertifikat-list',
+        'http://localhost:3000/api/admin/ajuan-for-sertifikat',
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -90,10 +88,10 @@ export default function ManageSertifikat() {
       );
 
       if (!res.ok) {
-        throw new Error('Gagal mengambil daftar peserta');
+        throw new Error('Gagal mengambil daftar ajuan');
       }
       const data = await res.json();
-      setPesertaList(data.data);
+      setAjuanList(data.data);
     } catch (err) {
       console.error(err);
     }
@@ -101,7 +99,7 @@ export default function ManageSertifikat() {
 
   useEffect(() => {
     fetchHistory(currentPage);
-    fetchPeserta();
+    fetchAjuansForSertifikat();
   }, [currentPage]);
 
   useEffect(() => {
@@ -125,24 +123,27 @@ export default function ManageSertifikat() {
     }));
   };
 
-  const handlePilihPeserta = (e) => {
+  const handlePilihAjuan = (e) => {
     const value = e.target.value;
-    const peserta = pesertaList.find((p) => p.namaLengkap === value);
-    if (peserta) {
+
+    const ajuan = ajuanList.find((a) => a.namaDisplay === value);
+
+    if (ajuan) {
       setForm((prev) => ({
         ...prev,
-        pesertaId: peserta.id,
-        namaPeserta: peserta.namaLengkap,
+        ajuanId: ajuan.id,
+        namaDisplay: ajuan.namaDisplay,
       }));
     } else {
-      setForm((prev) => ({ ...prev, pesertaId: '', namaPeserta: value }));
+      setForm((prev) => ({ ...prev, ajuanId: '', namaDisplay: value }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.pesertaId || !form.noSertifikat || !form.nilai || !form.file) {
-      alert('Semua kolom wajib diisi');
+
+    if (!form.ajuanId || !form.noSertifikat || !form.nilai || !form.file) {
+      alert('Semua kolom wajib diisi. Pastikan memilih ajuan dari daftar.');
       return;
     }
 
@@ -153,7 +154,7 @@ export default function ManageSertifikat() {
     }
 
     const formData = new FormData();
-    formData.append('pesertaId', form.pesertaId);
+    formData.append('ajuanId', form.ajuanId);
     formData.append('noSertifikat', form.noSertifikat);
     formData.append('nilai', form.nilai);
     formData.append('file', form.file);
@@ -178,17 +179,55 @@ export default function ManageSertifikat() {
       alert('Sertifikat berhasil dikirim!');
       setModalKirim(false);
       setForm({
-        pesertaId: '',
-        namaPeserta: '',
+        ajuanId: '',
+        namaDisplay: '',
         noSertifikat: '',
         nilai: '',
         file: null,
         fileURL: '',
       });
       fetchHistory(1);
+      fetchAjuansForSertifikat();
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
+  };
+
+  const handleBukaModalKosong = () => {
+    setForm({
+      ajuanId: '',
+      namaDisplay: '',
+      noSertifikat: '',
+      nilai: '',
+      file: null,
+      fileURL: '',
+    });
+    setModalKirim(true);
+  };
+
+  const handleBukaModalPraisi = (ajuan) => {
+    setForm({
+      ...form,
+      ajuanId: ajuan.id,
+      namaDisplay: ajuan.namaDisplay,
+      noSertifikat: '',
+      nilai: '',
+      file: null,
+      fileURL: '',
+    });
+    setModalKirim(true);
+  };
+
+  const handleTutupModal = () => {
+    setModalKirim(false);
+    setForm({
+      ajuanId: '',
+      namaDisplay: '',
+      noSertifikat: '',
+      nilai: '',
+      file: null,
+      fileURL: '',
+    });
   };
 
   return (
@@ -240,12 +279,38 @@ export default function ManageSertifikat() {
         </div>
 
         <button
-          onClick={() => setModalKirim(true)}
+          onClick={handleBukaModalKosong}
           className="flex items-center gap-2 bg-[#006DA6] hover:bg-[#1a4962] text-white px-4 py-2 rounded text-sm"
         >
-          <Plus size={16} /> Kirim Sertifikat
+          <Plus size={16} /> Kirim Sertifikat (Manual)
         </button>
       </div>
+
+      {ajuanList.length > 0 && (
+        <div className="mb-6 p-4 bg-gray-50 border rounded-lg shadow">
+          <h3 className="text-lg font-bold text-[#002942] mb-3">
+            🕒 Perlu Tindakan: Siap Kirim Sertifikat
+          </h3>
+          <div className="max-h-48 overflow-y-auto space-y-2">
+            {ajuanList.map((ajuan) => (
+              <div
+                key={ajuan.id}
+                className="flex justify-between items-center p-3 bg-white border rounded-md"
+              >
+                <span className="text-sm text-gray-700">
+                  {ajuan.namaDisplay}
+                </span>
+                <button
+                  onClick={() => handleBukaModalPraisi(ajuan)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs font-semibold rounded"
+                >
+                  Kirim
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white shadow rounded-lg overflow-x-auto">
         <table className="min-w-full text-sm border border-gray-200">
@@ -341,7 +406,7 @@ export default function ManageSertifikat() {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
             <button
-              onClick={() => setModalKirim(false)}
+              onClick={handleTutupModal}
               className="absolute top-2 right-3 text-gray-600 hover:text-red-600 text-xl"
             >
               &times;
@@ -350,19 +415,20 @@ export default function ManageSertifikat() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Nama Peserta
+                  Pilih Ajuan Magang (Peserta yang telah selesai)
                 </label>
                 <input
-                  list="pesertaList"
-                  name="namaPeserta"
-                  value={form.namaPeserta}
-                  onChange={handlePilihPeserta}
-                  placeholder="Ketik nama peserta..."
+                  list="ajuanList"
+                  name="namaDisplay"
+                  value={form.namaDisplay}
+                  onChange={handlePilihAjuan}
+                  placeholder="Ketik nama peserta atau bidang..."
                   className="w-full border px-3 py-2 rounded text-sm"
+                  required
                 />
-                <datalist id="pesertaList">
-                  {pesertaList.map((peserta) => (
-                    <option key={peserta.id} value={peserta.namaLengkap} />
+                <datalist id="ajuanList">
+                  {ajuanList.map((ajuan) => (
+                    <option key={ajuan.id} value={ajuan.namaDisplay} />
                   ))}
                 </datalist>
               </div>
@@ -376,6 +442,7 @@ export default function ManageSertifikat() {
                   value={form.noSertifikat}
                   onChange={handleChange}
                   className="w-full border px-3 py-2 rounded text-sm"
+                  required
                 />
               </div>
               <div>
@@ -388,6 +455,7 @@ export default function ManageSertifikat() {
                   value={form.nilai}
                   onChange={handleChange}
                   className="w-full border px-3 py-2 rounded text-sm"
+                  required
                 />
               </div>
               <div>
@@ -399,6 +467,7 @@ export default function ManageSertifikat() {
                   accept="application/pdf"
                   onChange={handleFileChange}
                   className="w-full text-sm"
+                  required
                 />
               </div>
               {form.fileURL && (
@@ -436,7 +505,7 @@ export default function ManageSertifikat() {
               &times;
             </button>
             <h3 className="text-lg font-semibold mb-4">
-              Sertifikat: {modalPreview.peserta.namaLengkap}
+              Sertifikat: {modalPreview.ajuan.peserta.namaLengkap}
             </h3>
             <iframe
               src={modalPreview.fileUrl}

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { FaStar } from 'react-icons/fa';
 
-export default function UlasanMagangPage({ onSubmit }) {
+export default function UlasanMagangPage({
+  onSubmit,
+  ajuanId,
+  existingReview,
+}) {
   const [ulasan, setUlasan] = useState('');
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(null);
@@ -77,6 +81,39 @@ export default function UlasanMagangPage({ onSubmit }) {
       setIsLoading(false);
     }
   };
+
+  if (existingReview) {
+    return (
+      <div className="bg-white rounded-lg p-6 w-full">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
+          Riwayat Ulasan Anda
+        </h2>
+        {/* Rating Read-only */}
+        <div className="text-center mb-4">
+          <label className="block text-gray-700 mb-2">Rating</label>
+          <div className="flex justify-center space-x-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <FaStar
+                key={star}
+                className={`h-6 w-6 ${
+                  star <= existingReview.rating
+                    ? 'text-yellow-400'
+                    : 'text-gray-300'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+        {/* Ulasan Read-only */}
+        <div>
+          <label className="block text-gray-700 mb-2">Ulasan</label>
+          <div className="w-full border rounded-lg p-3 bg-gray-50 min-h-[100px]">
+            <p className="text-gray-800">{existingReview.ulasan}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 w-full">

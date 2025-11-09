@@ -9,6 +9,7 @@ export default function FormUlasanWrapper() {
   // State untuk modal
   const [showModal, setShowModal] = useState(false);
   const [selectedAjuanId, setSelectedAjuanId] = useState(null);
+  const [selectedReview, setSelectedReview] = useState(null);
 
   useEffect(() => {
     const fetchEligibility = async () => {
@@ -36,14 +37,16 @@ export default function FormUlasanWrapper() {
     fetchEligibility();
   }, []);
 
-  const handleOpenModal = (ajuanId) => {
-    setSelectedAjuanId(ajuanId);
+  const handleOpenModal = (ajuan) => {
+    setSelectedAjuanId(ajuan.ajuanId);
+    setSelectedReview(ajuan.existingReview);
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedAjuanId(null);
+    setSelectedReview(null);
     window.location.reload();
   };
 
@@ -84,10 +87,19 @@ export default function FormUlasanWrapper() {
 
           {ajuan.eligible && (
             <button
-              onClick={() => handleOpenModal(ajuan.ajuanId)}
+              onClick={() => handleOpenModal(ajuan)}
               className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600"
             >
               Beri Ulasan
+            </button>
+          )}
+
+          {ajuan.status === 'COMPLETED' && (
+            <button
+              onClick={() => handleOpenModal(ajuan)}
+              className="bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-300"
+            >
+              Lihat Ulasan
             </button>
           )}
         </div>
@@ -99,6 +111,7 @@ export default function FormUlasanWrapper() {
           <div className="bg-white p-4 rounded-lg shadow-xl max-w-lg w-full">
             <UlasanMagangPage
               ajuanId={selectedAjuanId}
+              existingReview={selectedReview}
               onSubmit={handleCloseModal}
             />
             <button

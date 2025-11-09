@@ -4,7 +4,6 @@ import { LaporanContext } from './LaporanContext';
 import { Plus, X } from 'lucide-react';
 import Modal from 'react-modal';
 
-import $ from 'jquery';
 import DataTable from 'datatables.net-react';
 import DT from 'datatables.net-dt';
 import 'datatables.net-dt/css/dataTables.dataTables.css';
@@ -36,7 +35,6 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
   );
 
   while (currentDate <= endDate) {
-    // Cari hari Senin (hari ke-1)
     while (currentDate.getDay() !== 1 && currentDate <= endDate) {
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -46,10 +44,9 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
     const weekStartDate = new Date(currentDate.getTime());
     const weekDays = [];
 
-    // Loop 5 hari (Senin-Jumat)
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const dayDate = new Date(currentDate.getTime());
-      dayDate.setDate(dayDate.getDate() + i); // Maju 1 hari
+      dayDate.setDate(dayDate.getDate() + i);
 
       if (dayDate > endDate) break;
 
@@ -65,7 +62,6 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
     }
 
     if (weekDays.length > 0) {
-      // Ambil tanggal terakhir di array weekDays (Jumat atau hari terakhir magang)
       const weekEndDate = new Date(weekDays[weekDays.length - 1].date);
       weeks.push({
         id: toISODateString(weekStartDate),
@@ -75,7 +71,7 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
       });
     }
 
-    currentDate.setDate(currentDate.getDate() + 7 - 4);
+    currentDate.setDate(currentDate.getDate() + 7);
   }
 
   return weeks;
@@ -84,7 +80,7 @@ const generateWeeklyStructure = (tglMulaiISO, tglSelesaiISO, logbooks = []) => {
 export default function LaporanPage() {
   const navigate = useNavigate();
   const { uploadHistory } = useContext(LaporanContext);
-  const latestSubmission = uploadHistory.length > 0 ? uploadHistory[0] : null;
+  const [latestSubmission, setLatestSubmission] = useState(null);
 
   // --- State untuk Laporan Harian (Logbook) ---
   const [logbooks, setLogbooks] = useState([]);
@@ -104,52 +100,81 @@ export default function LaporanPage() {
   const [deskripsi, setDeskripsi] = useState('');
   const [fileBukti, setFileBukti] = useState(null);
 
-  const fetchLogbookData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Otentikasi dibutuhkan. Silakan login kembali.');
-      }
-
-      const response = await fetch(
-        'http://localhost:3000/api/peserta/logbook',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || 'Gagal mengambil data logbook');
-      }
-
-      const res = await response.json();
-      setLogbooks(res.data.logbooks);
-
-      const { periode, logbooks } = res.data;
-      if (periode) {
-        const weeks = generateWeeklyStructure(
-          periode.tglMulai,
-          periode.tglSelesai,
-          logbooks
-        );
-        setWeeklyData(weeks);
-      }
-    } catch (err) {
-      console.error('Error fetching logbook data:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    $(document).ready(() => {});
-    fetchLogbookData(); // Panggil fungsi yang sudah dipindah
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Otentikasi dibutuhkan. Silakan login kembali.');
+      setIsLoading(false);
+      return;
+    }
+
+    // 1. Fungsi untuk fetch logbook
+    const fetchLogbookData = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/logbook',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.message || 'Gagal mengambil data logbook');
+        }
+        const res = await response.json();
+
+        const { periode, logbooks } = res.data;
+        setLogbooks(logbooks); // Set data untuk DataTable
+
+        if (periode) {
+          const weeks = generateWeeklyStructure(
+            periode.tglMulai,
+            periode.tglSelesai,
+            logbooks
+          );
+          setWeeklyData(weeks);
+        }
+      } catch (err) {
+        console.error('Error fetching logbook data:', err);
+        setError((prevError) => prevError || err.message); // Hanya set error jika belum ada
+      }
+    };
+
+    // 2. Fungsi untuk fetch status laporan akhir
+    const fetchLaporanHistory = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/laporan-akhir/history',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(
+            errData.msg || 'Gagal mengambil riwayat laporan akhir'
+          );
+        }
+        const history = await response.json();
+        if (history.length > 0) {
+          setLatestSubmission(history[0]); // Simpan hanya laporan terbaru
+        }
+      } catch (err) {
+        console.error('Error fetching laporan history:', err);
+        setError((prevError) => prevError || err.message);
+      }
+    };
+
+    // 3. Panggil kedua fungsi
+    const loadAllData = async () => {
+      setIsLoading(true);
+      setError(null);
+      // Menjalankan kedua fetch secara paralel
+      await Promise.all([fetchLogbookData(), fetchLaporanHistory()]);
+      setIsLoading(false);
+    };
+
+    loadAllData();
   }, []);
 
   const handleNavigateUpload = () => {
