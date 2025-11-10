@@ -288,7 +288,9 @@ export default function ManageSuratMagang() {
                   <td className="px-4 py-3">{item.email}</td>
                   <td className="px-4 py-3">{item.bidang}</td>
                   <td className="px-4 py-3">{item.noSurat}</td>
-                  <td className="px-4 py-3">{item.tanggal}</td>
+                  <td className="px-4 py-3">
+                    {item.tanggal ? item.tanggal.split('T')[0] : 'N/A'}
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => {

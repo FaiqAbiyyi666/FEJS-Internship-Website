@@ -5,7 +5,12 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { useLoading } from '../../../contexts/LoadingContext';
 
-const formatDate = (date) => date.toISOString().split('T')[0];
+const formatDate = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 function generateFullLogbook(startDateStr, endDateStr, existingLogs) {
   if (!startDateStr || !endDateStr) {
@@ -18,53 +23,63 @@ function generateFullLogbook(startDateStr, endDateStr, existingLogs) {
   }
 
   let allWeeks = [];
-  let current = new Date(startDateStr + 'T00:00:00');
-  let end = new Date(endDateStr + 'T00:00:00');
 
-  let dayOfWeek = current.getDay();
-  let diff = current.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-  let monday = new Date(current.setDate(diff));
+  const startParts = startDateStr.split('-').map(Number);
+  const endParts = endDateStr.split('-').map(Number);
+
+  let current = new Date(
+    Date.UTC(startParts[0], startParts[1] - 1, startParts[2])
+  );
+  let end = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2]));
 
   let weekIndex = 0;
 
-  while (monday <= end) {
+  while (current <= end) {
     let harian = [];
-    let weekEndDate = new Date(monday);
-    weekEndDate.setDate(monday.getDate() + 4);
-    for (let i = 0; i < 5; i++) {
-      let day = new Date(monday);
-      day.setDate(monday.getDate() + i);
 
-      if (day >= new Date(startDateStr + 'T00:00:00') && day <= end) {
-        const dayStr = formatDate(day);
-        const existingLog = logMap.get(dayStr);
+    let weekEndDate = new Date(current);
+    weekEndDate.setUTCDate(current.getUTCDate() + 6);
 
-        if (existingLog) {
-          harian.push({
-            ...existingLog,
-            tanggal: dayStr,
-          });
-        } else {
-          harian.push({
-            id: `missing-${dayStr}`,
-            tanggal: dayStr,
-            isi: '',
-            done: false,
-          });
-        }
+    if (weekEndDate > end) {
+      weekEndDate = new Date(end);
+    }
+
+    let dayInWeek = new Date(current);
+
+    while (dayInWeek <= weekEndDate) {
+      if (dayInWeek > end) break;
+
+      const dayStr = formatDate(dayInWeek);
+      const existingLog = logMap.get(dayStr);
+
+      if (existingLog) {
+        harian.push({
+          ...existingLog,
+          tanggal: dayStr,
+        });
+      } else {
+        harian.push({
+          id: `missing-${dayStr}`,
+          tanggal: dayStr,
+          isi: '',
+          done: false,
+        });
       }
+
+      dayInWeek.setUTCDate(dayInWeek.getUTCDate() + 1);
     }
 
     if (harian.length > 0) {
       allWeeks.push({
         id: `week-${weekIndex}`,
         week: `Minggu ${weekIndex + 1}`,
-        range: `${formatDate(monday)} - ${formatDate(weekEndDate)}`,
+        range: `${harian[0].tanggal} - ${harian[harian.length - 1].tanggal}`,
         harian: harian,
       });
     }
 
-    monday.setDate(monday.getDate() + 7);
+    current = new Date(weekEndDate);
+    current.setUTCDate(current.getUTCDate() + 1);
     weekIndex++;
   }
 
@@ -848,10 +863,7 @@ export default function ManageDataMagang() {
                       <div>
                         <div className={labelClass}>Laporan Akhir</div>
                         <div className={readOnlyClass}>
-                          {selectedPeserta.laporanAkhir?.status || '-'}{' '}
-                          {selectedPeserta.laporanAkhir?.nilai
-                            ? ` • Nilai: ${selectedPeserta.laporanAkhir.nilai}`
-                            : ''}
+                          {selectedPeserta.laporanAkhir?.status || '-'}
                         </div>
                       </div>
 
@@ -865,7 +877,10 @@ export default function ManageDataMagang() {
                       <div>
                         <div className={labelClass}>Status Sertifikat</div>
                         <div className={readOnlyClass}>
-                          {selectedPeserta.sertifikat}
+                          {selectedPeserta.sertifikat || '-'}{' '}
+                          {selectedPeserta.sertifikatData?.nilai
+                            ? ` • Nilai: ${selectedPeserta.sertifikatData.nilai}`
+                            : ''}
                         </div>
                       </div>
                     </div>
@@ -901,38 +916,21 @@ export default function ManageDataMagang() {
                 </div>
               </form>
               <div>
-                 {' '}
                 <h4 className="text-xl font-bold text-[#006DA6] mb-3">
-                    Laporan Harian (Kalender Lengkap)  {' '}
+                  Laporan Harian (Kalender Lengkap)
                 </h4>
-                 {' '}
                 <div className="space-y-4">
-                    {/* Gunakan 'fullLogbookCalendar' yang sudah di-generate */}
-                   {' '}
                   {fullLogbookCalendar && fullLogbookCalendar.length ? (
                     fullLogbookCalendar.map((w, idx) => {
-                      // Cek kelengkapan minggu ini
                       const isComplete = w.harian?.every((d) => d.done);
-                      const isExpanded = selectedPeserta._expandedWeek === idx;
 
                       return (
                         <div
                           key={w.id}
                           className="bg-white border rounded-lg shadow-sm"
                         >
-                            {/* Tombol Accordion (Minggu) */} {' '}
-                          <button
-                            className="p-4 w-full flex items-center justify-between text-left"
-                            onClick={() =>
-                              setSelectedPeserta((prev) => ({
-                                ...prev, // Toggle expand/collapse
-                                _expandedWeek: isExpanded ? null : idx,
-                              }))
-                            }
-                          >
-                              {/* Info Minggu (Kiri) */} {' '}
+                          <div className="p-4 w-full flex items-center justify-between text-left">
                             <div>
-                               {' '}
                               <div
                                 className={`text-base font-medium ${
                                   isComplete
@@ -940,183 +938,46 @@ export default function ManageDataMagang() {
                                     : 'text-orange-500'
                                 }`}
                               >
-                                  {isComplete ? 'Lengkap' : 'Belum Lengkap'} {' '}
+                                {isComplete ? 'Lengkap' : 'Belum Lengkap'}
                               </div>
-                               {' '}
                               <div className="font-bold text-gray-800">
-                                  {w.week} ({w.range})  {' '}
+                                {w.week} ({w.range})
                               </div>
-                               {' '}
                             </div>
-                              {/* Status Harian (Kanan) - 5 Lingkaran */} {' '}
+
                             <div className="flex items-center gap-3">
-                               {' '}
                               <div className="flex items-center gap-2 sm:gap-4">
-                                 {' '}
                                 {w.harian.map((day) => (
                                   <div
-                                    key={day.id} // Gunakan ID (bisa 'missing-...' atau ID asli)
+                                    key={day.id}
                                     className="flex flex-col items-center"
                                   >
-                                     {' '}
                                     <div
-                                      title={day.tanggal} // Tooltip untuk tanggal
+                                      title={day.tanggal}
                                       className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center text-sm sm:text-base ${
                                         day.done
                                           ? 'bg-[#006DA6] text-white border-[#006DA6]'
                                           : 'bg-white text-gray-400 border-gray-500'
                                       }`}
                                     >
-                                        {day.done ? '✓' : ''} {' '}
+                                      {day.done ? '✓' : ''}
                                     </div>
-                                     {' '}
                                   </div>
                                 ))}
-                                 {' '}
                               </div>
-                               {' '}
                             </div>
-                             {' '}
-                          </button>
-                           {' '}
-                          {/* Konten Accordion (Harian) - Tampil jika 'isExpanded' */}
-                           {' '}
-                          {isExpanded && (
-                            <div className="p-4 border-t border-gray-100">
-                               {' '}
-                              <h5 className="font-semibold text-gray-800 mb-3">
-                                Detail Harian:
-                              </h5>
-                               {' '}
-                              <div className="space-y-3">
-                                 {' '}
-                                {w.harian.map((day) => (
-                                  <div
-                                    key={day.id}
-                                    className="bg-white border rounded p-3 shadow-sm"
-                                  >
-                                     {' '}
-                                    <div className="flex items-start gap-3">
-                                       {' '}
-                                      <div
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                          day.done
-                                            ? 'bg-[#006DA6] text-white'
-                                            : 'bg-gray-100 text-gray-400'
-                                        }`}
-                                      >
-                                          {day.done ? '✓' : '✗'} {' '}
-                                      </div>
-                                       {' '}
-                                      <div>
-                                         {' '}
-                                        <div className="font-semibold text-gray-800">
-                                           {' '}
-                                          {/* Tambah 'T00:00:00' untuk atasi masalah timezone saat format */}
-                                           {' '}
-                                          {new Date(
-                                            day.tanggal + 'T00:00:00'
-                                          ).toLocaleDateString('id-ID', {
-                                            weekday: 'long',
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                          })}
-                                           {' '}
-                                        </div>
-                                         {' '}
-                                        <p className="text-sm text-gray-600 mt-1">
-                                           {' '}
-                                          {day.isi || (
-                                            <span className="italic text-gray-400">
-                                              Belum diisi
-                                            </span>
-                                          )}
-                                           {' '}
-                                        </p>
-                                         {' '}
-                                      </div>
-                                       {' '}
-                                    </div>
-                                     {' '}
-                                  </div>
-                                ))}
-                                 {' '}
-                              </div>
-                               {' '}
-                            </div>
-                          )}
-                           {' '}
+                          </div>
                         </div>
                       );
                     })
                   ) : (
                     <div className="text-sm text-gray-500">
-                        Periode magang peserta ini belum diatur, atau tidak ada
-                      data logbook untuk ditampilkan.  {' '}
+                      Periode magang peserta ini belum diatur, atau tidak ada
+                      data logbook untuk ditampilkan.
                     </div>
                   )}
-                   {' '}
                 </div>
-                 {' '}
               </div>
-                {/* --- AKHIR BAGIAN LOGBOOK --- */}
-              {typeof selectedPeserta._expandedWeek === 'number' &&
-                selectedPeserta.logbook[selectedPeserta._expandedWeek] && (
-                  <div className="mt-4 bg-white border rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <div className="text-sm text-gray-500">
-                          Detail Minggu
-                        </div>
-                        <div className="font-semibold text-gray-800">
-                          {
-                            selectedPeserta.logbook[
-                              selectedPeserta._expandedWeek
-                            ].week
-                          }{' '}
-                          •{' '}
-                          {
-                            selectedPeserta.logbook[
-                              selectedPeserta._expandedWeek
-                            ].range
-                          }
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      {selectedPeserta.logbook[
-                        selectedPeserta._expandedWeek
-                      ].harian.map((day, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-white border rounded p-3 shadow-sm"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                day.done
-                                  ? 'bg-[#006DA6] text-white'
-                                  : 'bg-gray-100 text-gray-400'
-                              }`}
-                            >
-                              {day.done ? '✓' : ''}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-800">
-                                {new Date(day.tanggal).toLocaleDateString()}
-                              </div>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {day.isi || 'Belum dibuat'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setSelectedPeserta(null)}

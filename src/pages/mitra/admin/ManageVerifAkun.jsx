@@ -587,7 +587,9 @@ export default function ManageVerifAkun() {
                 <td className="px-4 py-3">{peserta.jurusan}</td>
                 <td className="px-4 py-3">{peserta.alamat}</td>
                 <td className="px-4 py-3">{peserta.instagram}</td>
-                <td className="px-4 py-3">{peserta.createdAt}</td>
+                <td className="px-4 py-3">
+                  {peserta.createdAt ? peserta.createdAt.split('T')[0] : 'N/A'}
+                </td>
                 <td className="px-4 py-3">{peserta.status}</td>
                 <td className="px-4 py-3">
                   {new Date(

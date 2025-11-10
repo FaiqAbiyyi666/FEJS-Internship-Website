@@ -12,20 +12,15 @@ import {
 } from 'react-icons/fa';
 
 export default function Footer() {
-  // --- Data & URL
   const gmapsUrl = 'http://googleusercontent.com/maps/google.com/1';
   const surveyUrl = 'https://ikm.sidoarjokab.go.id/opd/107';
   const websiteUrl = 'https://diskominfo.sidoarjokab.go.id/index-1.php';
-
-  // Media Sosial
   const instagramUrl =
     'https://www.instagram.com/diskominfosidoarjo?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==';
   const facebookUrl = 'https://www.facebook.com/share/1BM2vqFeJp/';
   const twitterUrl = 'https://x.com/KominfoSidoarjo?s=20';
   const tiktokUrl =
     'https://www.tiktok.com/@diskominfosidoarjo?_r=1&_t=ZS-91GhMbXd03M';
-
-  // --- Warna Desain ---
   const darkestBlue = '#002136';
   const midBlue = '#004A7B';
   const brighterBlue = '#006DA6';
@@ -35,25 +30,28 @@ export default function Footer() {
     <footer
       className="text-white"
       style={{
-        background: `radial-gradient(at bottom right, ${brighterBlue} 0%, ${midBlue} 40%, ${darkestBlue} 80%)`,
+        background: `radial-gradient(at top right, ${brighterBlue} 0%, ${midBlue} 40%, ${darkestBlue} 90%)`,
       }}
     >
       <div className="max-w-6xl mx-auto px-4 pt-20 pb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {/* Kolom 1 */}
           <div className="space-y-4">
             <img
               src="/logo-simagang-putih.svg"
               alt="Logo SIMAGANG"
               className="w-56 h-auto mb-6"
             />
-            {/* Ikon Media Sosial */}
+            <p className="text-sm text-gray-300 leading-relaxed">
+              {/* ... deskripsi ... */}
+            </p>
             <div className="flex space-x-3 pt-2">
               <a
                 href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all transform hover:scale-110"
               >
                 <FaInstagram size={18} />
               </a>
@@ -62,7 +60,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all transform hover:scale-110"
               >
                 <FaFacebookF size={18} />
               </a>
@@ -71,7 +69,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Twitter"
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all transform hover:scale-110"
               >
                 <FaTwitter size={18} />
               </a>
@@ -80,14 +78,14 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="TikTok"
-                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all transform hover:scale-110"
               >
                 <FaTiktok size={18} />
               </a>
             </div>
           </div>
 
-          {/* Kolom 2: Tautan Terkait */}
+          {/* Kolom 2 */}
           <div className="space-y-4">
             <h4 className="font-semibold text-lg mb-6">Tautan Terkait</h4>
             <ul className="space-y-3">
@@ -96,7 +94,7 @@ export default function Footer() {
                   href={websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-300 hover:text-white text-sm flex items-center gap-2 transition-all transform hover:-translate-y-0.5"
                 >
                   <FaGlobe size={14} className="opacity-70" />
                   Website Resmi Diskominfo
@@ -107,7 +105,7 @@ export default function Footer() {
                   href={surveyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-white transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-300 hover:text-white text-sm flex items-center gap-2 transition-all transform hover:-translate-y-0.5"
                 >
                   <FaClipboardCheck size={14} className="opacity-70" />
                   Survey Kepuasan
@@ -116,14 +114,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Kolom 3: Navigasi Halaman */}
+          {/* Kolom 3 */}
           <div className="space-y-4">
             <h4 className="font-semibold text-lg mb-6">Navigasi Halaman</h4>
             <ul className="space-y-3">
               <li>
                 <a
                   href="/"
-                  className="text-gray-300 hover:text-white transition-colors text-sm"
+                  className="text-gray-300 hover:text-white text-sm transition-all transform hover:-translate-y-0.5 inline-block"
                 >
                   Home
                 </a>
@@ -131,7 +129,7 @@ export default function Footer() {
               <li>
                 <a
                   href="#kuota-magang"
-                  className="text-gray-300 hover:text-white transition-colors text-sm"
+                  className="text-gray-300 hover:text-white text-sm transition-all transform hover:-translate-y-0.5 inline-block"
                 >
                   Kuota Magang
                 </a>
@@ -139,7 +137,7 @@ export default function Footer() {
               <li>
                 <a
                   href="#tata-cara"
-                  className="text-gray-300 hover:text-white transition-colors text-sm"
+                  className="text-gray-300 hover:text-white text-sm transition-all transform hover:-translate-y-0.5 inline-block"
                 >
                   Tata Cara Pendaftaran
                 </a>
@@ -147,14 +145,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Kolom 4: Ada Pertanyaan? (Kontak) */}
+          {/* Kolom 4 */}
           <div className="space-y-5">
             <h4 className="font-semibold text-lg mb-6">Ada Pertanyaan?</h4>
             <a
               href={gmapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-start gap-3 group"
+              className="flex items-start gap-3 group transition-transform transform hover:-translate-y-0.5"
             >
               <FaMapMarkerAlt
                 className="mt-1 flex-shrink-0"
@@ -174,7 +172,7 @@ export default function Footer() {
             </div>
             <a
               href="mailto:diskominfo@sidoarjokab.go.id"
-              className="flex items-center gap-3 group"
+              className="flex items-center gap-3 group transition-transform transform hover:-translate-y-0.5"
             >
               <FaEnvelope style={{ color: accentColor }} />
               <span className="text-gray-300 group-hover:text-white transition-colors text-sm break-all">
@@ -185,8 +183,8 @@ export default function Footer() {
         </div>
 
         {/* --- Garis Pemisah dan Hak Cipta --- */}
-        <div className="border-t border-white/10 mt-16 pt-8">
-          <p className="text-center text-sm text-gray-300">
+        <div className="border-t border-white mt-16 pt-8">
+          <p className="text-center text-sm text-gray-400">
             © 2025 teamDISKOMINFO. All rights reserved
           </p>
         </div>
