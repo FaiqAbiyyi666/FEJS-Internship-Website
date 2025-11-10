@@ -133,7 +133,9 @@ export default function AdminDashboardHome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart 1: Peserta per Bidang */}
         <Card className="p-4">
-          <h2 className="text-lg font-semibold mb-2">Peserta per Bidang</h2>
+          <h2 className="text-lg font-semibold mb-2">
+            Peserta Aktif per Bidang
+          </h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie

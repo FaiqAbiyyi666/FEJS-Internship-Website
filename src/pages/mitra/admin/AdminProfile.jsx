@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Eye, EyeOff } from 'lucide-react';
-import axios from 'axios';
+// axios sudah dihapus
 
-// Fungsi helper sederhana untuk memformat tanggal
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
@@ -14,7 +13,6 @@ const formatDate = (dateString) => {
 };
 
 const AdminProfile = () => {
-  // State untuk data profil (diambil dari API)
   const [formData, setFormData] = useState({
     nama: 'Memuat...',
     email: 'Memuat...',
@@ -22,7 +20,6 @@ const AdminProfile = () => {
     tanggalBergabung: 'Memuat...',
   });
 
-  // State untuk form ubah password
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
     newPassword: '',
@@ -33,30 +30,34 @@ const AdminProfile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // --- 1. Mengambil Data Profil Saat Halaman Dimuat ---
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Asumsi token disimpan di localStorage. Sesuaikan jika perlu.
         const token = localStorage.getItem('token');
 
-        // Memanggil API yang Anda tentukan di routes
-        const response = await axios.get(
+        // --- Diganti dari axios.get ke fetch ---
+        const response = await fetch(
           'http://localhost:3000/api/admin/profile',
           {
+            method: 'GET',
             headers: {
-              Authorization: `Bearer ${token}`, // Kirim token untuk middleware
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
             },
           }
         );
 
-        const data = response.data;
+        const data = await response.json(); // 1. Manual parse JSON
 
-        // Mengisi state dengan data dari controller
+        if (!response.ok) {
+          // 2. Manual cek error HTTP
+          throw new Error(data.message || 'Gagal mengambil data profil');
+        }
+        // ----------------------------------------
+
         setFormData({
           nama: data.nama,
           email: data.email,
-          // Menampilkan nama bidang, atau 'Super Admin' jika bidang null
           bidang: data.bidang ? data.bidang.nama : 'Super Admin',
           tanggalBergabung: formatDate(data.tanggalBergabung),
         });
@@ -68,13 +69,14 @@ const AdminProfile = () => {
           bidang: 'Gagal memuat',
           tanggalBergabung: 'Gagal memuat',
         });
+        // Menampilkan pesan error yang lebih spesifik
+        alert(`Gagal mengambil profil: ${error.message}`);
       }
     };
 
     fetchProfile();
-  }, []); // [] = Jalankan sekali saat komponen dimuat
+  }, []);
 
-  // --- 2. Handler untuk Form Ubah Password ---
   const handlePasswordChange = (e) => {
     setPasswordData({
       ...passwordData,
@@ -85,7 +87,6 @@ const AdminProfile = () => {
   const handleSubmitPassword = async (e) => {
     e.preventDefault();
 
-    // Validasi frontend sederhana
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert('Password baru dan konfirmasi tidak cocok!');
       return;
@@ -93,23 +94,34 @@ const AdminProfile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      // Memanggil API change-password
-      await axios.post(
+      const body = {
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword,
+      };
+
+      // --- Diganti dari axios.post ke fetch ---
+      const response = await fetch(
         'http://localhost:3000/api/admin/change-password',
         {
-          oldPassword: passwordData.oldPassword,
-          newPassword: passwordData.newPassword,
-          confirmPassword: passwordData.confirmPassword,
-        },
-        {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json', // Wajib ada untuk POST
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify(body), // 1. Manual stringify body
         }
       );
 
+      const data = await response.json(); // 2. Manual parse JSON
+
+      if (!response.ok) {
+        // 3. Manual cek error HTTP
+        throw new Error(data.message || 'Gagal mengubah password');
+      }
+      // ----------------------------------------
+
       alert('Password berhasil diubah!');
-      // Kosongkan form setelah berhasil
       setPasswordData({
         oldPassword: '',
         newPassword: '',
@@ -117,41 +129,35 @@ const AdminProfile = () => {
       });
     } catch (error) {
       console.error('Gagal mengubah password:', error);
-      // Menampilkan pesan error dari backend
-      alert(`Gagal: ${error.response?.data?.message || error.message}`);
+      // Menampilkan pesan error yang lebih sederhana
+      alert(`Gagal: ${error.message}`);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* --- Bagian Informasi Profil (Display Only) --- */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
             Informasi Profil
           </h2>
-          {/* Tombol Edit dihapus sesuai permintaan */}
         </div>
 
         <div className="flex items-center space-x-6 mb-6">
-          {/* Foto profil dihapus sesuai kode Anda yang dikomentari */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
               {formData.nama}
             </h2>
-            {/* Menampilkan bidang di bawah nama */}
             <p className="text-gray-500 text-sm">{formData.bidang}</p>
           </div>
         </div>
 
-        {/* Form ini tidak memiliki tombol submit, hanya untuk display */}
         <form>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
-              {/* Hanya menampilkan data, tidak ada input */}
               <div className="flex items-center py-2">
                 <Mail size={16} className="text-gray-400 mr-2" />
                 <span className="text-gray-900">{formData.email}</span>
@@ -164,20 +170,15 @@ const AdminProfile = () => {
               </label>
               <p className="text-gray-900 py-2">{formData.tanggalBergabung}</p>
             </div>
-
-            {/* Field "Role" dan "Bidang" yang lama dihapus agar sesuai data */}
           </div>
-          {/* Tombol Simpan/Batal dihapus sesuai permintaan */}
         </form>
       </div>
 
-      {/* --- Bagian Ubah Password (Fungsional) --- */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Ubah Password
         </h3>
         <form className="space-y-4" onSubmit={handleSubmitPassword}>
-          {/* --- Password Lama --- */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password Lama
@@ -202,7 +203,6 @@ const AdminProfile = () => {
             </div>
           </div>
 
-          {/* --- Password Baru --- */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password Baru
@@ -227,7 +227,6 @@ const AdminProfile = () => {
             </div>
           </div>
 
-          {/* --- Konfirmasi Password Baru --- */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Konfirmasi Password Baru

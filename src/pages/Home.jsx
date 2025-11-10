@@ -13,25 +13,32 @@ import StatistikMagang from '../components/StatistikMagang';
 
 export default function Home() {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <section id="hero-carousel" className="pt-[100px]">
-        <HeroCarousel />
-      </section>
-      <PromotionSection />
-      <TahapanMagang />
-      <StatistikMagang />
-      <section id="kuota-magang" className="scroll-mt-[120px]">
-        <KuotaMagang />
-      </section>
-      <ListUsulanMagang />
-      <section id="tata-cara" className="scroll-mt-[120px]">
-        <VideoTataCaraMagang />
-      </section>
-      <FAQSection />
-      <KritikSaran />
-      <TestimoniSection />
+
+      {/* 2. (Opsional tapi disarankan) Bungkus konten utama dengan <main> 
+             dan tambahkan 'flex-grow' */}
+      <main className="flex-grow">
+        <section id="hero-carousel" className="pt-[100px]">
+          <HeroCarousel />
+        </section>
+        <PromotionSection />
+        <TahapanMagang />
+        <StatistikMagang />
+        <section id="kuota-magang" className="scroll-mt-[120px]">
+          <KuotaMagang />
+        </section>
+        <ListUsulanMagang />
+        <section id="tata-cara" className="scroll-mt-[120px]">
+          <VideoTataCaraMagang />
+        </section>
+        <FAQSection />
+        <KritikSaran />
+        <TestimoniSection />
+      </main>
+
+      {/* 3. Footer akan otomatis terdorong ke bawah */}
       <Footer />
-    </>
+    </div>
   );
 }
