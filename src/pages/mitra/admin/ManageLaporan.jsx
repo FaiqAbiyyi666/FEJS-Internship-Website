@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Eye, Download, X, ChevronDown } from 'lucide-react';
-// 1. Hapus semua 'import' library eksternal yang gagal
-// (Kita akan memuatnya dari CDN)
-// import ExcelJS from 'exceljs';
-// import { saveAs } from 'file-saver';
-// import $ from 'jquery';
-// import DataTable from 'datatables.net-react';
-// import DT from 'datatables.net-dt';
-// import 'datatables.net-dt/css/dataTables.dataTables.css';
-// import Modal from 'react-modal';
+
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import $ from 'jquery';
+import DataTable from 'datatables.net-react';
+import DT from 'datatables.net-dt';
+import 'datatables.net-dt/css/dataTables.dataTables.css';
+import Modal from 'react-modal';
 
 // --- Helper Functions (Tidak Berubah) ---
 const formatTanggalLaporan = (isoDate) => {
@@ -31,9 +30,7 @@ const formatTanggalSubmit = (isoDateTime) => {
     hour12: false,
   });
 };
-// --- Akhir Helper ---
 
-// --- Komponen Paginasi (Gaya dari Referensi Gambar Anda) ---
 const Pagination = ({ pagination, onPageChange }) => {
   const { currentPage, totalPages, totalItems, itemsPerPage } = pagination;
   if (totalPages <= 1) return null;
@@ -43,14 +40,12 @@ const Pagination = ({ pagination, onPageChange }) => {
 
   return (
     <div className="py-4 px-6 flex items-center justify-between border-t border-gray-200">
-      {/* Info "Menampilkan..." */}
       <div className="text-sm text-gray-700">
         Menampilkan <span className="font-medium">{start}</span> sampai{' '}
         <span className="font-medium">{end}</span> dari{' '}
         <span className="font-medium">{totalItems}</span> entri
       </div>
 
-      {/* Tombol Paginasi */}
       <div className="flex items-center space-x-2">
         <button
           onClick={() => onPageChange(1)}
@@ -106,12 +101,12 @@ const ManagementLaporan = () => {
   const [bidangFilter, setBidangFilter] = useState('all');
   const [tanggalFilter, setTanggalFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [bidangList, setBidangList] = useState([]);
 
   // Modal state
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLaporan, setSelectedLaporan] = useState(null);
 
-  // --- 2. useEffect untuk memuat SEMUA script dari CDN ---
   useEffect(() => {
     const scripts = [
       'https://code.jquery.com/jquery-3.7.1.min.js',
@@ -123,7 +118,6 @@ const ManagementLaporan = () => {
       'https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css',
     ];
 
-    // Muat CSS
     styles.forEach((href) => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
@@ -132,7 +126,6 @@ const ManagementLaporan = () => {
       document.head.appendChild(link);
     });
 
-    // Muat Scripts
     scripts.forEach((src) => {
       const script = document.createElement('script');
       script.src = src;
@@ -141,7 +134,6 @@ const ManagementLaporan = () => {
       document.body.appendChild(script);
     });
 
-    // Cleanup scripts dan styles
     return () => {
       scripts.forEach((src) => {
         const script = document.getElementById(src);
@@ -154,7 +146,29 @@ const ManagementLaporan = () => {
     };
   }, []);
 
-  // --- Fungsi Fetch Data (Sesuai Controller) ---
+  useEffect(() => {
+    const fetchBidangList = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch(
+          `http://localhost:3000/api/admin/bidang/list`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!response.ok) throw new Error('Gagal mengambil daftar bidang');
+        const data = await response.json();
+        setBidangList(data.data); // Simpan daftar bidang di state
+      } catch (err) {
+        console.error(err.message);
+      }
+    };
+
+    fetchBidangList();
+  }, []);
+
   useEffect(() => {
     const fetchLogbooks = async () => {
       setIsLoading(true);
@@ -198,9 +212,7 @@ const ManagementLaporan = () => {
     fetchLogbooks();
   }, [searchTerm, bidangFilter, tanggalFilter, currentPage]);
 
-  // --- 3. useEffect untuk menginisialisasi DataTables ---
   useEffect(() => {
-    // Cek jika library sudah dimuat, loading selesai, dan data ada
     if (
       typeof window.$ === 'undefined' ||
       typeof window.$.fn.DataTable === 'undefined' ||
@@ -213,27 +225,23 @@ const ManagementLaporan = () => {
     const tableId = '#logbook-admin-table';
     const $ = window.$;
 
-    // Hancurkan tabel yang ada (jika ada) sebelum inisialisasi ulang
     if ($.fn.DataTable.isDataTable(tableId)) {
       $(tableId).DataTable().destroy();
     }
 
-    // Inisialisasi DataTables
     const table = $(tableId).DataTable({
-      paging: false, // Paging kita tangani manual (backend)
-      searching: false, // Search kita tangani manual (backend)
-      info: false, // Info "showing entries" kita tangani manual
-      ordering: true, // ⬅️ AKTIFKAN SORTIR
-      order: [[2, 'desc']], // Urutkan berdasarkan kolom ke-3 (Tanggal Laporan)
+      paging: false,
+      searching: false,
+      info: false,
+      ordering: true,
+      order: [[2, 'desc']],
       destroy: true,
       language: {
         emptyTable: 'Tidak ada data logbook',
       },
     });
 
-    // --- Event listener untuk tombol 'Lihat' ---
-    // Kita harus pakai 'delegation' (.on()) karena tombol dibuat oleh React
-    $(tableId + ' tbody').off('click', '.view-logbook-btn'); // Hapus listener lama
+    $(tableId + ' tbody').off('click', '.view-logbook-btn');
     $(tableId + ' tbody').on('click', '.view-logbook-btn', function () {
       const id = $(this).data('id');
       const logbook = logbooks.find((l) => l.id === id);
@@ -242,18 +250,15 @@ const ManagementLaporan = () => {
       }
     });
 
-    // Cleanup: Hancurkan tabel saat komponen unmount
     return () => {
       if ($.fn.DataTable.isDataTable(tableId)) {
         $(tableId).DataTable().destroy();
       }
       $(tableId + ' tbody').off('click', '.view-logbook-btn');
     };
-  }, [isLoading, logbooks]); // Jalankan ulang saat loading atau data berubah
+  }, [isLoading, logbooks]);
 
-  // --- 4. Fungsi Export (Menggunakan window.ExcelJS) ---
   const handleExportExcel = async () => {
-    // Cek jika library sudah dimuat
     if (
       typeof window.ExcelJS === 'undefined' ||
       typeof window.saveAs === 'undefined'
@@ -262,7 +267,6 @@ const ManagementLaporan = () => {
       return;
     }
 
-    // (Gunakan window.ExcelJS dan window.saveAs)
     const exportData = logbooks.map(({ pasFoto, ...rest }) => ({
       ...rest,
       tanggal: formatTanggalLaporan(rest.tanggal),
@@ -324,7 +328,6 @@ const ManagementLaporan = () => {
     window.saveAs(new Blob([buffer]), fileName);
   };
 
-  // --- Fungsi Paginasi & Modal (Tidak Berubah) ---
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
@@ -339,9 +342,7 @@ const ManagementLaporan = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters: Disesuaikan agar 'Cari' di kanan */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        {/* Filter Kiri: Bidang & Tanggal */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <select
             value={bidangFilter}
@@ -353,12 +354,11 @@ const ManagementLaporan = () => {
                        focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent"
           >
             <option value="all">Semua Bidang</option>
-            {/* Ganti 'value' dengan ID Bidang Anda */}
-            <option value="ID_BIDANG_1">Tata Kelola Informatika</option>
-            <option value="ID_BIDANG_2">Pengelolaan Informasi...</option>
-            <option value="ID_BIDANG_3">Infrastruktur & Keamanan TIK</option>
-            <option value="ID_BIDANG_4">Sekretariat</option>
-            <option value="ID_BIDANG_5">Statistik</option>
+            {bidangList.map((bidang) => (
+              <option key={bidang.id} value={bidang.id}>
+                {bidang.nama}
+              </option>
+            ))}
           </select>
           <input
             type="date"
@@ -372,7 +372,6 @@ const ManagementLaporan = () => {
           />
         </div>
 
-        {/* Filter Kanan: Cari & Export */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="relative">
             <label htmlFor="search-input" className="sr-only">
@@ -403,7 +402,6 @@ const ManagementLaporan = () => {
         </div>
       </div>
 
-      {/* --- 5. Mengganti .map() Laporan Cards menjadi <table> --- */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
         {isLoading && (
           <div className="text-center text-gray-500 py-10">
@@ -416,7 +414,6 @@ const ManagementLaporan = () => {
           </div>
         )}
 
-        {/* Tabel ini akan di-enhance oleh DataTables dari CDN */}
         <div className="overflow-x-auto">
           <table id="logbook-admin-table" className="w-full text-sm text-left">
             <thead className="text-gray-700">
@@ -434,16 +431,13 @@ const ManagementLaporan = () => {
                 <th className="px-6 py-4 font-medium">
                   File Bukti <ChevronDown size={14} className="inline-block" />
                 </th>
-                {/* --- ⬇️ TAMBAHAN BARU ⬇️ --- */}
                 <th className="px-6 py-4 font-medium">
                   Tgl. Pengiriman{' '}
                   <ChevronDown size={14} className="inline-block" />
                 </th>
-                {/* --- ⬆️ AKHIR TAMBAHAN ⬆️ --- */}
                 <th className="px-6 py-4 font-medium">Aksi</th>
               </tr>
             </thead>
-            {/* React akan me-render <tbody>, DataTables akan mengambil alih */}
             <tbody>
               {!isLoading &&
                 !error &&
@@ -511,12 +505,9 @@ const ManagementLaporan = () => {
                         <span className="text-gray-400">Tidak ada</span>
                       )}
                     </td>
-                    {/* --- ⬇️ TAMBAHAN BARU ⬇️ --- */}
                     <td className="px-6 py-4 text-gray-700">
                       {formatTanggalSubmit(laporan.tanggalSubmit)}
                     </td>
-                    {/* --- ⬆️ AKHIR TAMBAHAN ⬆️ --- */}
-                    {/* Kolom Aksi */}
                     <td className="px-6 py-4">
                       <button
                         data-id={laporan.id} // ⬅️ ID PENTING untuk jQuery
@@ -532,7 +523,6 @@ const ManagementLaporan = () => {
           </table>
         </div>
 
-        {/* Status jika tabel kosong */}
         {!isLoading && !error && logbooks.length === 0 && (
           <div className="text-center text-gray-500 py-10">
             Tidak ada laporan harian yang ditemukan.
@@ -549,8 +539,6 @@ const ManagementLaporan = () => {
       {isOpen && selectedLaporan && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[90vh] flex flex-col">
-            {/* ... (Kode Modal Anda tetap sama) ... */}
-            {/* Header Modal */}
             <div className="flex items-start space-x-4 mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-[#006DA6] to-[#002942] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {selectedLaporan.pasFoto ? (

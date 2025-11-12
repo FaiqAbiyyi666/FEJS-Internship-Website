@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -6,9 +6,20 @@ import { saveAs } from 'file-saver';
 const ITEMS_PER_PAGE_PENDING = 5;
 const ITEMS_PER_PAGE_APPROVED = 5;
 
+const formattedDate = (tanggalISO) => {
+  if (!tanggalISO) return null;
+
+  const d = new Date(tanggalISO);
+  if (isNaN(d.getTime())) return 'Tanggal Tidak Valid';
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
 export default function ManageVerifAkun() {
-  // === State Utama ===
-  const [pesertaMagang, setPesertaMagang] = useState([]);
   const [pendingPeserta, setPendingPeserta] = useState([]);
   const [approvedPeserta, setApprovedPeserta] = useState([]);
 
@@ -20,42 +31,67 @@ export default function ManageVerifAkun() {
   const [selectedPeserta, setSelectedPeserta] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // === Fetch Data ===
-  const fetchData = async () => {
+  const fetchPending = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) throw new Error('Token tidak ada, silakan login ulang');
+      if (!token) throw new Error('Token tidak ada');
 
-      const [pendingRes, historyRes] = await Promise.all([
-        fetch('http://localhost:3000/api/admin/peserta-magang/pending', {
+      const pendingRes = await fetch(
+        'http://localhost:3000/api/admin/peserta-magang/pending',
+        {
           headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('http://localhost:3000/api/admin/peserta-magang/history', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
+        }
+      );
       const pending = await pendingRes.json();
-      const history = await historyRes.json();
-
       if (!pendingRes.ok)
         throw new Error(pending.message || 'Gagal ambil pending');
+
+      setPendingPeserta(pending.data || []);
+    } catch (err) {
+      console.error('Gagal fetch pending:', err.message);
+    }
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Token tidak ada');
+
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (searchDate) params.append('date', searchDate);
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+
+      const queryString = params.toString();
+
+      const historyRes = await fetch(
+        `http://localhost:3000/api/admin/peserta-magang/history?${queryString}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const history = await historyRes.json();
       if (!historyRes.ok)
         throw new Error(history.message || 'Gagal ambil history');
 
-      setPendingPeserta(pending.data || []);
       setApprovedPeserta(history.data || []);
     } catch (err) {
-      console.error('Gagal fetch data:', err.message);
+      console.error('Gagal fetch history:', err.message);
     }
-  };
+  }, [searchTerm, searchDate, statusFilter]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchPending();
+  }, [fetchPending]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchHistory();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [fetchHistory]);
 
   const handleAccPeserta = async (id) => {
     try {
@@ -148,31 +184,6 @@ export default function ManageVerifAkun() {
     setSelectedPeserta(null);
   };
 
-  const filteredApprovedPeserta = approvedPeserta.filter((p) => {
-    const term = searchTerm.toLowerCase();
-
-    const matchUmum =
-      p.namaLengkap.toLowerCase().includes(term) ||
-      p.peserta.user.email.toLowerCase().includes(term) ||
-      p.nimNis.toLowerCase().includes(term) ||
-      p.nik.toLowerCase().includes(term) ||
-      p.instansi.toLowerCase().includes(term) ||
-      p.jurusan.toLowerCase().includes(term) ||
-      p.instagram.toLowerCase().includes(term) ||
-      p.alamat.toLowerCase().includes(term) ||
-      p.status.toLowerCase().includes(term);
-
-    const matchTanggal = searchDate
-      ? new Date(p.createdAt).toISOString().split('T')[0] === searchDate
-      : true;
-
-    const matchStatus =
-      statusFilter === 'all' ||
-      p.status.toLowerCase() === statusFilter.toLowerCase();
-
-    return matchUmum && matchTanggal && matchStatus;
-  });
-
   const [currentPendingPage, setCurrentPendingPage] = useState(1);
   const [currentApprovedPage, setCurrentApprovedPage] = useState(1);
 
@@ -180,7 +191,7 @@ export default function ManageVerifAkun() {
     pendingPeserta.length / ITEMS_PER_PAGE_PENDING
   );
   const totalApprovedPages = Math.ceil(
-    filteredApprovedPeserta.length / ITEMS_PER_PAGE_APPROVED
+    approvedPeserta.length / ITEMS_PER_PAGE_APPROVED
   );
 
   const paginate = (data, page, itemsPerPage) =>
@@ -192,13 +203,13 @@ export default function ManageVerifAkun() {
     ITEMS_PER_PAGE_PENDING
   );
   const paginatedApprovedPeserta = paginate(
-    filteredApprovedPeserta,
+    approvedPeserta,
     currentApprovedPage,
     ITEMS_PER_PAGE_APPROVED
   );
 
   const handleExportExcelHistory = async () => {
-    if (filteredApprovedPeserta.length === 0) {
+    if (approvedPeserta.length === 0) {
       alert('Tidak ada data riwayat untuk diekspor.');
       return;
     }
@@ -220,17 +231,17 @@ export default function ManageVerifAkun() {
       { header: 'STATUS', key: 'status', width: 15 },
     ];
 
-    const exportData = filteredApprovedPeserta.map((p) => ({
+    const exportData = approvedPeserta.map((p) => ({
       namaLengkap: p.namaLengkap,
-      email: p.user.email,
-      nimNis: p.nimNis,
+      email: p.user?.email || 'N/A',
+      nimNis: p.nimNis || 'N/A',
       nik: p.nik,
       noTelepon: p.noTelepon,
-      instansi: p.instansi,
-      jurusan: p.jurusan,
+      instansi: p.instansi || 'N/A',
+      jurusan: p.jurusan || 'N/A',
       alamat: p.alamat,
       instagram: p.instagram,
-      tanggalDaftar: new Date(p.createdAt).toLocaleDateString('id-ID'),
+      tanggalDaftar: formattedDate(p.createdAt),
       status: p.status,
     }));
 
@@ -309,7 +320,7 @@ export default function ManageVerifAkun() {
                 <td className="px-4 py-3">{peserta.instansi}</td>
                 <td className="px-4 py-3">{peserta.jurusan}</td>
                 <td className="px-4 py-3">
-                  {new Date(peserta.createdAt).toLocaleDateString()}
+                  {formattedDate(peserta.createdAt)}
                 </td>
                 <td className="px-4 py-3 flex flex-wrap justify-center gap-2">
                   <button
@@ -490,7 +501,7 @@ export default function ManageVerifAkun() {
               <div className="border rounded p-3 sm:col-span-2">
                 <label className="text-gray-600 text-sm">Tanggal Daftar</label>
                 <p className="text-gray-800 font-semibold">
-                  {new Date(selectedPeserta.createdAt).toLocaleDateString()}
+                  {formattedDate(selectedPeserta.createdAt)}
                 </p>
               </div>
             </div>
@@ -554,8 +565,8 @@ export default function ManageVerifAkun() {
             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#006DA6] focus:border-[#006DA6] text-sm w-full sm:w-1/4"
           >
             <option value="all">Semua Status</option>
-            <option value="Diterima">Diterima</option>
-            <option value="Ditolak">Ditolak</option>
+            <option value="APPROVED">Diterima</option>
+            <option value="REJECTED">Ditolak</option>
           </select>
         </div>
         <table className="min-w-full text-sm text-left">
@@ -588,13 +599,11 @@ export default function ManageVerifAkun() {
                 <td className="px-4 py-3">{peserta.alamat}</td>
                 <td className="px-4 py-3">{peserta.instagram}</td>
                 <td className="px-4 py-3">
-                  {peserta.createdAt ? peserta.createdAt.split('T')[0] : 'N/A'}
+                  {peserta.createdAt ? formattedDate(peserta.createdAt) : 'N/A'}
                 </td>
                 <td className="px-4 py-3">{peserta.status}</td>
                 <td className="px-4 py-3">
-                  {new Date(
-                    peserta.updatedAt || peserta.createdAt
-                  ).toLocaleDateString()}
+                  {formattedDate(peserta.updatedAt || peserta.createdAt)}
                 </td>
               </tr>
             ))}
@@ -619,13 +628,10 @@ export default function ManageVerifAkun() {
               <span className="font-medium">
                 {Math.min(
                   currentApprovedPage * ITEMS_PER_PAGE_APPROVED,
-                  filteredApprovedPeserta.length
+                  approvedPeserta.length
                 )}
               </span>{' '}
-              dari{' '}
-              <span className="font-medium">
-                {filteredApprovedPeserta.length}
-              </span>{' '}
+              dari <span className="font-medium">{approvedPeserta.length}</span>{' '}
               hasil
             </p>
             <div className="flex space-x-1">
