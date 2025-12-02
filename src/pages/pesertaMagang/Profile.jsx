@@ -269,7 +269,7 @@ export default function Profile() {
                 { id: 'instansi', label: 'Asal Instansi', type: 'text' },
                 { id: 'email', label: 'Email', type: 'email', readOnly: true },
                 { id: 'jurusan', label: 'Jurusan', type: 'text' },
-                { id: 'instagram', label: 'Instagram', type: 'text' },
+                // { id: 'instagram', label: 'Instagram', type: 'text' },
                 {
                   id: 'nik',
                   label: 'Nomor Induk Kependudukan',

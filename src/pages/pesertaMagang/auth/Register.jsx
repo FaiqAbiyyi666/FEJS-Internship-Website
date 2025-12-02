@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useLoading } from '../../../contexts/LoadingContext';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -21,9 +22,20 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const { showLoading, hideLoading, isLoading } = useLoading();
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target; // Ambil 'name' bukan 'id'
+    const { name, value, files } = e.target;
+
+    if (name === 'noTelepon') {
+      const numericValue = value.replace(/\D/g, '');
+
+      setFormData({
+        ...formData,
+        [name]: numericValue,
+      });
+      return;
+    }
     setFormData({
       ...formData,
       [name]: files ? files[0] : value,
@@ -32,10 +44,15 @@ export default function Register() {
 
   const validate = () => {
     const newErrors = {};
+    const phoneRegex = /^08[1-9][0-9]{7,10}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{8,}$/;
 
     // Validasi No Telepon
-    if (!/^\d{10,13}$/.test(formData.noTelepon)) {
-      newErrors.noTelepon = 'No Telepon harus terdiri dari 10-13 angka.';
+    if (!formData.noTelepon) {
+      newErrors.noTelepon = 'Nomor telepon wajib diisi.';
+    } else if (!phoneRegex.test(formData.noTelepon)) {
+      newErrors.noTelepon =
+        'Nomor tidak valid. Harus diawali "08" dan berisi 10-13 angka.';
     }
 
     // Validasi Tanggal Lahir
@@ -53,9 +70,39 @@ export default function Register() {
       newErrors.email = 'Format email tidak valid.';
     }
 
-    // Validasi Konfirmasi Password
+    // Validasi Password
+    if (!formData.password) {
+      newErrors.password = 'Password wajib diisi.';
+    } else if (!passwordRegex.test(formData.password)) {
+      newErrors.password =
+        'Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka/simbol.';
+    }
+
+    // Validasi Konfirmasi Password (tetap sama)
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Konfirmasi password tidak sesuai.';
+    }
+
+    if (!formData.tglLahir) {
+      newErrors.tglLahir = 'Tanggal lahir wajib diisi.';
+    } else {
+      const selectedDate = new Date(formData.tglLahir);
+      const today = new Date();
+      // Hitung umur secara presisi
+      let age = today.getFullYear() - selectedDate.getFullYear();
+      const monthDiff = today.getMonth() - selectedDate.getMonth();
+
+      // Koreksi jika belum ulang tahun di tahun ini
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < selectedDate.getDate())
+      ) {
+        age--;
+      }
+
+      if (age < 15) {
+        newErrors.tglLahir = 'Minimal usia pendaftar adalah 15 tahun.';
+      }
     }
 
     setErrors(newErrors);
@@ -65,18 +112,15 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      // --- PERBAIKAN KRITIS: Buat FormData secara manual ---
+      showLoading();
       const dataToSend = new FormData();
 
-      // Loop semua data di state KECUALI yang tidak perlu
       for (const key in formData) {
-        // Jangan kirim confirmPassword dan pastikan file ditangani secara terpisah
         if (key !== 'confirmPassword' && key !== 'pasFoto') {
           dataToSend.append(key, formData[key]);
         }
       }
 
-      // Tambahkan file dengan NAMA FIELD YANG BENAR ('pas_foto')
       if (formData.pasFoto) {
         dataToSend.append('pasFoto', formData.pasFoto);
       }
@@ -84,26 +128,36 @@ export default function Register() {
       try {
         const res = await fetch('http://localhost:3000/api/auth/register', {
           method: 'POST',
-          body: dataToSend, // Kirim FormData yang sudah benar
+          body: dataToSend,
         });
 
         const result = await res.json();
         if (res.ok) {
           alert('Registrasi berhasil! ' + result.message);
-          // Lakukan redirect atau reset form di sini
         } else {
-          // Tampilkan pesan error dari server
           alert('Registrasi Gagal: ' + result.message);
-          // Mungkin juga set error ke state, e.g., setErrors({ api: result.message })
         }
       } catch (error) {
         console.error('Error saat submit:', error);
         alert('Terjadi kesalahan koneksi ke server.');
+      } finally {
+        hideLoading();
       }
     }
   };
 
-  const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  // 1. Ambil tanggal hari ini
+  const todayDate = new Date();
+
+  // 2. Kurangi tahunnya sebanyak 15
+  const minAgeDate = new Date(
+    todayDate.getFullYear() - 15,
+    todayDate.getMonth(),
+    todayDate.getDate()
+  );
+
+  // 3. Format ke string YYYY-MM-DD agar bisa dibaca input date
+  const maxDateAllowed = minAgeDate.toISOString().split('T')[0];
 
   return (
     <div className="flex min-h-screen font-sans">
@@ -148,7 +202,7 @@ export default function Register() {
                 name="tglLahir"
                 value={formData.tglLahir}
                 onChange={handleChange}
-                max={today} // ❗ Membatasi hanya hingga hari ini
+                max={maxDateAllowed} // ❗ Membatasi hanya hingga hari ini
                 className={`mt-1 w-full px-4 py-2 border ${
                   errors.tglLahir ? 'border-red-500' : 'border-gray-300'
                 } rounded-md focus:outline-none focus:ring-2 focus:ring-[#006DA6]`}
@@ -212,7 +266,7 @@ export default function Register() {
               onChange={handleChange}
             />
             <Input
-              label="Instagram (*Opsional)"
+              label="Instagram"
               id="instagram"
               name="instagram"
               value={formData.instagram}
@@ -225,8 +279,14 @@ export default function Register() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                Password
+                Password{' '}
+                <span className="text-xs font-normal text-gray-500 ml-1">
+                  (Min. 8 kar, A-Z, a-z, & 0-9)
+                </span>
               </label>
+              {/* <span className="text-xs text-gray-500 mb-1 block">
+                (Min. 8 karakter, kombinasi huruf besar, kecil, & angka/simbol)
+              </span> */}
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -234,7 +294,9 @@ export default function Register() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#006DA6] focus:outline-none"
+                  className="mt-1 w-full px-4 py-2 border ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md focus:ring-2 focus:ring-[#006DA6] focus:outline-none"
                   placeholder="********"
                 />
                 <button
@@ -245,6 +307,9 @@ export default function Register() {
                   👁
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+              )}
             </div>
 
             {/* Konfirmasi Password */}
@@ -290,7 +355,10 @@ export default function Register() {
                 htmlFor="pasFoto"
                 className="block text-sm font-medium text-gray-700"
               >
-                Foto
+                Foto{' '}
+                <span className="text-xs font-normal text-gray-500 ml-1">
+                  (Maks 5MB)
+                </span>
               </label>
               <input
                 type="file"

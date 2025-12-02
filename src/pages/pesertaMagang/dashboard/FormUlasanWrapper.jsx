@@ -72,12 +72,12 @@ export default function FormUlasanWrapper() {
       {eligibilityData.map((ajuan) => (
         <div
           key={ajuan.ajuanId}
-          className="p-4 border rounded-md flex justify-between items-center"
+          className="p-6 border rounded-md flex flex-col items-center justify-center text-center gap-3 shadow-sm bg-white"
         >
-          <div className={!ajuan.eligible ? 'w-full text-center' : ''}>
-            <h3 className="font-semibold">{ajuan.namaBidang}</h3>
+          <div className="w-full">
+            <h3 className="font-semibold text-lg">{ajuan.namaBidang}</h3>
             <p
-              className={`text-sm ${
+              className={`text-sm mt-1 ${
                 ajuan.eligible ? 'text-green-600' : 'text-gray-500'
               }`}
             >
@@ -88,7 +88,7 @@ export default function FormUlasanWrapper() {
           {ajuan.eligible && (
             <button
               onClick={() => handleOpenModal(ajuan)}
-              className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600"
+              className="mt-2 bg-blue-500 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
             >
               Beri Ulasan
             </button>
@@ -97,7 +97,7 @@ export default function FormUlasanWrapper() {
           {ajuan.status === 'COMPLETED' && (
             <button
               onClick={() => handleOpenModal(ajuan)}
-              className="bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-300"
+              className="mt-2 bg-gray-100 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors border border-gray-300"
             >
               Lihat Ulasan
             </button>

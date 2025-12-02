@@ -72,7 +72,7 @@ const AdminHeader = ({ title }) => {
         <div className="flex items-center space-x-4 relative">
           {/* Notifications */}
           <div className="relative" ref={notifRef}>
-            <button
+            {/* <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 text-gray-600 hover:text-[#006DA6] hover:bg-gray-100 rounded-lg transition-colors"
             >
@@ -80,7 +80,7 @@ const AdminHeader = ({ title }) => {
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {notifications.length}
               </span>
-            </button>
+            </button> */}
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-[420px] bg-white border border-gray-200 rounded-lg shadow-lg z-20">

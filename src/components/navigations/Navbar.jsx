@@ -142,7 +142,7 @@ export default function Navbar() {
 
         {/* Mobile menu button + notif */}
         <div className="flex items-center gap-4 md:hidden">
-          {isLoggedIn && (
+          {/* {isLoggedIn && (
             <div ref={notifRef} className="relative">
               <FaBell
                 className="text-[#002942] text-xl cursor-pointer hover:text-[#006DA6]"
@@ -195,7 +195,7 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-          )}
+          )} */}
           <button
             className="text-[#002942] text-xl"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -232,7 +232,7 @@ export default function Navbar() {
         {isLoggedIn ? (
           <div className="flex items-center gap-6 relative">
             {/* Notifikasi */}
-            <div ref={notifRef} className="relative">
+            {/* <div ref={notifRef} className="relative">
               <FaBell
                 className="text-[#002942] text-xl cursor-pointer hover:text-[#006DA6]"
                 onClick={() => setShowNotifMenu(!showNotifMenu)}
@@ -285,7 +285,7 @@ export default function Navbar() {
                   </ul>
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Profil */}
             <div ref={profileRef} className="relative">

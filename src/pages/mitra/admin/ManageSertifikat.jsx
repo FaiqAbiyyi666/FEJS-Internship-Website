@@ -282,7 +282,7 @@ export default function ManageSertifikat() {
           onClick={handleBukaModalKosong}
           className="flex items-center gap-2 bg-[#006DA6] hover:bg-[#1a4962] text-white px-4 py-2 rounded text-sm"
         >
-          <Plus size={16} /> Kirim Sertifikat (Manual)
+          <Plus size={16} /> Kirim Sertifikat
         </button>
       </div>
 

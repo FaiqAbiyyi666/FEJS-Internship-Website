@@ -580,7 +580,7 @@ export default function ManageVerifAkun() {
               <th className="px-4 py-3">Instansi</th>
               <th className="px-4 py-3">Jurusan</th>
               <th className="px-4 py-3">Alamat</th>
-              <th className="px-4 py-3">Instagram</th>
+              {/* <th className="px-4 py-3">Instagram</th> */}
               <th className="px-4 py-3">Tanggal Daftar</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Tanggal Keputusan</th>
@@ -597,7 +597,7 @@ export default function ManageVerifAkun() {
                 <td className="px-4 py-3">{peserta.instansi}</td>
                 <td className="px-4 py-3">{peserta.jurusan}</td>
                 <td className="px-4 py-3">{peserta.alamat}</td>
-                <td className="px-4 py-3">{peserta.instagram}</td>
+                {/* <td className="px-4 py-3">{peserta.instagram}</td> */}
                 <td className="px-4 py-3">
                   {peserta.createdAt ? formattedDate(peserta.createdAt) : 'N/A'}
                 </td>

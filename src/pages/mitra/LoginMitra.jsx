@@ -64,7 +64,7 @@ export default function LoginMitra() {
             />
           </Link>
           <h2 className="text-2xl font-bold text-[#004A72] mb-2">
-            Masuk Akun ADMIN dan BIDANG
+            Masuk Akun ADMIN dan SUB KOORDINATOR BIDANG
           </h2>
 
           <form className="space-y-5" onSubmit={handleLogin}>
