@@ -790,6 +790,71 @@ export default function ManageDataMagang() {
                           </div>
                         )}
                       </div>
+
+                      <div className="pt-4 mt-2 border-t border-dashed">
+                        <div className={`${labelClass} text-red-600`}>
+                          Dokumen Verifikasi (KTP)
+                        </div>
+
+                        <div className="mt-2">
+                          {selectedPeserta.ktp ? (
+                            <div className="group relative w-full h-48 bg-gray-100 border border-gray-300 rounded-lg overflow-hidden flex items-center justify-center">
+                              {/* Gambar KTP */}
+                              <img
+                                src={selectedPeserta.ktp}
+                                alt="KTP Peserta"
+                                className="max-w-full max-h-full object-contain"
+                              />
+
+                              {/* Overlay Hover untuk Tombol Buka */}
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                                <a
+                                  href={selectedPeserta.ktp}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="opacity-0 group-hover:opacity-100 bg-white text-[#006DA6] px-4 py-2 rounded-full font-medium text-sm shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-200 flex items-center gap-2"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  Lihat Detail
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Tampilan Error jika file corrupt/hilang (karena seharusnya Wajib Ada) */
+                            <div className="w-full h-32 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center text-red-500 p-4 text-center">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-8 w-8 mb-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                              </svg>
+                              <span className="text-xs font-semibold">
+                                File KTP Tidak Ditemukan
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 

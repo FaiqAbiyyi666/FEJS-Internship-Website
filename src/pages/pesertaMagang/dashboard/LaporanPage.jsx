@@ -117,6 +117,7 @@ export default function LaporanPage() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+
         if (!response.ok) {
           const errData = await response.json();
           throw new Error(errData.message || 'Gagal mengambil data logbook');
@@ -136,7 +137,7 @@ export default function LaporanPage() {
         }
       } catch (err) {
         console.error('Error fetching logbook data:', err);
-        setError((prevError) => prevError || err.message); // Hanya set error jika belum ada
+        setError((prevError) => prevError || err.message);
       }
     };
 

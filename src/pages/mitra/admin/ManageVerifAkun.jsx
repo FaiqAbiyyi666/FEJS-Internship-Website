@@ -499,6 +499,53 @@ export default function ManageVerifAkun() {
               </div>
 
               <div className="border rounded p-3 sm:col-span-2">
+                <label className="text-gray-600 text-sm block mb-2">
+                  Foto KTP (Dokumen Verifikasi)
+                </label>
+
+                {selectedPeserta.ktp ? (
+                  <div className="flex flex-col items-start gap-3">
+                    {/* Container Gambar: Dibuat ada background agar terlihat batasnya */}
+                    <div className="w-full h-64 bg-gray-100 rounded border border-gray-300 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={selectedPeserta.ktp}
+                        alt="KTP Peserta"
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+
+                    {/* Tombol Lihat Ukuran Penuh (Penting untuk Admin membaca NIK) */}
+                    <a
+                      href={selectedPeserta.ktp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-white bg-[#006DA6] hover:bg-blue-800 px-4 py-2 rounded transition shadow-sm"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                      Lihat Ukuran Penuh
+                    </a>
+                  </div>
+                ) : (
+                  <div className="w-full h-32 bg-gray-50 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 italic text-sm">
+                    Peserta belum mengunggah KTP
+                  </div>
+                )}
+              </div>
+
+              <div className="border rounded p-3 sm:col-span-2">
                 <label className="text-gray-600 text-sm">Tanggal Daftar</label>
                 <p className="text-gray-800 font-semibold">
                   {formattedDate(selectedPeserta.createdAt)}

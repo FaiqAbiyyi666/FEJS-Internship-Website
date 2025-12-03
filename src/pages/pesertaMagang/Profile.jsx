@@ -16,6 +16,7 @@ export default function Profile() {
     nik: '',
     alamat: '',
     instagram: '',
+    ktp: '',
   });
 
   const [profileImage, setProfileImage] = useState('/default-profile.png');
@@ -26,9 +27,19 @@ export default function Profile() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let newValue = value;
+
+    if (name === 'instagram') {
+      newValue = value.replace(/\s/g, '').toLowerCase();
+    }
+
+    if (name === 'nimNis' || name === 'noTelepon') {
+      newValue = value.replace(/\D/g, '');
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
@@ -55,8 +66,8 @@ export default function Profile() {
       newErrors.noTelepon =
         'Format nomor telepon tidak valid (contoh: 081234567890).';
     if (!formData.nimNis) newErrors.nimNis = 'NIM/NIS tidak boleh kosong.';
-    else if (formData.nimNis.length < 10 || formData.nimNis.length > 12)
-      newErrors.nimNis = 'NIM/NIS harus 10-12 karakter.';
+    else if (formData.nimNis.length < 8 || formData.nimNis.length > 12)
+      newErrors.nimNis = 'NIM/NIS harus 8-12 karakter.';
     if (!formData.instansi)
       newErrors.instansi = 'Asal instansi tidak boleh kosong.';
     if (!formData.jurusan) newErrors.jurusan = 'Jurusan tidak boleh kosong.';
@@ -107,6 +118,7 @@ export default function Profile() {
           alamat: profileData.alamat || '',
           instagram: profileData.instagram || '',
           pasFoto: profileData.pas_foto || '',
+          ktp: profileData.ktp || '',
         });
         const imageUrl = profileData.pasFoto;
 
@@ -264,41 +276,60 @@ export default function Profile() {
                   type: 'date',
                   readOnly: true,
                 },
-                { id: 'nimNis', label: 'NIM / NIS', type: 'text' },
-                { id: 'noTelepon', label: 'Nomor Telepon', type: 'tel' },
+                {
+                  id: 'nimNis',
+                  label: 'NIM / NIS',
+                  type: 'text',
+                  inputMode: 'numeric',
+                },
+                {
+                  id: 'noTelepon',
+                  label: 'Nomor Telepon',
+                  type: 'tel',
+                  inputMode: 'numeric',
+                },
                 { id: 'instansi', label: 'Asal Instansi', type: 'text' },
                 { id: 'email', label: 'Email', type: 'email', readOnly: true },
                 { id: 'jurusan', label: 'Jurusan', type: 'text' },
-                // { id: 'instagram', label: 'Instagram', type: 'text' },
+                {
+                  id: 'instagram',
+                  label: 'Instagram',
+                  type: 'text',
+                  autoCapitalize: 'none',
+                },
                 {
                   id: 'nik',
                   label: 'Nomor Induk Kependudukan',
                   type: 'text',
                   readOnly: true,
                 },
-              ].map(({ id, label, type, readOnly }) => (
-                <div key={id}>
-                  <label
-                    htmlFor={id}
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    {label}
-                  </label>
-                  <input
-                    type={type}
-                    id={id}
-                    name={id}
-                    value={formData[id] || ''}
-                    onChange={handleInputChange}
-                    readOnly={readOnly}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none ${
-                      readOnly
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200'
-                        : 'border-gray-300 focus:ring-2 focus:ring-[#006DA6] focus:border-transparent'
-                    }`}
-                  />
-                </div>
-              ))}
+              ].map(
+                ({ id, label, type, readOnly, inputMode, autoCapitalize }) => (
+                  <div key={id}>
+                    <label
+                      htmlFor={id}
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      {label}
+                    </label>
+                    <input
+                      type={type}
+                      id={id}
+                      name={id}
+                      value={formData[id] || ''}
+                      onChange={handleInputChange}
+                      readOnly={readOnly}
+                      inputMode={inputMode}
+                      autoCapitalize={autoCapitalize}
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none ${
+                        readOnly
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200'
+                          : 'border-gray-300 focus:ring-2 focus:ring-[#006DA6] focus:border-transparent'
+                      }`}
+                    />
+                  </div>
+                )
+              )}
 
               <div className="md:col-span-2">
                 <label
@@ -315,6 +346,77 @@ export default function Profile() {
                   rows={3}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006DA6] focus:border-transparent resize-none"
                 />
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Foto KTP
+              </label>
+
+              <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center">
+                {formData.ktp ? (
+                  <>
+                    {/* Container Gambar */}
+                    <div className="h-56 w-full flex items-center justify-center overflow-hidden rounded mb-3 bg-gray-200 border border-gray-300">
+                      <img
+                        src={formData.ktp}
+                        alt="Preview KTP"
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+
+                    {/* Tombol Lihat Full Size */}
+                    <a
+                      href={formData.ktp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-[#006DA6] hover:text-blue-800 hover:underline transition-colors"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                      Lihat Ukuran Penuh
+                    </a>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center text-gray-400 py-6">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-10 w-10 mb-2 opacity-50"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="text-sm italic">
+                      File KTP tidak ditemukan
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

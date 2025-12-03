@@ -1,12 +1,63 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { FormDataContext } from './PengajuanMagangPage';
 
 export default function FormulirPendaftaran() {
   const { formData, setFormData } = useContext(FormDataContext);
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch(
+          'http://localhost:3000/api/peserta/profile',
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const result = await response.json();
+
+        if (result.status && result.data) {
+          const profile = result.data;
+
+          setFormData((prev) => ({
+            ...prev,
+            namaLengkap: profile.namaLengkap || prev.namaLengkap || '',
+            nis_nim: profile.nimNis || prev.nis_nim || '',
+            instansi: profile.instansi || prev.instansi || '',
+            jurusan: profile.jurusan || prev.jurusan || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Gagal mengambil data profil untuk autofill:', error);
+      }
+    };
+
+    // Jalankan fungsi
+    fetchUserData();
+  }, [setFormData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const getMinEndDate = () => {
+    if (!formData.durasiMulai) {
+      return today;
+    }
+
+    const startDate = new Date(formData.durasiMulai);
+    startDate.setMonth(startDate.getMonth() + 1);
+
+    return startDate.toISOString().split('T')[0];
   };
 
   return (
@@ -26,7 +77,7 @@ export default function FormulirPendaftaran() {
               name="namaLengkap"
               value={formData.namaLengkap}
               onChange={handleChange}
-              className="form-input w-full"
+              className="form-input w-full bg-gray-100 border-gray-300"
               placeholder="Masukkan Nama Lengkap"
             />
           </div>
@@ -36,7 +87,7 @@ export default function FormulirPendaftaran() {
               name="nis_nim"
               value={formData.nis_nim}
               onChange={handleChange}
-              className="form-input w-full"
+              className="form-input w-full bg-gray-100 border-gray-300"
               placeholder="Masukkan NIS / NIM"
             />
           </div>
@@ -152,7 +203,7 @@ export default function FormulirPendaftaran() {
               name="instansi"
               value={formData.instansi}
               onChange={handleChange}
-              className="form-input w-full"
+              className="form-input w-full bg-gray-100 border-gray-300"
               placeholder="Masukkan Sekolah / Perguruan Tinggi"
             />
             <label className="block text-xs font-light mt-1 text-gray-600 text-justify">
@@ -166,7 +217,7 @@ export default function FormulirPendaftaran() {
               name="jurusan"
               value={formData.jurusan}
               onChange={handleChange}
-              className="form-input w-full"
+              className="form-input w-full bg-gray-100 border-gray-300"
               placeholder="Masukkan Jurusan"
             />
           </div>
@@ -179,6 +230,7 @@ export default function FormulirPendaftaran() {
                 name="durasiMulai"
                 value={formData.durasiMulai}
                 onChange={handleChange}
+                min={today}
                 className="form-input w-full"
                 type="date"
               />
@@ -187,10 +239,15 @@ export default function FormulirPendaftaran() {
                 name="durasiSelesai"
                 value={formData.durasiSelesai}
                 onChange={handleChange}
+                min={getMinEndDate()}
+                disabled={!formData.durasiMulai}
                 className="form-input w-full"
                 type="date"
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              *Minimal durasi magang adalah 1 bulan.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">

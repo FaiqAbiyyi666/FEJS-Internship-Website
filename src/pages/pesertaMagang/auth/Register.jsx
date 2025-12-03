@@ -17,6 +17,7 @@ export default function Register() {
     instagram: '',
     confirmPassword: '',
     pasFoto: null,
+    fotoKtp: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -27,7 +28,7 @@ export default function Register() {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
-    if (name === 'noTelepon') {
+    if (['noTelepon', 'nimNis', 'nik'].includes(name)) {
       const numericValue = value.replace(/\D/g, '');
 
       setFormData({
@@ -36,6 +37,17 @@ export default function Register() {
       });
       return;
     }
+
+    if (name === 'instagram') {
+      const formattedValue = value.replace(/\s/g, '').toLowerCase();
+
+      setFormData({
+        ...formData,
+        [name]: formattedValue,
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
       [name]: files ? files[0] : value,
@@ -105,6 +117,16 @@ export default function Register() {
       }
     }
 
+    // Validasi KTP Wajib Upload
+    if (!formData.fotoKtp) {
+      newErrors.fotoKtp = 'Foto KTP wajib diupload untuk verifikasi.';
+    }
+
+    // Validasi Pas Foto
+    if (!formData.pasFoto) {
+      newErrors.pasFoto = 'Pas Foto wajib diupload.';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -116,13 +138,21 @@ export default function Register() {
       const dataToSend = new FormData();
 
       for (const key in formData) {
-        if (key !== 'confirmPassword' && key !== 'pasFoto') {
+        if (
+          key !== 'confirmPassword' &&
+          key !== 'pasFoto' &&
+          key !== 'fotoKtp'
+        ) {
           dataToSend.append(key, formData[key]);
         }
       }
 
       if (formData.pasFoto) {
         dataToSend.append('pasFoto', formData.pasFoto);
+      }
+
+      if (formData.fotoKtp) {
+        dataToSend.append('fotoKtp', formData.fotoKtp);
       }
 
       try {
@@ -266,11 +296,12 @@ export default function Register() {
               onChange={handleChange}
             />
             <Input
-              label="Instagram"
+              label="Username Instagram (Tanpa @)"
               id="instagram"
               name="instagram"
               value={formData.instagram}
               onChange={handleChange}
+              autoCapitalize="none" // Mencegah huruf pertama jadi kapital
             />
 
             {/* Password */}
@@ -364,6 +395,31 @@ export default function Register() {
                 type="file"
                 id="pasFoto"
                 name="pasFoto"
+                accept=".jpg,.jpeg,.png"
+                onChange={handleChange}
+                className="mt-1 block w-full text-sm border border-gray-300 rounded-md px-4 py-2 bg-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Ekstensi file yang dapat diupload adalah{' '}
+                <strong>.jpg / .jpeg / .png</strong>
+              </p>
+            </div>
+
+            {/* KTP */}
+            <div>
+              <label
+                htmlFor="pasFoto"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Foto KTP{' '}
+                <span className="text-xs font-normal text-gray-500 ml-1">
+                  (Maks 5MB)
+                </span>
+              </label>
+              <input
+                type="file"
+                id="fotoKtp"
+                name="fotoKtp"
                 accept=".jpg,.jpeg,.png"
                 onChange={handleChange}
                 className="mt-1 block w-full text-sm border border-gray-300 rounded-md px-4 py-2 bg-white"
