@@ -301,7 +301,7 @@ export default function Register() {
               name="instagram"
               value={formData.instagram}
               onChange={handleChange}
-              autoCapitalize="none" // Mencegah huruf pertama jadi kapital
+              autoCapitalize="none"
             />
 
             {/* Password */}

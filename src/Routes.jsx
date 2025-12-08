@@ -1,5 +1,3 @@
-// src/App.jsx
-
 import {
   BrowserRouter as Router,
   Routes,
@@ -35,8 +33,21 @@ import PilihBidang from './pages/pesertaMagang/usulan/PilihBidang';
 import KonfirmasiSimpan from './pages/pesertaMagang/usulan/KonfirmasiSimpan';
 
 import AllTestimoniPage from './components/AllTestimoniPage';
+
 import AdminDashboard from './pages/mitra/admin/AdminDashboard';
-import VerifikasiAkun from './pages/mitra/admin/ManageVerifAkun';
+import DashboardHomeAdmin from './pages/mitra/admin/AdminDashboardHome'; // Pastikan path benar
+import ManageVerifikasiAkun from './pages/mitra/admin/ManageVerifAkun';
+import ManageSubKoorbid from './pages/mitra/admin/ManageSubKoorbid';
+import ManageLaporan from './pages/mitra/admin/ManageLaporan';
+import ManageLaporanAkhir from './pages/mitra/admin/ManageLaporanAkhir';
+import ManageBidang from './pages/mitra/admin/ManageBidang';
+import ManageDataMagang from './pages/mitra/admin/ManageDataMagang';
+import ManageSertifikat from './pages/mitra/admin/ManageSertifikat';
+import ManageSuratMagang from './pages/mitra/admin/ManageSuratMagang';
+import ManageKritikSaran from './pages/mitra/admin/ManageKritikSaran';
+import ManageUlasanMagang from './pages/mitra/admin/ManageUlasanMagang';
+import AdminProfile from './pages/mitra/admin/AdminProfile';
+import ManageAjuanMagang from './pages/mitra/admin/ManageAjuanMagang';
 
 export default function App() {
   return (
@@ -79,11 +90,24 @@ export default function App() {
 
         <Route path="/testimoni" element={<AllTestimoniPage />} />
 
-        <Route path="/dashboard-admin" element={<AdminDashboard />} />
-        <Route
-          path="/dashboard-admin/verifikasi-akun"
-          element={<VerifikasiAkun />}
-        />
+        <Route path="/dashboard-admin" element={<AdminDashboard />}>
+          {/* Index akan dimuat saat url tepat /dashboard-admin */}
+          <Route index element={<DashboardHomeAdmin />} />
+
+          {/* Sub-routes: URL akan menjadi /dashboard-admin/verifikasi, dll */}
+          <Route path="verifikasi" element={<ManageVerifikasiAkun />} />
+          <Route path="subkoorbid" element={<ManageSubKoorbid />} />
+          <Route path="laporan" element={<ManageLaporan />} />
+          <Route path="laporan-akhir" element={<ManageLaporanAkhir />} />
+          <Route path="ajuan" element={<ManageAjuanMagang />} />
+          <Route path="bidang" element={<ManageBidang />} />
+          <Route path="data-magang" element={<ManageDataMagang />} />
+          <Route path="sertifikat" element={<ManageSertifikat />} />
+          <Route path="surat-magang" element={<ManageSuratMagang />} />
+          <Route path="kritik" element={<ManageKritikSaran />} />
+          <Route path="ulasan" element={<ManageUlasanMagang />} />
+          <Route path="profile" element={<AdminProfile />} />
+        </Route>
       </Routes>
     </Router>
   );

@@ -4,6 +4,23 @@ import { FormDataContext } from './PengajuanMagangPage';
 export default function FormulirPendaftaran() {
   const { formData, setFormData } = useContext(FormDataContext);
 
+  const today = new Date();
+  const minStartDate = new Date(today);
+  minStartDate.setDate(today.getDate() + 21);
+  const minStartDateString = minStartDate.toISOString().split('T')[0];
+
+  const getMinEndDate = () => {
+    if (!formData.durasiMulai) {
+      const defaultEnd = new Date(minStartDate);
+      defaultEnd.setMonth(defaultEnd.getMonth() + 1);
+      return defaultEnd.toISOString().split('T')[0];
+    }
+
+    const startDate = new Date(formData.durasiMulai);
+    startDate.setMonth(startDate.getMonth() + 1);
+    return startDate.toISOString().split('T')[0];
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -38,26 +55,37 @@ export default function FormulirPendaftaran() {
       }
     };
 
-    // Jalankan fungsi
     fetchUserData();
   }, [setFormData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
 
-  const today = new Date().toISOString().split('T')[0];
+    if (name === 'durasiMulai') {
+      const selectedDate = new Date(value);
+      const dayOfWeek = selectedDate.getDay();
 
-  const getMinEndDate = () => {
-    if (!formData.durasiMulai) {
-      return today;
+      if (dayOfWeek !== 1) {
+        alert('Tanggal mulai magang harus hari SENIN.');
+        return;
+      }
+
+      if (value < minStartDateString) {
+        alert(
+          'Tanggal mulai minimal 3 minggu dari hari ini untuk proses verifikasi.'
+        );
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        durasiSelesai: '',
+      }));
+      return;
     }
 
-    const startDate = new Date(formData.durasiMulai);
-    startDate.setMonth(startDate.getMonth() + 1);
-
-    return startDate.toISOString().split('T')[0];
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -230,7 +258,7 @@ export default function FormulirPendaftaran() {
                 name="durasiMulai"
                 value={formData.durasiMulai}
                 onChange={handleChange}
-                min={today}
+                min={minStartDateString}
                 className="form-input w-full"
                 type="date"
               />
@@ -245,6 +273,10 @@ export default function FormulirPendaftaran() {
                 type="date"
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              *Minimal tanggal mulai adalah 3 minggu dari hari ini (untuk proses
+              verifikasi).
+            </p>
             <p className="text-xs text-gray-500 mt-1">
               *Minimal durasi magang adalah 1 bulan.
             </p>

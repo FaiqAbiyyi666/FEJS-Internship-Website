@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   UserRoundCheck,
@@ -15,21 +16,89 @@ import {
   Database,
 } from 'lucide-react';
 
-const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
+// Kita tidak butuh setActiveMenu lagi karena state diatur oleh URL
+const AdminSidebar = ({ activeMenu }) => {
+  // Pastikan ID di sini cocok dengan URL slug yang kita buat di Route.jsx
+  // path: alamat tujuan saat diklik
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'verifikasi', label: 'Verifikasi Akun', icon: UserRoundCheck },
-    { id: 'subkoorbid', label: 'Sub Koor Bidang', icon: UserCog2 },
-    { id: 'laporan', label: 'Laporan Harian', icon: FileText },
-    { id: 'laporanAkhir', label: 'Laporan Akhir', icon: FileCheck },
-    { id: 'ajuan', label: 'Ajuan Magang', icon: Files },
-    { id: 'bidang', label: 'Bidang Magang', icon: Briefcase },
-    { id: 'dataMagang', label: 'Data Magang', icon: Database },
-    { id: 'sertifikat', label: 'Sertifikat', icon: TicketCheck },
-    { id: 'suratMagang', label: 'Surat Magang', icon: FileSignature },
-    { id: 'kritik', label: 'Kritik & Saran', icon: Mail },
-    { id: 'ulasan', label: 'Ulasan Magang', icon: ThumbsUp },
-    { id: 'profile', label: 'Profile', icon: User },
+    {
+      id: 'dashboard',
+      path: '/dashboard-admin',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'verifikasi',
+      path: '/dashboard-admin/verifikasi',
+      label: 'Verifikasi Akun',
+      icon: UserRoundCheck,
+    },
+    {
+      id: 'subkoorbid',
+      path: '/dashboard-admin/subkoorbid',
+      label: 'Sub Koor Bidang',
+      icon: UserCog2,
+    },
+    {
+      id: 'laporan',
+      path: '/dashboard-admin/laporan',
+      label: 'Laporan Harian',
+      icon: FileText,
+    },
+    {
+      id: 'laporan-akhir', // ID disesuaikan dengan URL (kebab-case)
+      path: '/dashboard-admin/laporan-akhir',
+      label: 'Laporan Akhir',
+      icon: FileCheck,
+    },
+    {
+      id: 'ajuan',
+      path: '/dashboard-admin/ajuan',
+      label: 'Ajuan Magang',
+      icon: Files,
+    },
+    {
+      id: 'bidang',
+      path: '/dashboard-admin/bidang',
+      label: 'Bidang Magang',
+      icon: Briefcase,
+    },
+    {
+      id: 'data-magang', // ID disesuaikan dengan URL (kebab-case)
+      path: '/dashboard-admin/data-magang',
+      label: 'Data Magang',
+      icon: Database,
+    },
+    {
+      id: 'sertifikat',
+      path: '/dashboard-admin/sertifikat',
+      label: 'Sertifikat',
+      icon: TicketCheck,
+    },
+    {
+      id: 'surat-magang', // ID disesuaikan dengan URL (kebab-case)
+      path: '/dashboard-admin/surat-magang',
+      label: 'Surat Magang',
+      icon: FileSignature,
+    },
+    {
+      id: 'kritik',
+      path: '/dashboard-admin/kritik',
+      label: 'Kritik & Saran',
+      icon: Mail,
+    },
+    {
+      id: 'ulasan',
+      path: '/dashboard-admin/ulasan',
+      label: 'Ulasan Magang',
+      icon: ThumbsUp,
+    },
+    {
+      id: 'profile',
+      path: '/dashboard-admin/profile',
+      label: 'Profile',
+      icon: User,
+    },
   ];
 
   return (
@@ -56,12 +125,15 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
         <div className="px-3 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
+
+            // Logika Active: Membandingkan prop activeMenu dengan item.id
+            // (activeMenu dikirim dari AdminDashboard berdasarkan URL)
             const isActive = activeMenu === item.id;
 
             return (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => setActiveMenu(item.id)}
+                to={item.path}
                 className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all duration-200 ${
                   isActive
                     ? 'bg-[#BFDCFA] text-[#002942] shadow-sm'
@@ -70,24 +142,11 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
               >
                 <Icon size={20} className="mr-3" />
                 <span>{item.label}</span>
-              </button>
+              </Link>
             );
           })}
         </div>
       </nav>
-
-      {/* User Info */}
-      {/* <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-[#20A0E6] rounded-full flex items-center justify-center">
-            <span className="text-white font-medium text-sm">A</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Admin</p>
-            <p className="text-xs text-gray-500 truncate">admin@simagang.com</p>
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 };

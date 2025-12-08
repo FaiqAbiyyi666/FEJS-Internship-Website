@@ -106,6 +106,44 @@ export default function ManageDataMagang() {
   const [notification, setNotification] = useState({ message: '', type: '' });
 
   useEffect(() => {
+    const fetchBidangData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(
+          'http://localhost:3000/api/admin/bidang/list',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Gagal mengambil data bidang: ${response.statusText}`
+          );
+        }
+
+        const result = await response.json();
+
+        // console.log('Response Bidang dari Server:', result);
+
+        if (result.data && Array.isArray(result.data)) {
+          setAllBidang(result.data);
+        } else if (Array.isArray(result)) {
+          setAllBidang(result);
+        }
+      } catch (err) {
+        console.error('Error fetching data bidang:', err);
+      }
+    };
+
+    fetchBidangData();
+  }, []);
+
+  useEffect(() => {
     const loadScript = (src, id) => {
       return new Promise((resolve, reject) => {
         if (document.getElementById(id)) {
@@ -207,7 +245,17 @@ export default function ManageDataMagang() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let newValue = value;
+
+    if (name === 'nimNis' || name === 'noTelepon' || name === 'nik') {
+      newValue = value.replace(/\D/g, '');
+    }
+
+    if (name === 'email') {
+      newValue = value.replace(/\s/g, '');
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
   };
 
   const handleCancelClick = () => {
@@ -642,6 +690,7 @@ export default function ManageDataMagang() {
                             name="nimNis"
                             value={formData.nimNis}
                             onChange={handleInputChange}
+                            inputMode="numeric"
                             className={inputClass}
                           />
                         ) : (
@@ -695,6 +744,7 @@ export default function ManageDataMagang() {
                             name="noTelepon"
                             value={formData.noTelepon}
                             onChange={handleInputChange}
+                            inputMode="numeric"
                             className={inputClass}
                           />
                         ) : (
@@ -714,6 +764,8 @@ export default function ManageDataMagang() {
                             name="nik"
                             value={formData.nik}
                             onChange={handleInputChange}
+                            inputMode="numeric"
+                            maxLength={16}
                             className={inputClass}
                           />
                         ) : (

@@ -7,39 +7,64 @@ const AdminHeader = ({ title }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const notifRef = useRef(null);
   const dropdownRef = useRef(null);
-  const [user, setUser] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
-  const notifications = [
-    {
-      id: 1,
-      type: 'Pendaftaran',
-      message: 'Pengajuan magang baru dari Universitas A.',
-      date: '16 Juli 2025',
-    },
-    {
-      id: 2,
-      type: 'Laporan',
-      message: 'Laporan harian dari peserta B telah dikirim.',
-      date: '15 Juli 2025',
-    },
-    {
-      id: 3,
-      type: 'Akun',
-      message: 'Akun sub koordinator berhasil ditambahkan.',
-      date: '14 Juli 2025',
-    },
-  ];
+
+  const formatRole = (role) => {
+    if (!role) return 'Admin';
+    return role
+      .replace(/_/g, ' ')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        navigate('/login-admin');
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          'http://localhost:3000/api/admin/profile',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data);
+        } else {
+          if (response.status === 401) {
+            handleLogout();
+          }
+          console.error('Gagal mengambil profil');
+        }
+      } catch (error) {
+        console.error('Error koneksi:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminProfile();
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('isLoggedIn');
-
-    setUser(null);
-    setIsLoggedIn(false);
-
     navigate('/login-admin');
   };
 
@@ -52,16 +77,26 @@ const AdminHeader = ({ title }) => {
         setShowDropdown(false);
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const displayName = loading ? 'Memuat...' : profile?.nama || 'Admin';
+
+  const displayRole = loading
+    ? '...'
+    : profile?.bidang
+    ? `${formatRole(profile.role)}`
+    : formatRole(profile?.role);
+
+  const userInitial = profile?.nama
+    ? profile.nama.charAt(0).toUpperCase()
+    : 'A';
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 relative">
       <div className="flex items-center justify-between px-6 py-4">
+        {/* Title Halaman */}
         <div>
           <h1 className="text-2xl font-bold text-[#002942]">{title}</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -70,61 +105,30 @@ const AdminHeader = ({ title }) => {
         </div>
 
         <div className="flex items-center space-x-4 relative">
-          {/* Notifications */}
+          {/* Bagian Notifikasi */}
           <div className="relative" ref={notifRef}>
-            {/* <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-gray-600 hover:text-[#006DA6] hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Bell size={20} />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {notifications.length}
-              </span>
-            </button> */}
-
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-[420px] bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                <div className="p-4 border-b text-sm font-semibold text-gray-700">
-                  Notifikasi
-                </div>
-                <ul className="max-h-80 overflow-y-auto">
-                  {notifications.map((notif) => (
-                    <li
-                      key={notif.id}
-                      className="px-5 py-4 hover:bg-gray-50 border-b text-sm"
-                    >
-                      <div className="flex justify-between">
-                        <div>
-                          <p className="font-semibold text-gray-800">
-                            {notif.type}
-                          </p>
-                          <p className="text-gray-600 mt-1">{notif.message}</p>
-                        </div>
-                        <p className="text-xs text-gray-400 whitespace-nowrap ml-4">
-                          {notif.date}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* ... kode notifikasi ... */}
           </div>
 
-          {/* User Menu */}
+          {/* --- User Menu --- */}
           <div className="relative" ref={dropdownRef}>
             <div
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
             >
               <div className="w-8 h-8 bg-[#006DA6] rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">A</span>
+                <span className="text-white font-medium text-sm">
+                  {userInitial}
+                </span>
               </div>
-              <div className="hidden md:block text-right">
+
+              <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-700">
-                  Administrator
+                  {displayName}
                 </p>
-                <p className="text-xs text-gray-500">Super Admin</p>
+                <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                  {displayRole}
+                </p>
               </div>
               <ChevronDown size={16} className="text-gray-400" />
             </div>
@@ -134,6 +138,13 @@ const AdminHeader = ({ title }) => {
                 <ul className="text-sm text-gray-700">
                   <li
                     className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => navigate('/dashboard-admin/profile')}
+                  >
+                    <User size={16} className="mr-2 text-gray-500" />
+                    Profile Saya
+                  </li>
+                  <li
+                    className="flex items-center px-4 py-3 hover:bg-gray-100 cursor-pointer border-t border-gray-100"
                     onClick={handleLogout}
                   >
                     <LogOut size={16} className="mr-2 text-[#a60000]" />

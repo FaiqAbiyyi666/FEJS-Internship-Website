@@ -1,58 +1,29 @@
-import React, { useState } from 'react';
+// AdminDashboard.jsx
+import React from 'react'; // Hapus useState karena tidak dipakai lagi untuk navigasi
+import { Outlet, useLocation } from 'react-router-dom';
 import AdminSidebar from '../../../components/navigations/AdminSidebar';
 import AdminHeader from '../../../components/navigations/AdminHeader';
-import DashboardHome from './AdminDashboardHome';
-import ManagementVerifikasiAkun from './ManageVerifAkun';
-import ManagementSubKoorbid from './ManageSubKoorbid';
-import ManagementLaporan from './ManageLaporan';
-import ManagementLaporanAkhir from './ManageLaporanAkhir';
-import ManagementBidang from './ManageBidang';
-import ManagementKritikSaran from './ManageKritikSaran';
-import ManagementUlasanMagang from './ManageUlasanMagang';
-import AdminProfile from './AdminProfile';
-import ManageAjuanMagang from './ManageAjuanMagang';
-import ManageSertifikat from './ManageSertifikat';
-import ManageSuratMagang from './ManageSuratMagang';
-import ManageDataMagang from './ManageDataMagang';
+
+// TIDAK PERLU IMPORT Component Halaman (ManagementVerifikasi, dll) disini lagi.
+// Karena sudah di-handle oleh Route.jsx
 
 const AdminDashboard = () => {
-  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const location = useLocation();
 
-  const renderContent = () => {
-    switch (activeMenu) {
-      case 'dashboard':
-        return <DashboardHome />;
-      case 'verifikasi':
-        return <ManagementVerifikasiAkun />;
-      case 'subkoorbid':
-        return <ManagementSubKoorbid />;
-      case 'laporan':
-        return <ManagementLaporan />;
-      case 'laporanAkhir':
-        return <ManagementLaporanAkhir />;
-      case 'ajuan':
-        return <ManageAjuanMagang />;
-      case 'bidang':
-        return <ManagementBidang />;
-      case 'dataMagang':
-        return <ManageDataMagang />;
-      case 'sertifikat':
-        return <ManageSertifikat />;
-      case 'suratMagang':
-        return <ManageSuratMagang />;
-      case 'kritik':
-        return <ManagementKritikSaran />;
-      case 'ulasan':
-        return <ManagementUlasanMagang />;
-      case 'profile':
-        return <AdminProfile />;
-      default:
-        return <DashboardHome />;
-    }
+  // Fungsi untuk mendapatkan menu aktif berdasarkan URL
+  // Contoh: URL "/dashboard-admin/verifikasi" -> activeMenu = "verifikasi"
+  const getActiveMenu = () => {
+    const path = location.pathname;
+    const parts = path.split('/');
+    // parts[0] = "", parts[1] = "dashboard-admin", parts[2] = "verifikasi"
+    return parts[2] || 'dashboard';
   };
 
-  const getPageTitle = () => {
-    switch (activeMenu) {
+  const activeMenu = getActiveMenu();
+
+  // Fungsi Judul tetap digunakan, tapi logic-nya menyesuaikan activeMenu dari URL
+  const getPageTitle = (menu) => {
+    switch (menu) {
       case 'dashboard':
         return 'Dashboard';
       case 'verifikasi':
@@ -61,18 +32,18 @@ const AdminDashboard = () => {
         return 'Sub Koordinator Bidang';
       case 'laporan':
         return 'Laporan Harian';
-      case 'laporanAkhir':
-        return 'Laporan Akhir';
+      case 'laporan-akhir':
+        return 'Laporan Akhir'; // Sesuaikan dengan path di Route
       case 'ajuan':
         return 'Ajuan Magang';
       case 'bidang':
         return 'Bidang Magang';
-      case 'dataMagang':
-        return 'Arsip Data Magang';
+      case 'data-magang':
+        return 'Arsip Data Magang'; // Sesuaikan dengan path di Route
       case 'sertifikat':
         return 'Sertifikat';
-      case 'suratMagang':
-        return 'Surat Magang';
+      case 'surat-magang':
+        return 'Surat Magang'; // Sesuaikan dengan path di Route
       case 'kritik':
         return 'Kritik & Saran';
       case 'ulasan':
@@ -86,13 +57,17 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
+      {/* Pastikan AdminSidebar menerima prop activeMenu agar bisa highlight tombol.
+         Kita tidak perlu setActiveMenu lagi, karena navigasi sekarang via URL (Link).
+      */}
+      <AdminSidebar activeMenu={activeMenu} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader title={getPageTitle()} />
+        <AdminHeader title={getPageTitle(activeMenu)} />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-          {renderContent()}
+          {/* Outlet adalah tempat komponen anak (child route) akan muncul */}
+          <Outlet />
         </main>
       </div>
     </div>

@@ -86,17 +86,13 @@ export default function UsulanMagangPage() {
           today.setHours(0, 0, 0, 0);
 
           const hasBlockingAjuan = result.data.some((item) => {
-            // 1. Blokir jika ada yang PENDING
             if (item.statusUsulan === 'PENDING') {
               return true;
             }
-            // 2. Blokir jika DITERIMA dan periode belum selesai
-            if (item.statusUsulan === 'DITERIMA') {
+            if (item.statusUsulan === 'APPROVED') {
               const endDate = new Date(item.tglSelesai);
-              // Jika tanggal selesai >= hari ini, berarti magang masih/akan berlangsung
               return endDate >= today;
             }
-            // Abaikan jika DITOLAK atau DITERIMA tapi sudah selesai
             return false;
           });
 
