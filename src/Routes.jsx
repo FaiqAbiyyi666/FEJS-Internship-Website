@@ -35,7 +35,7 @@ import KonfirmasiSimpan from './pages/pesertaMagang/usulan/KonfirmasiSimpan';
 import AllTestimoniPage from './components/AllTestimoniPage';
 
 import AdminDashboard from './pages/mitra/admin/AdminDashboard';
-import DashboardHomeAdmin from './pages/mitra/admin/AdminDashboardHome'; // Pastikan path benar
+import DashboardHomeAdmin from './pages/mitra/admin/AdminDashboardHome';
 import ManageVerifikasiAkun from './pages/mitra/admin/ManageVerifAkun';
 import ManageSubKoorbid from './pages/mitra/admin/ManageSubKoorbid';
 import ManageLaporan from './pages/mitra/admin/ManageLaporan';

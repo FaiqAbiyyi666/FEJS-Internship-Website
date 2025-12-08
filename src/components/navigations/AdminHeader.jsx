@@ -2,64 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, ChevronDown, User, LogOut } from 'lucide-react';
 
-const AdminHeader = ({ title }) => {
-  const [showNotifications, setShowNotifications] = useState(false);
+// Menerima props 'user' dari AdminDashboard
+const AdminHeader = ({ title, user }) => {
   const [showDropdown, setShowDropdown] = useState(false);
-  const notifRef = useRef(null);
   const dropdownRef = useRef(null);
-
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
   const navigate = useNavigate();
-
-  const formatRole = (role) => {
-    if (!role) return 'Admin';
-    return role
-      .replace(/_/g, ' ')
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  };
-
-  useEffect(() => {
-    const fetchAdminProfile = async () => {
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        navigate('/login-admin');
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          'http://localhost:3000/api/admin/profile',
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setProfile(data);
-        } else {
-          if (response.status === 401) {
-            handleLogout();
-          }
-          console.error('Gagal mengambil profil');
-        }
-      } catch (error) {
-        console.error('Error koneksi:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAdminProfile();
-  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -68,11 +15,24 @@ const AdminHeader = ({ title }) => {
     navigate('/login-admin');
   };
 
+  // Helper Format Role agar enak dibaca
+  const formatRoleLabel = (role, bidangName) => {
+    if (!role) return 'Memuat...';
+
+    if (role === 'admin') {
+      return 'Super Admin';
+    }
+
+    if (role === 'sub_koordinator_bidang') {
+      // Jika ada nama bidang, tampilkan. Jika tidak, tampilkan default.
+      return bidangName ? `Sub Koor Bidang - ${bidangName}` : 'Sub Koordinator Bidang';
+    }
+
+    return role;
+  };
+
   useEffect(() => {
     function handleClickOutside(event) {
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotifications(false);
-      }
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
@@ -81,22 +41,15 @@ const AdminHeader = ({ title }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const displayName = loading ? 'Memuat...' : profile?.nama || 'Admin';
-
-  const displayRole = loading
-    ? '...'
-    : profile?.bidang
-    ? `${formatRole(profile.role)}`
-    : formatRole(profile?.role);
-
-  const userInitial = profile?.nama
-    ? profile.nama.charAt(0).toUpperCase()
-    : 'A';
+  // Data Display Logic
+  const displayName = user?.nama || 'Administrator';
+  const displayRole = formatRoleLabel(user?.role, user?.bidang?.nama);
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 relative">
       <div className="flex items-center justify-between px-6 py-4">
-        {/* Title Halaman */}
+        {/* Title */}
         <div>
           <h1 className="text-2xl font-bold text-[#002942]">{title}</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -105,12 +58,7 @@ const AdminHeader = ({ title }) => {
         </div>
 
         <div className="flex items-center space-x-4 relative">
-          {/* Bagian Notifikasi */}
-          <div className="relative" ref={notifRef}>
-            {/* ... kode notifikasi ... */}
-          </div>
-
-          {/* --- User Menu --- */}
+          {/* User Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <div
               onClick={() => setShowDropdown(!showDropdown)}
@@ -126,7 +74,7 @@ const AdminHeader = ({ title }) => {
                 <p className="text-sm font-medium text-gray-700">
                   {displayName}
                 </p>
-                <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                <p className="text-xs text-gray-500 truncate max-w-[200px]">
                   {displayRole}
                 </p>
               </div>

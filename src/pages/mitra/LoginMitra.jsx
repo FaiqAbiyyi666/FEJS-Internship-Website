@@ -34,14 +34,17 @@ export default function LoginMitra() {
       // Simpan token JWT di localStorage
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
+      localStorage.setItem('isLoggedIn', 'true');
 
       // Redirect sesuai role user
-      if (data.data.user.role === 'admin') {
+      const userRole = data.data.user.role;
+
+      // Baik Admin maupun Sub Koordinator diarahkan ke Dashboard Admin yang sama
+      if (userRole === 'admin' || userRole === 'sub_koordinator_bidang') {
         navigate('/dashboard-admin');
-      } else if (data.data.user.role === 'sub_koordinator_bidang') {
-        navigate('/dashboard-subkoor-bidang');
       } else {
-        navigate('/'); // fallback
+        // Fallback jika ada role lain (misal user biasa nyasar ke login admin)
+        navigate('/');
       }
     } catch (err) {
       console.error(err);
